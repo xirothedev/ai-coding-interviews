@@ -2,15 +2,15 @@
 
 [⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../README.md)
 
-| Attribute                    | Details                                                                                                                                                     |
-| :--------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Case ID**                  | `M10`                                                                                                                                                       |
-| **Difficulty Level**         | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar)                                                                                                             |
-| **Task Archetype**           | Code Review & AI-Slop Rescue + Domain State Machine                                                                                                         |
-| **Source GitHub Repository** | [`WiliamPerezBeltran/real_technical_tests`](https://github.com/WiliamPerezBeltran/real_technical_tests) _(Backend Ledger / Payment Challenge)_              |
-| **Target Files**             | `ledger`, `webhook_processor`, and `test_ledger`                                                                                                            |
-| **Supported Languages**      | `TypeScript`, `Python`, `Java`, `Go`                                                                                                                        |
-| **Primary AI Traps**         | Out-of-order `CAPTURE` arriving before `HOLD` · Partial capture (`$80` of `$100` hold) failing to release the `$20` remainder · Duplicate `event_id` replay |
+| Attribute                    | Details                                                                                                                                                                                                              |
+| :--------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Case ID**                  | `M10`                                                                                                                                                                                                                |
+| **Difficulty Level**         | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar)                                                                                                                                                                      |
+| **Task Archetype**           | Code Review & AI-Slop Rescue + Domain State Machine                                                                                                                                                                  |
+| **Source GitHub Repository** | [`oskardudycz/EventSourcing.NetCore`](https://github.com/oskardudycz/EventSourcing.NetCore) · [`cer/event-sourcing-examples`](https://github.com/cer/event-sourcing-examples) _(Backend Ledger / Payment Challenge)_ |
+| **Target Files**             | `ledger`, `webhook_processor`, and `test_ledger`                                                                                                                                                                     |
+| **Supported Languages**      | `TypeScript`, `Python`, `Java`, `Go`                                                                                                                                                                                 |
+| **Primary AI Traps**         | Out-of-order `CAPTURE` arriving before `HOLD` · Partial capture (`$80` of `$100` hold) failing to release the `$20` remainder · Duplicate `event_id` replay                                                          |
 
 ---
 

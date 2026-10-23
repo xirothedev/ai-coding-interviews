@@ -7,7 +7,7 @@
 | **Case ID**                  | `E05`                                                                                                                                     |
 | **Difficulty Level**         | 🟢 **Easy** (`30–45 mins` — Junior / Mid Bar)                                                                                             |
 | **Task Archetype**           | Legacy Refactoring + Feature Extension                                                                                                    |
-| **Source GitHub Repository** | [`emilybache/Lift-Pass-Pricing-Refactoring-Kata`](https://github.com/emilybache/Lift-Pass-Pricing-Refactoring-Kata)                       |
+| **Source GitHub Repository** | [`martinsson/Refactoring-Kata-Lift-Pass-Pricing`](https://github.com/martinsson/Refactoring-Kata-Lift-Pass-Pricing)                       |
 | **Target Files**             | `prices.py` & `test_prices.py` _(or `TypeScript/`, `go/`, `java/`, `csharp/`)_                                                            |
 | **Supported Languages**      | `Python`, `TypeScript`, `Go`, `Java`, `C#`                                                                                                |
 | **Primary AI Traps**         | Counting free toddlers (`age < 6`) toward the `4+` paying group discount threshold · Applying `math.ceil` in the wrong intermediate order |
@@ -19,7 +19,7 @@
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/emilybache/Lift-Pass-Pricing-Refactoring-Kata.git lift-pass-interview
+git clone https://github.com/martinsson/Refactoring-Kata-Lift-Pass-Pricing.git lift-pass-interview
 cd lift-pass-interview/python # (or typescript / go / java / csharp)
 rm -rf ../.git && git init && git add . && git commit -m "Initial interview baseline"
 pytest

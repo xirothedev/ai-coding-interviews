@@ -7,7 +7,7 @@
 | **Case ID**                  | `E08`                                                                                                                                                 |
 | **Difficulty Level**         | 🟢 **Easy** (`30–45 mins` — Junior / Mid Bar)                                                                                                         |
 | **Task Archetype**           | Bugfix + Feature Extension                                                                                                                            |
-| **Source GitHub Repository** | [`emilybache/Delivery-Controller-Refactoring-Kata`](https://github.com/emilybache/Delivery-Controller-Refactoring-Kata)                               |
+| **Source GitHub Repository** | [`emilybache/DeliveryController-Refactoring-Kata`](https://github.com/emilybache/DeliveryController-Refactoring-Kata)                                 |
 | **Target Files**             | Delivery controller / slot service & unit tests                                                                                                       |
 | **Supported Languages**      | `Python`, `TypeScript`, `Java`, `C#`                                                                                                                  |
 | **Primary AI Traps**         | Non-idempotent booking retry decrementing slot capacity twice for the same `order_id` · Comparing naive timestamp against warehouse local cutoff hour |
@@ -19,7 +19,7 @@
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/emilybache/Delivery-Controller-Refactoring-Kata.git delivery-interview
+git clone https://github.com/emilybache/DeliveryController-Refactoring-Kata.git delivery-interview
 cd delivery-interview
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
 ```

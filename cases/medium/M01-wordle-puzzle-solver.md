@@ -2,15 +2,15 @@
 
 [⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../README.md)
 
-| Attribute                    | Details                                                                                                                                       |
-| :--------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Case ID**                  | `M01` _(Meta AI-Enabled SWE Practice Flagship)_                                                                                               |
-| **Difficulty Level**         | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar)                                                                                               |
-| **Task Archetype**           | Bugfix + Solver Implementation + Toy-vs-Prod Scale                                                                                            |
-| **Source GitHub Repository** | [`agermanidis/wordle-solver`](https://github.com/agermanidis/wordle-solver) · [`heb12/wordle-solver`](https://github.com/heb12/wordle-solver) |
-| **Target Files**             | `src/dictionary.py`, `src/puzzle.py`, `src/solver.py`, `src/test_puzzle.py`, `src/test_solver.py`, `data/up_to_six_letters.txt`               |
-| **Supported Languages**      | `Python`, `TypeScript`, `Go`, `Java`                                                                                                          |
-| **Primary AI Traps**         | Duplicate-letter `Match.MOVE` bug · Variable word lengths (`1..6`) in `up_to_six_letters.txt` · $O(                                           | D   | ^2)$ timeout on `get_prod_dictionary()` |
+| Attribute                    | Details                                                                                                                                     |
+| :--------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Case ID**                  | `M01` _(Meta AI-Enabled SWE Practice Flagship)_                                                                                             |
+| **Difficulty Level**         | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar)                                                                                             |
+| **Task Archetype**           | Bugfix + Solver Implementation + Toy-vs-Prod Scale                                                                                          |
+| **Source GitHub Repository** | [`jason-chao/wordle-solver`](https://github.com/jason-chao/wordle-solver) · [`jonhoo/roget`](https://github.com/jonhoo/roget)               |
+| **Target Files**             | `src/dictionary.py`, `src/puzzle.py`, `src/solver.py`, `src/test_puzzle.py`, `src/test_solver.py`, `data/up_to_six_letters.txt`             |
+| **Supported Languages**      | `Python`, `TypeScript`, `Go`, `Java`                                                                                                        |
+| **Primary AI Traps**         | Duplicate-letter `Match.MOVE` bug · Variable word lengths (`1..6`) in `up_to_six_letters.txt` · $O(N^2)$ timeout on `get_prod_dictionary()` |
 
 ---
 

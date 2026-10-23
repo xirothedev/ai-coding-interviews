@@ -48,8 +48,10 @@ async function main() {
   const failures: string[] = [];
 
   for (const [repo, referencedBy] of repoToFiles.entries()) {
-    const url = `https://github.com/${repo}`;
+    const apiUrl = `https://api.github.com/repos/${repo}`;
+    const webUrl = `https://github.com/${repo}`;
     const headers: Record<string, string> = {
+      Accept: "application/vnd.github+json",
       "User-Agent": "ai-coding-interviews-repo-checker",
     };
     if (token) {
@@ -57,18 +59,18 @@ async function main() {
     }
 
     try {
-      const res = await fetch(url, { method: "HEAD", redirect: "follow", headers });
+      const res = await fetch(apiUrl, { method: "GET", redirect: "follow", headers });
       if (!res.ok) {
         failures.push(
-          `${url} returned HTTP ${res.status} (referenced in: ${referencedBy.join(", ")})`,
+          `${webUrl} returned HTTP ${res.status} (referenced in: ${referencedBy.join(", ")})`,
         );
       } else {
-        console.log(`  [OK] ${url}`);
+        console.log(`  [OK] ${webUrl}`);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       failures.push(
-        `${url} failed to fetch: ${message} (referenced in: ${referencedBy.join(", ")})`,
+        `${webUrl} failed to fetch: ${message} (referenced in: ${referencedBy.join(", ")})`,
       );
     }
   }
