@@ -1,0 +1,31 @@
+name: Sync Documentation & Cases to GitHub Wiki
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "wiki/**"
+      - "docs/**"
+      - "cases/**"
+      - "templates/**"
+      - "scripts/publish-wiki.sh"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-wiki:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build and push Wiki pages
+        env:
+          WIKI_REMOTE: "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git"
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          chmod +x ./scripts/publish-wiki.sh
+          ./scripts/publish-wiki.sh
