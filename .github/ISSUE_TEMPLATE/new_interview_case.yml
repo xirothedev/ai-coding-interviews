@@ -1,0 +1,68 @@
+name: "🆕 Propose New AI Coding Interview Case"
+description: "Suggest a real open-source GitHub repository and scenario for an Easy, Medium, or Hard AI-enabled coding interview case."
+title: "[Case Proposal] <Level>: <Short Descriptive Title>"
+labels: ["case-proposal", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for proposing a new interview case! Remember: we build cases on top of **real open-source GitHub repositories** rather than writing synthetic codebases from scratch.
+  - type: dropdown
+    id: level
+    attributes:
+      label: Difficulty Level
+      description: Which tier does this case belong to?
+      options:
+        - Easy (30-45 min | 3-4 files | Polyglot Kata / Utility)
+        - Medium (45-60 min | 5-7 files | Multi-file App / Micro-Library)
+        - Hard (60-75 min | 7-10+ files | Production OSS Commit / Compounding AI Traps)
+    validations:
+      required: true
+  - type: dropdown
+    id: archetype
+    attributes:
+      label: Task Archetype
+      options:
+        - "Archetype 1: Bugfix + Feature Extension (Meta CoderPad Style)"
+        - "Archetype 2: Legacy Refactoring & Performance Optimization (Toy vs. Prod Scale)"
+        - "Archetype 3: System Component Integration (Strict Cross-Module Contracts)"
+        - "Archetype 4: Code Review & AI Hallucination Rescue (Fixing AI-Slop PR)"
+    validations:
+      required: true
+  - type: input
+    id: github_repo
+    attributes:
+      label: Target Open-Source GitHub Repository URL (and optional Commit/Tag)
+      placeholder: "https://github.com/encode/httpx (or emilybache/GildedRose-Refactoring-Kata)"
+    validations:
+      required: true
+  - type: checkboxes
+    id: languages
+    attributes:
+      label: Supported Programming Languages
+      options:
+        - label: Python
+        - label: TypeScript / JavaScript
+        - label: Go
+        - label: Java
+        - label: Rust
+        - label: C#
+  - type: textarea
+    id: checkpoints
+    attributes:
+      label: The 4 Checkpoints Overview
+      description: Briefly outline (1) Explore & Trace, (2) Bug to Fix, (3) Feature/Optimization to Build, and (4) Edge Case Verification.
+      placeholder: |
+        1. Explore: ...
+        2. Bugfix: ...
+        3. Feature/Solver: ...
+        4. Edge Cases: ...
+    validations:
+      required: true
+  - type: textarea
+    id: ai_trap
+    attributes:
+      label: The "AI Trap" (Why Naive Prompting Fails)
+      description: What happens when a candidate copies the whole requirement into ChatGPT/Claude/Gemini without reading the codebase first?
+    validations:
+      required: true

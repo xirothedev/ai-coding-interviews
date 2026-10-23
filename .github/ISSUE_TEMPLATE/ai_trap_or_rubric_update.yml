@@ -1,0 +1,26 @@
+name: "🪤 Share an AI Trap or Rubric Update"
+description: "Report a new LLM failure mode observed during an interview/practice session or suggest improvements to the 7-criteria rubric."
+title: "[AI Trap / Rubric] <Case ID or Criterion>: <Summary>"
+labels: ["ai-trap", "rubric"]
+body:
+  - type: input
+    id: target_case
+    attributes:
+      label: Target Case ID or Document
+      placeholder: "e.g., H03 (colinhacks/zod) or docs/01-THE-7-EVALUATION-CRITERIA.md"
+    validations:
+      required: true
+  - type: textarea
+    id: observation
+    attributes:
+      label: Observed AI Trap / Candidate Behavior
+      description: What prompt was used, which model was tested, and what subtle bug or architectural violation did the AI produce?
+    validations:
+      required: true
+  - type: textarea
+    id: recommendation
+    attributes:
+      label: Suggested Update to Rubric or Playbook
+      description: How should interviewers grade this or how should candidates adjust their Divide-and-Conquer prompt flow?
+    validations:
+      required: true

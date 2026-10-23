@@ -1,0 +1,145 @@
+# M01 — Secret Word Puzzle & Entropy Solver Engine *(Meta Flagship)*
+
+[⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../README.md)
+
+| Attribute | Details |
+| :--- | :--- |
+| **Case ID** | `M01` *(Meta AI-Enabled SWE Practice Flagship)* |
+| **Difficulty Level** | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar) |
+| **Task Archetype** | Bugfix + Solver Implementation + Toy-vs-Prod Scale |
+| **Source GitHub Repository** | [`agermanidis/wordle-solver`](https://github.com/agermanidis/wordle-solver) · [`heb12/wordle-solver`](https://github.com/heb12/wordle-solver) |
+| **Target Files** | `src/dictionary.py`, `src/puzzle.py`, `src/solver.py`, `src/test_puzzle.py`, `src/test_solver.py`, `data/up_to_six_letters.txt` |
+| **Supported Languages** | `Python`, `TypeScript`, `Go`, `Java` |
+| **Primary AI Traps** | Duplicate-letter `Match.MOVE` bug · Variable word lengths (`1..6`) in `up_to_six_letters.txt` · $O(|D|^2)$ timeout on `get_prod_dictionary()` |
+
+---
+
+## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
+
+### Workspace Layout (Matching Meta CoderPad Environment)
+```text
+.
+├── data/
+│   └── up_to_six_letters.txt       # 40,000+ words of lengths 1 to 6
+├── src/
+│   ├── dictionary.py               # get_test_dictionary() & get_prod_dictionary()
+│   ├── main.py                     # Entrypoint runner
+│   ├── puzzle.py                   # Match(YES, MOVE, NO), Puzzle.guess(), Puzzle.admitDefeat()
+│   ├── solver.py                   # Solver stub to implement
+│   ├── test_puzzle.py              # Unit tests for Puzzle (some commented out)
+│   └── test_solver.py              # Unit tests for Solver (some commented out)
+└── requirements.txt
+```
+
+### Seeded Defects to Inject Before the Session
+1. **Bug 1 (`src/dictionary.py`)**: `_read_file_dictionary("up_to_six_letters.txt")` only searches `[Path("data")]` (relative to current working directory) and raises `FileNotFoundError` when tests are run from `src/` or if blank/uppercase lines exist.
+2. **Bug 2 (`src/puzzle.py` — Duplicate Letter `Match.MOVE` Bug)**: `Puzzle.guess(word)` checks `elif letter in self._secret_word: result.append(Match.MOVE)` in a single pass without decrementing available letter counts!
+   - Example: If `secret = "area"` and `guess = "aaaa"`, `Puzzle.guess("aaaa")` returns `[YES, MOVE, MOVE, YES]` instead of `[YES, NO, NO, YES]`.
+   - Example: If `secret = "aloe"` and `guess = "ally"`, the second `"l"` in `"ally"` returns `Match.MOVE` even though `"aloe"` only has one `"l"` (already matched at index 1!).
+3. **Commented Tests**: Comment out `test_duplicate_letter_guess` and `test_variable_length_words` in `src/test_puzzle.py`, and `test_solver_prod_dictionary` in `src/test_solver.py`.
+
+---
+
+## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
+
+> ### Welcome to Your AI-Enabled SWE Coding Interview
+> Use this session to solve a realistic multi-file engineering problem with the AI Assistant.
+>
+> ### The Puzzle
+> I've written a new word game, and it works like this:
+> - `Puzzle` has a secret word chosen from a dictionary (`up_to_six_letters.txt`, containing words of **1 to 6 letters**).
+> - The player needs to guess the secret word, ideally in as few guesses as possible.
+> - When you guess a word via `Puzzle.guess(word)`, you get a list of `Match` statuses for each letter in your guess:
+>   - `Match.YES` if the secret word has that exact letter in that exact spot.
+>   - `Match.MOVE` if that letter could be moved to another spot to be correct (respecting letter frequency counts—excess duplicate letters in a guess beyond how many exist in the secret word must be marked `Match.NO`!).
+>   - `Match.NO` if the letter can't be used.
+> - If you can't guess it, you can give up via `Puzzle.admitDefeat()` to reveal the secret word.
+>
+> ### Examples of `Puzzle.guess`
+> - Secret = `"able"`, Guess = `"ably"` → `[Match.YES, Match.YES, Match.YES, Match.NO]`
+> - Secret = `"aloe"`, Guess = `"ally"` → `[Match.YES, Match.YES, Match.NO, Match.NO]` *(Second `'l'` is `NO` because `'aloe'` has only one `'l'`, already matched at index 1)*
+> - Secret = `"area"`, Guess = `"aaaa"` → `[Match.YES, Match.NO, Match.NO, Match.YES]`
+>
+> ### Your Tasks
+> 1. **Explore the code**: Figure out how `dictionary.py`, `puzzle.py`, `solver.py`, and `main.py` work.
+> 2. **Execute the code**: Run `main.py` to see current behavior.
+> 3. **Run & Uncomment Unit Tests**: Run `test_puzzle.py` and `test_solver.py`. Look at the unit test files, see that there are commented-out unit tests, and uncomment them.
+> 4. **Fix the Existing Bugs**: Fix `dictionary.py` and `puzzle.py` to pass all unit tests in `test_puzzle.py`.
+> 5. **Implement the `Solver`**: Implement `Solver` in `solver.py` to play the game and beat the puzzle across both `get_test_dictionary()` and `get_prod_dictionary()` (`up_to_six_letters.txt`), averaging `<= 5.0` guesses per word and completing 100 production games in `< 2.0 seconds`.
+> 6. **Use the AI Assistant** as much or as little as you would like, and be ready to explain why your solution is correct.
+
+---
+
+## 3. The AI Traps & Expected Solution (Confidential)
+
+### Trap 1: Single-Pass `Match.MOVE` Over-Counting Duplicate Letters
+- **What Naive AI Writes**:
+  ```python
+  return [
+      Match.YES if g == s else (Match.MOVE if g in secret else Match.NO)
+      for g, s in zip(guess, secret)
+  ]
+  ```
+- **Why It Fails**: If `secret = "aloe"` and `guess = "ally"`, index 1 (`'l' == 'l'`) consumes the only `'l'` in `"aloe"`. A single-pass check sees `'l' in "aloe"` at index 2 and returns `Match.MOVE`! Even worse, if `secret = "abbey"` and `guess = "babes"`, index 0 `'b'` would consume a `'b'` before index 2's exact `Match.YES`!
+- **Correct Fix (Two-Pass Frequency Algorithm)**:
+  ```python
+  def evaluate_guess(secret: str, guess: str) -> list[Match]:
+      result = [Match.NO] * len(guess)
+      remaining = Counter(secret)
+      # Pass 1: Exact matches (Match.YES) MUST be claimed first!
+      for i, (s_char, g_char) in enumerate(zip(secret, guess)):
+          if s_char == g_char:
+              result[i] = Match.YES
+              remaining[g_char] -= 1
+      # Pass 2: Misplaced matches (Match.MOVE) consume remaining unmatched counts
+      for i, g_char in enumerate(guess):
+          if result[i] == Match.NO and remaining[g_char] > 0:
+              result[i] = Match.MOVE
+              remaining[g_char] -= 1
+      return result
+  ```
+
+### Trap 2: Inconsistent Filtering in `Solver` + Variable Word Lengths (`1..6`)
+- **What Naive AI Writes**:
+  - Hardcodes `word_len = 5` (crashing on `get_test_dictionary()` which uses 4-letter words and `up_to_six_letters.txt` which has 1-to-6 letter words!).
+  - Writes ad-hoc filtering rules (`if match == Match.NO: candidates = [w for w in candidates if ch not in w]`) which **eliminates the true secret word** when a duplicate letter gets `Match.YES` at pos 1 and `Match.NO` at pos 2!
+- **The Brilliant Fix**: Reuse `evaluate_guess(candidate, guess) == feedback`!
+  - A candidate word `w` in `candidates` is consistent with `feedback` **if and only if** `evaluate_guess(secret=w, guess=last_guess) == feedback`! This is 1 line of code and handles duplicate letters with 100% mathematical perfection!
+
+### Trap 3: $O(|C|^2)$ Minimax / Entropy Timeout on `get_prod_dictionary()`
+- **Why It Fails**: Computing full pairwise entropy over 40,000 words takes $1.6 \times 10^9$ evaluations (`> 60 seconds`).
+- **Correct Fix**: Score remaining candidates in $O(|C| \cdot L)$ time using positional character frequencies (preferring words with high-frequency distinct letters in the first 1–2 guesses, or pre-grouping dictionary by `len(word)`).
+
+---
+
+## 4. Reference Divide-and-Conquer Prompt Flow
+
+1. **Step 1 (`Understand`)**:
+   > *"Do not write code. Read `dictionary.py`, `puzzle.py`, `solver.py`, `test_puzzle.py`, and `test_solver.py`. List the commented-out tests and explain what bugs currently exist in `dictionary.py` and `puzzle.py`."*
+2. **Step 2 (`Plan`)**:
+   - Candidate plans: (1) fix path resolution in `dictionary.py`, (2) extract pure helper `evaluate_guess(secret, guess)` using the 2-pass `Counter` algorithm in `puzzle.py`, (3) implement `Solver` by filtering `evaluate_guess(cand, guess) == feedback` and scoring candidates via $O(|C| \cdot L)$ positional letter frequency.
+3. **Step 3 (`Prompt`)**:
+   - Prompt 1: Fix `dictionary.py` and 2-pass `evaluate_guess` in `puzzle.py`; run `test_puzzle.py`.
+   - Prompt 2: Implement `Solver` in `solver.py` using `evaluate_guess` for filtering + $O(N)$ frequency heuristic.
+4. **Step 4 (`Review`) & Step 5 (`Test`)**:
+   - Verify `Solver` never uses `if ch not in w` on `Match.NO`, handles lengths 1–6, and passes `test_solver.py` on `get_prod_dictionary()`.
+
+---
+
+## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
+
+| # | Criterion | Strong Hire / Hire (`Score 3–4`) | No Hire / Blind Vibe-Coder (`Score 1–2`) |
+| :-: | :--- | :--- | :--- |
+| **1** | **Problem Decomposition** | Fixes `dictionary.py` & `puzzle.py` first (`test_puzzle.py` green), then reuses `evaluate_guess` inside `solver.py`. | Prompts AI to write `solver.py` immediately before fixing `puzzle.py` or running unit tests. |
+| **2** | **Prompt Context Quality** | Specifies the 2-pass `Match.YES` → `Match.MOVE` algorithm, variable word lengths `1..6`, and $O(N)$ scoring. | Prompts *"Implement a Wordle solver in `solver.py`"*, getting hardcoded 5-letter $O(N^2)$ code. |
+| **3** | **Not Blindly Trusting AI** | Rejects AI's `if letter not in candidate` filter for `Match.NO` and rejects $O(N^2)$ entropy loops on prod dictionary. | Accepts `if letter not in candidate` for `Match.NO`, causing `Solver` to throw away the secret word on duplicate letters! |
+| **4** | **Code Reading Speed** | Notices `get_test_dictionary()` has 4-letter words while `up_to_six_letters.txt` has 1–6 letter words within 5 minutes. | Assumes all words are 5 letters long without reading `dictionary.py`. |
+| **5** | **Bug & Edge-Case Discovery** | Tests `"area"` vs `"aaaa"`, `"aloe"` vs `"ally"`, 1-letter words, and words with no matching letters. | Misses the case where `Match.MOVE` appears *before* `Match.YES` in the same word (`secret="abbey"`, `guess="babes"`). |
+| **6** | **Testing Before Claiming Done** | Uncomments all tests in `test_puzzle.py` and `test_solver.py` and benchmarks against `get_prod_dictionary()`. | Only tests with `get_test_dictionary()` (38 words) and never runs `get_prod_dictionary()`. |
+| **7** | **Explaining Correctness** | Explains why `evaluate_guess(candidate, guess) == feedback` is an exact equivalence relation filter and why $O(|C| \cdot L)$ frequency scoring scales. | Cannot explain why `Match.NO` does not mean "letter is absent from the word." |
+
+### Interviewer Probing Questions (Final 10 Minutes)
+1. **Q**: *"Suppose the secret word is `'aloe'` and the solver guesses `'ally'`, receiving `[YES, YES, NO, NO]`. What happens if your solver eliminates every word containing `'l'` when it sees `Match.NO` at index 2?"*  
+   **Expected Answer**: It eliminates `'aloe'` (the true secret word!) and ends up with an empty candidate list. Checking `evaluate_guess(candidate, 'ally') == [YES, YES, NO, NO]` keeps `'aloe'` and eliminates words with two `'l'`s.
+2. **Q**: *"Why must Pass 1 (`Match.YES`) complete across the entire word before Pass 2 (`Match.MOVE`) begins?"*  
+   **Expected Answer**: If `secret = "abbey"` and `guess = "babes"`, a single left-to-right pass would give index 0 `'b'` a `Match.MOVE` and index 2 `'b'` a `Match.YES`, leaving `0` remaining `'b'`s—Wait: if `secret = "abide"` (one `'b'` at index 1) and `guess = "bbbbb"`, index 0 `'b'` would steal the only `'b'` as `Match.MOVE`, causing index 1's exact match `'b'` to become `Match.NO`!

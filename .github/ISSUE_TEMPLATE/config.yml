@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📖 Employee Mindset & Prompt Playbook
+    url: https://github.com/xirothedev/ai-coding-interviews/blob/main/docs/02-EMPLOYEE-MINDSET-AND-PROMPT-PLAYBOOK.md
+    about: Learn the 5-step Divide & Conquer workflow (Understand -> Plan -> Prompt -> Review -> Test)
+  - name: 🎯 HR & Interviewer Runbook
+    url: https://github.com/xirothedev/ai-coding-interviews/blob/main/docs/03-HR-AND-INTERVIEWER-RUNBOOK.md
+    about: Guide for running and scoring 60-minute AI-enabled coding interviews across the 7 criteria

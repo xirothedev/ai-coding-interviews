@@ -1,0 +1,24 @@
+name: "🔗 Broken Repository Link or Setup Issue"
+description: "Report an archived/moved GitHub repository, broken commit SHA, or failing test setup in a curated case."
+title: "[Broken Repo/Link] <Case ID>: <Repo Name>"
+labels: ["bug", "maintenance"]
+body:
+  - type: input
+    id: case_id
+    attributes:
+      label: Case ID & File Path
+      placeholder: "e.g., M04 in cases/medium/README.md"
+    validations:
+      required: true
+  - type: input
+    id: repo_url
+    attributes:
+      label: Broken GitHub URL or Commit SHA
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What went wrong and suggested replacement (if any)
+    validations:
+      required: true
