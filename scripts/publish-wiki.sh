@@ -83,7 +83,8 @@ for fname in os.listdir(build_dir):
         f.write(content)
 EOF
 
-echo "==> Compiled $(ls -1 "${BUILD_DIR}"/*.md | wc -l | tr -d ' ') Wiki pages in ${BUILD_DIR}."
+PAGE_COUNT=$(find "${BUILD_DIR}" -maxdepth 1 -name '*.md' | wc -l | tr -d ' ')
+echo "==> Compiled ${PAGE_COUNT} Wiki pages in ${BUILD_DIR}."
 
 if [[ "${1:-}" == "--dry-run" ]]; then
   echo "==> Dry run complete. Files generated at: ${BUILD_DIR}"
@@ -93,7 +94,7 @@ fi
 cd "${BUILD_DIR}"
 git init -b master
 git add .
-git commit -m "docs(wiki): sync 39 wiki pages (Home, Sidebar, Playbooks, and 30 Cases)"
+git commit -m "docs(wiki): sync ${PAGE_COUNT} wiki pages (Home, Sidebar, Playbooks, and 30 Cases)"
 git remote add origin "${WIKI_REMOTE}"
 git push --force origin master:master
 echo "==> Successfully published Wiki to https://github.com/xirothedev/ai-coding-interviews/wiki"

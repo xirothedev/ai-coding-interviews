@@ -1,0 +1,3 @@
+{
+  "*.{md,yml,yaml,json,ts,js}": ["bun fmt --no-script --ignore-unknown"]
+}

@@ -9,6 +9,7 @@
 - 🔬 [Hard Level & AI Traps Research](04-HARD-LEVEL-RESEARCH-AND-AI-TRAPS)
 - 📋 [Candidate Scorecard Template](SCORECARD_TEMPLATE)
 - 🧩 [Case Blueprint Template](CASE_TEMPLATE)
+
 </details>
 
 <details open>
@@ -25,13 +26,14 @@
 - [H08: CLI Flag Hooks (`cobra`)](H08-cobra-flag-propagation)
 - [H09: Wide-Char Table (`rich`)](H09-rich-wide-char-table)
 - [H10: Billing AI-Slop Rescue](H10-legacy-billing-ai-slop-rescue)
+
 </details>
 
 <details open>
 <summary><b>🟡 Medium Cases (Meta Bar)</b></summary>
 
 - **[Medium Tier Index](Medium-Tier-Catalog)**
-- [M01: Wordle Solver *(Meta)*](M01-wordle-puzzle-solver)
+- [M01: Wordle Solver _(Meta)_](M01-wordle-puzzle-solver)
 - [M02: Legacy Service DI](M02-legacy-service-refactoring)
 - [M03: Go Worker Pool](M03-concurrent-worker-pool)
 - [M04: HTTP Retry & Jitter](M04-http-retry-middleware)
@@ -41,6 +43,7 @@
 - [M08: TTL + LRU Stampede](M08-ttl-lru-cache-stampede)
 - [M09: CLI Option Precedence](M09-cli-option-precedence)
 - [M10: Event-Sourced Ledger](M10-event-sourced-ledger)
+
 </details>
 
 <details>
@@ -57,4 +60,5 @@
 - [E08: Delivery Slot Capacity](E08-delivery-controller)
 - [E09: Expense Multi-Currency](E09-expense-report)
 - [E10: Racing Car Telemetry](E10-racing-car-telemetry)
+
 </details>

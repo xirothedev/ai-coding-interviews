@@ -13,7 +13,7 @@
 ## Quality Verification Checklist (For Interview Cases)
 
 - [ ] Points to a **real, public open-source GitHub repository** (no proprietary/NDA code or bloated vendored source trees).
-- [ ] Includes the **4-Checkpoint Candidate Flow** (*Explore & Trace → Fix Bug → Core Feature/Scale → Edge Cases & Defense*).
+- [ ] Includes the **4-Checkpoint Candidate Flow** (_Explore & Trace → Fix Bug → Core Feature/Scale → Edge Cases & Defense_).
 - [ ] Documents a verified **AI Trap** (explaining why naive copy-paste prompting fails or produces subtle bugs).
 - [ ] Includes a **Divide-and-Conquer Prompt Walkthrough** (`Understand → Plan → Prompt → Review → Test`).
 - [ ] Maps observable **Green Flags & Red Flags** to **[The 7 Evaluation Criteria](docs/01-THE-7-EVALUATION-CRITERIA.md)**.

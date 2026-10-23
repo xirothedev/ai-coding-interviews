@@ -16,9 +16,9 @@ This document outlines how the **AI Coding Interviews** knowledge base is mainta
 
 3. **Alignment with the 7 Evaluation Criteria**
    - Every case must give the candidate an opportunity to demonstrate all 7 core competencies:
-     1. Problem Decomposition (*Divide & Conquer*)
+     1. Problem Decomposition (_Divide & Conquer_)
      2. Prompt Context & Precision
-     3. AI Skepticism & Diff Verification (*Not Blindly Trusting AI*)
+     3. AI Skepticism & Diff Verification (_Not Blindly Trusting AI_)
      4. Unfamiliar Codebase Navigation Speed
      5. Bug & Edge-Case Discovery
      6. Testing Before Claiming Done
@@ -34,7 +34,7 @@ This document outlines how the **AI Coding Interviews** knowledge base is mainta
 1. **Proposal**: Contributors open a Pull Request or Issue using [templates/CASE_TEMPLATE.md](templates/CASE_TEMPLATE.md).
 2. **Verification by Maintainers**:
    - Is the target GitHub repository public, actively accessible, and quick to run locally (`< 2 minutes` from clone to running unit tests)?
-   - Are the **4 Checkpoints** (*Explore & Trace → Fix Bug → Implement Feature/Scale → Edge Cases & Defense*) realistic within a 45–75 minute window?
+   - Are the **4 Checkpoints** (_Explore & Trace → Fix Bug → Implement Feature/Scale → Edge Cases & Defense_) realistic within a 45–75 minute window?
    - Is the **AI Trap** reproducible with frontier models (GPT, Claude, Gemini) when given a naive copy-paste prompt?
-   - Does the **HR Rubric** clearly distinguish a *Blind Vibe-Coder (Score 1–2)* from a *Strategic AI Orchestrator (Score 3–4)*?
+   - Does the **HR Rubric** clearly distinguish a _Blind Vibe-Coder (Score 1–2)_ from a _Strategic AI Orchestrator (Score 3–4)_?
 3. **Merge & Indexing**: Once approved, the case is added to the appropriate tier (`cases/easy/`, `cases/medium/`, or `cases/hard/`) and indexed in the root [README.md](README.md).

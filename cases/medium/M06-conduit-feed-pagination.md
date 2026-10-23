@@ -2,22 +2,24 @@
 
 [⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../README.md)
 
-| Attribute | Details |
-| :--- | :--- |
-| **Case ID** | `M06` |
-| **Difficulty Level** | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar) |
-| **Task Archetype** | Legacy Refactoring & Performance Optimization |
-| **Source GitHub Repository** | [`gothinkster/realworld`](https://github.com/gothinkster/realworld) *(FastAPI / Express / Go-Gin / Spring Boot)* |
-| **Target Files** | Articles controller/router, service, repository/queries, and feed integration tests |
-| **Supported Languages** | `Python`, `TypeScript`, `Go`, `Java` |
-| **Primary AI Traps** | SQL `LIMIT` applied to `LEFT JOIN`ed tag rows (returning fewer articles than `limit`) · Single-column `created_at` cursor skipping tied rows |
+| Attribute                    | Details                                                                                                                                      |
+| :--------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Case ID**                  | `M06`                                                                                                                                        |
+| **Difficulty Level**         | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar)                                                                                              |
+| **Task Archetype**           | Legacy Refactoring & Performance Optimization                                                                                                |
+| **Source GitHub Repository** | [`gothinkster/realworld`](https://github.com/gothinkster/realworld) _(FastAPI / Express / Go-Gin / Spring Boot)_                             |
+| **Target Files**             | Articles controller/router, service, repository/queries, and feed integration tests                                                          |
+| **Supported Languages**      | `Python`, `TypeScript`, `Go`, `Java`                                                                                                         |
+| **Primary AI Traps**         | SQL `LIMIT` applied to `LEFT JOIN`ed tag rows (returning fewer articles than `limit`) · Single-column `created_at` cursor skipping tied rows |
 
 ---
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
 ### Clean-Room Workspace Provisioning
+
 Clone any backend implementation of the RealWorld ("Conduit") spec (e.g., FastAPI/SQLAlchemy, Express/Prisma/Knex, Go/Gin/SQLx, or Spring Boot) and ensure the `GET /api/articles` endpoint exhibits these two classic defects:
+
 1. **Bug 1 (Post-Pagination In-Memory Filtering & N+1 Query Loop)**: The repository fetches `LIMIT 20 OFFSET 0` articles first and filters by `tag` or `favorited` in application code (or applies `LIMIT 20` directly to a `SELECT ... FROM articles LEFT JOIN article_tags` query so 1 article with 5 tags consumes 5 of the 20 limit rows!), and executes 3 separate queries per article in a `for` loop (`N+1` queries!).
 2. **Bug 2 (Unstable Timestamp Pagination)**: Sorting only by `ORDER BY created_at DESC` causes articles created in the same millisecond to duplicate or vanish across pages.
 
@@ -26,11 +28,14 @@ Clone any backend implementation of the RealWorld ("Conduit") spec (e.g., FastAP
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
 > ### Welcome to Your AI-Enabled SWE Coding Interview
+>
 > You are working on the backend API of "Conduit" (the RealWorld blogging platform). You have full access to the AI Assistant and test suite.
 >
 > ### Problem Context
+>
 > The `GET /api/articles` endpoint is the highest-traffic route in our application, supporting filters (`?tag=`, `?author=`, `?favorited=`) and pagination (`?limit=20&offset=0`).
 > Currently, three critical issues exist:
+>
 > 1. **Incorrect Filtered Page Size & Total Count**:
 >    - Filtering by `?tag=dragons` when an article has multiple tags (e.g., `["dragons", "training", "magic"]`) must still return **all** tags of that article in `tagList: ["dragons", "magic", "training"]` (sorted alphabetically)—NOT just `["dragons"]`!
 >    - Applying `?limit=10` must return exactly `10` distinct articles (when `>= 10` matching articles exist), and `articlesCount` must reflect the **total matching articles before `limit`/`offset`**, not `len(articles)`.
@@ -41,6 +46,7 @@ Clone any backend implementation of the RealWorld ("Conduit") spec (e.g., FastAP
 >    - Add optional cursor pagination (`?limit=20&cursor=<opaque_token>`) ordered by `created_at DESC, id DESC` so that even if 50 articles share the exact same `created_at` timestamp, paging through the feed never skips or duplicates a single article!
 >
 > ### Your Tasks
+>
 > 1. **Explore & Trace**: Trace `GET /api/articles` from route handler to database query and serializer.
 > 2. **Run & Uncomment Tests**: Run the test suite and uncomment the query-count assertion, multi-tag filtering, and tied-timestamp cursor pagination tests.
 > 3. **Fix Filtering, Eliminate N+1 Queries & Add Composite Cursor**: Implement all three improvements cleanly.
@@ -51,6 +57,7 @@ Clone any backend implementation of the RealWorld ("Conduit") spec (e.g., FastAP
 ## 3. The AI Traps & Expected Solution (Confidential)
 
 ### Trap 1: Applying `LIMIT` to a 1-to-Many `LEFT JOIN` Query
+
 - **What Naive AI Writes**:
   ```sql
   SELECT a.*, t.name AS tag_name
@@ -66,6 +73,7 @@ Clone any backend implementation of the RealWorld ("Conduit") spec (e.g., FastAP
   2. Query 2: Batch-load all tags (`WHERE article_id IN (:article_ids)`) and favorites in bulk, grouping by `article_id` in memory! This takes exactly 2–3 queries total ($O(1)$ queries) and never truncates `LIMIT` or strips sibling tags!
 
 ### Trap 2: Single-Column Cursor (`WHERE created_at < :cursor_ts`)
+
 - **What Naive AI Writes**:
   - Encodes only `created_at` in the cursor and filters `WHERE created_at < :cursor_ts`.
 - **Why It Fails**: If 10 articles have `created_at = '2026-10-24T00:00:00Z'` and `limit = 5`, Page 1 returns the first 5 (`id` 10..6), and Page 2 (`WHERE created_at < '2026-10-24T00:00:00Z'`) **skips `id` 5..1 completely**!
@@ -81,7 +89,7 @@ Clone any backend implementation of the RealWorld ("Conduit") spec (e.g., FastAP
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > *"Do not write code. Trace `GET /api/articles` and count how many SQL queries execute for `limit=20`. Show where `tag` filtering and `limit/offset` happen."*
+   > _"Do not write code. Trace `GET /api/articles` and count how many SQL queries execute for `limit=20`. Show where `tag` filtering and `limit/offset` happen."_
 2. **Step 2 (`Plan`)**:
    - Candidate plans the 2-query batch hydration strategy (`WHERE EXISTS` on `articles` with `LIMIT`, followed by `WHERE article_id IN (...)` for tags/favorites) and the composite `(created_at, id)` keyset predicate.
 3. **Step 3 (`Prompt`)**:
@@ -94,16 +102,17 @@ Clone any backend implementation of the RealWorld ("Conduit") spec (e.g., FastAP
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 
-| # | Criterion | Strong Hire / Hire (`Score 3–4`) | No Hire / Blind Vibe-Coder (`Score 1–2`) |
-| :-: | :--- | :--- | :--- |
-| **1** | **Problem Decomposition** | Separates article selection/counting from batch relation hydration (`WHERE article_id IN (...)`) and cursor encoding. | Tries to cram everything into a single giant SQL `JOIN` that breaks `LIMIT`. |
-| **2** | **Prompt Context Quality** | Explicitly specifies `WHERE EXISTS` for tag filtering, `IN (...)` batch loading, and composite `(created_at, id)` tie-breaking. | Prompts *"Fix N+1 and add cursor pagination"*, getting the broken `LEFT JOIN ... LIMIT` query. |
-| **3** | **Not Blindly Trusting AI** | Spots both the `LEFT JOIN` + `LIMIT` row-multiplication bug and the missing sibling tags bug when filtering by `?tag=X`. | Accepts AI's `WHERE t.name = 'dragons'` join that wipes out all other tags on the returned articles! |
-| **4** | **Code Reading Speed** | Pinpoints the N+1 loop and in-memory pagination bug within 5–10 minutes. | Wastes time editing response serializers instead of the repository query. |
-| **5** | **Bug & Edge-Case Discovery** | Tests articles with 0 tags, articles with 5 tags filtered by 1 tag, and 20 articles with identical `created_at` timestamps. | Only tests articles with distinct timestamps and 1 tag each. |
-| **6** | **Testing Before Claiming Done** | Asserts exact SQL query count (`<= 4`) and verifies zero missing/duplicate IDs across all cursor pages. | Claims N+1 is fixed without asserting the number of executed SQL statements. |
-| **7** | **Explaining Correctness** | Explains why `LIMIT` on a 1-to-many join limits *joined rows* rather than *root entities*, and why `(created_at, id)` forms a strict total order. | Cannot explain why `WHERE created_at <= :ts` causes duplicates while `< :ts` drops rows. |
+|   #   | Criterion                        | Strong Hire / Hire (`Score 3–4`)                                                                                                                  | No Hire / Blind Vibe-Coder (`Score 1–2`)                                                             |
+| :---: | :------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------- |
+| **1** | **Problem Decomposition**        | Separates article selection/counting from batch relation hydration (`WHERE article_id IN (...)`) and cursor encoding.                             | Tries to cram everything into a single giant SQL `JOIN` that breaks `LIMIT`.                         |
+| **2** | **Prompt Context Quality**       | Explicitly specifies `WHERE EXISTS` for tag filtering, `IN (...)` batch loading, and composite `(created_at, id)` tie-breaking.                   | Prompts _"Fix N+1 and add cursor pagination"_, getting the broken `LEFT JOIN ... LIMIT` query.       |
+| **3** | **Not Blindly Trusting AI**      | Spots both the `LEFT JOIN` + `LIMIT` row-multiplication bug and the missing sibling tags bug when filtering by `?tag=X`.                          | Accepts AI's `WHERE t.name = 'dragons'` join that wipes out all other tags on the returned articles! |
+| **4** | **Code Reading Speed**           | Pinpoints the N+1 loop and in-memory pagination bug within 5–10 minutes.                                                                          | Wastes time editing response serializers instead of the repository query.                            |
+| **5** | **Bug & Edge-Case Discovery**    | Tests articles with 0 tags, articles with 5 tags filtered by 1 tag, and 20 articles with identical `created_at` timestamps.                       | Only tests articles with distinct timestamps and 1 tag each.                                         |
+| **6** | **Testing Before Claiming Done** | Asserts exact SQL query count (`<= 4`) and verifies zero missing/duplicate IDs across all cursor pages.                                           | Claims N+1 is fixed without asserting the number of executed SQL statements.                         |
+| **7** | **Explaining Correctness**       | Explains why `LIMIT` on a 1-to-many join limits _joined rows_ rather than _root entities_, and why `(created_at, id)` forms a strict total order. | Cannot explain why `WHERE created_at <= :ts` causes duplicates while `< :ts` drops rows.             |
 
 ### Interviewer Probing Questions (Final 10 Minutes)
-1. **Q**: *"What happens if you filter a `LEFT JOIN tags` query with `WHERE tags.name = 'dragons'` and also use that same join to populate `article.tagList`?"*  
-   **Expected Answer**: The `WHERE` clause filters out all joined rows for the article's *other* tags (like `'magic'`), so the API falsely returns `tagList: ['dragons']` instead of the article's full tag list! Using `WHERE EXISTS` (or fetching tags in a second batch query `WHERE article_id IN (...)`) preserves the full `tagList`.
+
+1. **Q**: _"What happens if you filter a `LEFT JOIN tags` query with `WHERE tags.name = 'dragons'` and also use that same join to populate `article.tagList`?"_  
+   **Expected Answer**: The `WHERE` clause filters out all joined rows for the article's _other_ tags (like `'magic'`), so the API falsely returns `tagList: ['dragons']` instead of the article's full tag list! Using `WHERE EXISTS` (or fetching tags in a second batch query `WHERE article_id IN (...)`) preserves the full `tagList`.

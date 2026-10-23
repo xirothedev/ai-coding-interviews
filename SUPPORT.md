@@ -7,6 +7,7 @@ Welcome to the **AI Coding Interviews** knowledge base! Whether you are an **HR 
 ## Where to Start by Role
 
 ### For HR Teams & Technical Interviewers
+
 1. Read **[The 7 Evaluation Criteria](docs/01-THE-7-EVALUATION-CRITERIA.md)** to understand what modern AI-enabled interviews measure beyond syntax generation.
 2. Read the **[HR & Interviewer Runbook](docs/03-HR-AND-INTERVIEWER-RUNBOOK.md)** for the 60-minute interview structure, workspace preparation instructions (including stripping `.git` history), and behavioral grading rubrics.
 3. Copy the **[Candidate Scorecard Template](templates/SCORECARD_TEMPLATE.md)** to standardize debriefs across your hiring panel.
@@ -16,6 +17,7 @@ Welcome to the **AI Coding Interviews** knowledge base! Whether you are an **HR 
    - **[Hard Cases (10 Cases)](cases/hard/README.md)** — Senior / Staff 60–75 minute deep-dive sessions.
 
 ### For Employees & Candidates Practicing
+
 1. Read the **[Employee Mindset & Prompt Playbook](docs/02-EMPLOYEE-MINDSET-AND-PROMPT-PLAYBOOK.md)** to master the **Divide-and-Conquer** control mindset and the **`Understand → Plan → Prompt → Review → Test`** loop.
 2. Bookmark the pre-written prompt templates in that playbook so you can quickly map unfamiliar codebases and trace execution flows before editing code.
 3. Clone one of the linked GitHub repositories in **[Easy](cases/easy/README.md)**, **[Medium](cases/medium/README.md)**, or **[Hard](cases/hard/README.md)**, read only the **Candidate Instructions (Checkpoints 1–4)** first, and time yourself for 60 minutes before checking the **AI Trap Analysis** and **Interviewer Rubric**.

@@ -10,20 +10,20 @@ We pledge to act and interact in ways that contribute to an open, welcoming, div
 
 Examples of behavior that contributes to a positive environment for our community include:
 
-* Demonstrating empathy and kindness toward other people, including junior engineers learning AI-assisted workflows and HR teams calibrating technical rubrics.
-* Being respectful of differing opinions, programming language preferences, and organizational hiring practices.
-* Giving and gracefully accepting constructive feedback on interview case designs, rubrics, and prompt strategies.
-* Respecting intellectual property and confidentiality: **using open-source GitHub repositories and clean-room problem designs** rather than leaking verbatim proprietary or NDA-protected company interview materials.
-* Focusing on what is best not just for us as individuals, but for the broader engineering and hiring community.
+- Demonstrating empathy and kindness toward other people, including junior engineers learning AI-assisted workflows and HR teams calibrating technical rubrics.
+- Being respectful of differing opinions, programming language preferences, and organizational hiring practices.
+- Giving and gracefully accepting constructive feedback on interview case designs, rubrics, and prompt strategies.
+- Respecting intellectual property and confidentiality: **using open-source GitHub repositories and clean-room problem designs** rather than leaking verbatim proprietary or NDA-protected company interview materials.
+- Focusing on what is best not just for us as individuals, but for the broader engineering and hiring community.
 
 Examples of unacceptable behavior include:
 
-* The use of sexualized language or imagery, and sexual attention or advances of any kind.
-* Trolling, insulting or derogatory comments, and personal or political attacks.
-* Public or private harassment.
-* Publishing others' private information, such as a physical or email address, or confidential candidate evaluation records, without their explicit permission.
-* Posting verbatim stolen proprietary codebases or NDA-restricted internal company documents.
-* Other conduct which could reasonably be considered inappropriate in a professional setting.
+- The use of sexualized language or imagery, and sexual attention or advances of any kind.
+- Trolling, insulting or derogatory comments, and personal or political attacks.
+- Public or private harassment.
+- Publishing others' private information, such as a physical or email address, or confidential candidate evaluation records, without their explicit permission.
+- Posting verbatim stolen proprietary codebases or NDA-restricted internal company documents.
+- Other conduct which could reasonably be considered inappropriate in a professional setting.
 
 ## Enforcement Responsibilities
 

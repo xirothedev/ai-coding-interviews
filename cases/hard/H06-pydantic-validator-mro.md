@@ -2,21 +2,22 @@
 
 [⬅️ Back to Hard Catalog](README.md) · [🏠 Master Hub](../../README.md)
 
-| Attribute | Details |
-| :--- | :--- |
-| **Case ID** | `H06` |
-| **Difficulty Level** | 🔴 **Hard** (`60–75 mins` — Senior / Staff Bar) |
-| **Task Archetype** | Deceptive Abstraction + Cross-Module Invariant Bugfix |
-| **Source GitHub Repository** | [`pydantic/pydantic`](https://github.com/pydantic/pydantic) |
-| **Target Files** | `pydantic/_internal/_decorators.py`, `pydantic/_internal/_model_construction.py`, `pydantic/main.py`, `tests/test_validators.py` |
-| **Supported Languages** | `Python` |
-| **Hard Taxonomy Pillars** | Pillar 1 (Deceptive Metaclass Abstraction) · Pillar 2 (Performance Cliff) · Pillar 3 (Conflicting MRO Invariants) |
+| Attribute                    | Details                                                                                                                          |
+| :--------------------------- | :------------------------------------------------------------------------------------------------------------------------------- |
+| **Case ID**                  | `H06`                                                                                                                            |
+| **Difficulty Level**         | 🔴 **Hard** (`60–75 mins` — Senior / Staff Bar)                                                                                  |
+| **Task Archetype**           | Deceptive Abstraction + Cross-Module Invariant Bugfix                                                                            |
+| **Source GitHub Repository** | [`pydantic/pydantic`](https://github.com/pydantic/pydantic)                                                                      |
+| **Target Files**             | `pydantic/_internal/_decorators.py`, `pydantic/_internal/_model_construction.py`, `pydantic/main.py`, `tests/test_validators.py` |
+| **Supported Languages**      | `Python`                                                                                                                         |
+| **Hard Taxonomy Pillars**    | Pillar 1 (Deceptive Metaclass Abstraction) · Pillar 2 (Performance Cliff) · Pillar 3 (Conflicting MRO Invariants)                |
 
 ---
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
 ### Clean-Room Workspace Provisioning
+
 ```bash
 git clone https://github.com/pydantic/pydantic.git pydantic-interview
 cd pydantic-interview
@@ -25,7 +26,8 @@ pytest tests/test_validators.py
 ```
 
 ### Seeded Defects to Inject Before the Session
-1. **Bug 1 (Validator Override & Diamond MRO Bug in `_decorators.py`)**: In `DecoratorInfos.build(model_dc)`, iterate `model_dc.__mro__` in an order or dictionary-keying scheme where overriding a `@model_validator(mode='after')` method in a child class with the **same method name** either runs *both* parent and child validators or reverses the execution order between `mode='before'` and `mode='after'`.
+
+1. **Bug 1 (Validator Override & Diamond MRO Bug in `_decorators.py`)**: In `DecoratorInfos.build(model_dc)`, iterate `model_dc.__mro__` in an order or dictionary-keying scheme where overriding a `@model_validator(mode='after')` method in a child class with the **same method name** either runs _both_ parent and child validators or reverses the execution order between `mode='before'` and `mode='after'`.
 2. **Bug 2 (Shallow Mutation Leak in `BaseModel.model_copy`)**: In `pydantic/main.py` (`model_copy`), when `update={...}` is provided alongside nested mutable default containers (`list`, `dict`, `set`) or `__pydantic_extra__`, mutating a list on the copied instance mutates the original instance unless isolated.
 
 ---
@@ -33,12 +35,14 @@ pytest tests/test_validators.py
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
 > ### Welcome to Your AI-Enabled SWE Coding Interview
+>
 > You are working inside `pydantic`. You have full access to the AI Assistant and `pytest`. We are evaluating your ability to reason about Python's Method Resolution Order (MRO), metaclass schema construction, and performance-sensitive object copying.
 >
 > ### Problem Context
+>
 > 1. **Validator Inheritance & Method Override Contract (`pydantic/_internal/_decorators.py`)**:
 >    - When `Child(Parent)` defines a `@model_validator` or `@field_validator` with the **exact same method name** as `Parent`, `Child`'s validator must **override (replace)** `Parent`'s validator of that name—not run both!
->    - When `Parent` and `Child` define validators with *different* method names, execution order MUST respect mode semantics:
+>    - When `Parent` and `Child` define validators with _different_ method names, execution order MUST respect mode semantics:
 >      - `mode='after'` validators run **Base → Derived (`Parent` first, then `Child`)** so `Child` can rely on invariants established by `Parent`.
 >      - `mode='before'` (and `mode='wrap'`) validators run **Derived → Base (`Child` first/outermost, then `Parent`)** so `Child` can pre-process raw inputs before `Parent`'s schema parses them.
 > 2. **Safe Container Isolation in `model_copy(update=...)` (`pydantic/main.py`)**:
@@ -46,22 +50,25 @@ pytest tests/test_validators.py
 >    - However, blindly running `copy.deepcopy(self)` when `deep=False` is **unacceptable**: models with `model_config = ConfigDict(arbitrary_types_allowed=True)` holding non-pickleable objects (e.g., `threading.Lock()`, sockets, or DB connections) must not crash on `model_copy()`, and copying 50,000 models must complete in `< 0.15s`.
 >
 > ### Your Tasks
+>
 > 1. **Explore & Trace**: Read `DecoratorInfos.build()` in `pydantic/_internal/_decorators.py`, `_model_construction.py`, and `BaseModel.model_copy()` in `pydantic/main.py`.
 > 2. **Uncomment & Run Tests**: Run `pytest tests/test_validators.py` and uncomment the failing MRO override and `model_copy` isolation tests.
 > 3. **Fix Validator MRO Resolution & `model_copy` Isolation**: Implement fixes that satisfy both `mode='before'` and `mode='after'` ordering invariants and isolate mutable field/extra containers safely.
-> 4. **Verify Edge Cases**: Test diamond inheritance (`Base -> MixinA, MixinB -> Sub`), child method overriding parent validator *without* re-applying `@model_validator`, and `arbitrary_types_allowed=True` models containing a `threading.Lock`.
+> 4. **Verify Edge Cases**: Test diamond inheritance (`Base -> MixinA, MixinB -> Sub`), child method overriding parent validator _without_ re-applying `@model_validator`, and `arbitrary_types_allowed=True` models containing a `threading.Lock`.
 
 ---
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
 ### Trap 1: Reversing `reversed(model_dc.__mro__)` Globally (Whack-a-Mole Between `before` and `after`)
+
 - **What Naive AI Writes**:
   - When `test_model_validator_after_mro_order` fails, the candidate pastes the failure into AI. The AI changes `for base in reversed(model_dc.__mro__):` to `for base in model_dc.__mro__:`.
 - **Why It Fails**: Changing the traversal direction fixes `mode='after'` (or `mode='before'`) while **breaking the opposite mode** and breaking same-name method overrides!
-- **Correct Fix**: Collect decorators walking `reversed(model_dc.__mro__)` into an insertion-ordered `dict[str, Decorator]` keyed by function/attribute name. Because Python `dict` preserves the key's *first* insertion position (or can be moved to the end on override depending on desired MRO semantics) while overwriting the value with the most-derived class's implementation, overrides replace base methods cleanly! Furthermore, if a subclass overrides a decorated parent method with a plain undecorated method of the same name, check `base.__dict__` so the parent's stale validator is removed or rebound properly.
+- **Correct Fix**: Collect decorators walking `reversed(model_dc.__mro__)` into an insertion-ordered `dict[str, Decorator]` keyed by function/attribute name. Because Python `dict` preserves the key's _first_ insertion position (or can be moved to the end on override depending on desired MRO semantics) while overwriting the value with the most-derived class's implementation, overrides replace base methods cleanly! Furthermore, if a subclass overrides a decorated parent method with a plain undecorated method of the same name, check `base.__dict__` so the parent's stale validator is removed or rebound properly.
 
 ### Trap 2: Blanket `copy.deepcopy()` Breaking `threading.Lock` and Performance
+
 - **What Naive AI Writes**:
   ```python
   # Inside model_copy:
@@ -77,7 +84,7 @@ pytest tests/test_validators.py
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > *"Do not write code. Trace `DecoratorInfos.build` in `pydantic/_internal/_decorators.py` and explain how `model_validators` and `field_validators` are ordered and passed to `pydantic-core` schema generation for `mode='before'` vs `mode='after'`."*
+   > _"Do not write code. Trace `DecoratorInfos.build` in `pydantic/_internal/_decorators.py` and explain how `model_validators` and `field_validators` are ordered and passed to `pydantic-core` schema generation for `mode='before'` vs `mode='after'`."_
 2. **Step 2 (`Plan`)**:
    - Candidate verifies how `pydantic-core` wraps `before` validators (outer-to-inner) vs `after` validators (inner-to-outer).
 3. **Step 3 (`Prompt`)**:
@@ -90,16 +97,17 @@ pytest tests/test_validators.py
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 
-| # | Criterion | Strong Hire / Hire (`Score 3–4`) | No Hire / Blind Vibe-Coder (`Score 1–2`) |
-| :-: | :--- | :--- | :--- |
-| **1** | **Problem Decomposition** | Analyzes `pydantic-core` wrapping order for `before` vs `after` before touching `_decorators.py`. | Repeatedly flips `reversed(__mro__)` back and forth as tests fail. |
-| **2** | **Prompt Context Quality** | Specifies both `mode='before'` (Derived → Base) and `mode='after'` (Base → Derived) plus `threading.Lock` constraints in prompts. | Prompts *"Fix MRO test in `test_validators.py`"* with no explanation of why `before` and `after` differ. |
-| **3** | **Not Blindly Trusting AI** | Rejects AI's `copy.deepcopy()` suggestion on `deep=False`. | Accepts `copy.deepcopy()` and fails the `threading.Lock` and benchmark tests. |
-| **4** | **Code Reading Speed** | Traces `_decorators.py` → `_generate_schema.py` quickly and understands how `DecoratorInfos` is cached on classes. | Gets lost in C/Rust `pydantic-core` bindings instead of inspecting `_decorators.py`. |
-| **5** | **Bug & Edge-Case Discovery** | Tests diamond MRO, overriding a validator with a non-validator method, and `__pydantic_extra__` mutation. | Misses the case where `Child` overrides `Parent`'s validator method name. |
-| **6** | **Testing Before Claiming Done** | Runs the full `test_validators.py` suite plus a `threading.Lock` + 50k copy micro-benchmark. | Only runs the single failing test function in isolation. |
-| **7** | **Explaining Correctness** | Articulates why `mode='before'` wraps outside-in while `mode='after'` wraps inside-out around core validation. | Cannot explain why `Parent` must run before `Child` in `mode='after'`. |
+|   #   | Criterion                        | Strong Hire / Hire (`Score 3–4`)                                                                                                  | No Hire / Blind Vibe-Coder (`Score 1–2`)                                                                 |
+| :---: | :------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------- |
+| **1** | **Problem Decomposition**        | Analyzes `pydantic-core` wrapping order for `before` vs `after` before touching `_decorators.py`.                                 | Repeatedly flips `reversed(__mro__)` back and forth as tests fail.                                       |
+| **2** | **Prompt Context Quality**       | Specifies both `mode='before'` (Derived → Base) and `mode='after'` (Base → Derived) plus `threading.Lock` constraints in prompts. | Prompts _"Fix MRO test in `test_validators.py`"_ with no explanation of why `before` and `after` differ. |
+| **3** | **Not Blindly Trusting AI**      | Rejects AI's `copy.deepcopy()` suggestion on `deep=False`.                                                                        | Accepts `copy.deepcopy()` and fails the `threading.Lock` and benchmark tests.                            |
+| **4** | **Code Reading Speed**           | Traces `_decorators.py` → `_generate_schema.py` quickly and understands how `DecoratorInfos` is cached on classes.                | Gets lost in C/Rust `pydantic-core` bindings instead of inspecting `_decorators.py`.                     |
+| **5** | **Bug & Edge-Case Discovery**    | Tests diamond MRO, overriding a validator with a non-validator method, and `__pydantic_extra__` mutation.                         | Misses the case where `Child` overrides `Parent`'s validator method name.                                |
+| **6** | **Testing Before Claiming Done** | Runs the full `test_validators.py` suite plus a `threading.Lock` + 50k copy micro-benchmark.                                      | Only runs the single failing test function in isolation.                                                 |
+| **7** | **Explaining Correctness**       | Articulates why `mode='before'` wraps outside-in while `mode='after'` wraps inside-out around core validation.                    | Cannot explain why `Parent` must run before `Child` in `mode='after'`.                                   |
 
 ### Interviewer Probing Questions (Final 10 Minutes)
-1. **Q**: *"From first principles, why should `mode='before'` validators run `Child → Parent`, while `mode='after'` validators run `Parent → Child`?"*  
+
+1. **Q**: _"From first principles, why should `mode='before'` validators run `Child → Parent`, while `mode='after'` validators run `Parent → Child`?"_  
    **Expected Answer**: Before core field parsing (`mode='before'`), the input is raw untyped data (e.g., a `dict`); `Child` may normalize new subclass-specific raw keys into the format `Parent` expects. After core validation (`mode='after'`), `self` is an initialized instance; `Parent`'s invariants must be verified first so `Child`'s `after` validator can safely assume `Parent` fields are valid.

@@ -1,0 +1,38 @@
+name: CI Quality Gate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Format, Typecheck & Repo Integrity Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check Formatting (bun fmt --check)
+        run: bun run fmt:check
+
+      - name: Type Check (bun check)
+        run: bun run check
+
+      - name: Run Repository Integrity & Wiki Dry-Run Tests (bun test)
+        run: bun test

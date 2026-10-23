@@ -2,21 +2,22 @@
 
 [⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../README.md)
 
-| Attribute | Details |
-| :--- | :--- |
-| **Case ID** | `M04` |
-| **Difficulty Level** | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar) |
-| **Task Archetype** | Bugfix + Feature Extension |
-| **Source GitHub Repository** | [`sindresorhus/ky`](https://github.com/sindresorhus/ky) (TypeScript) · [`encode/httpx`](https://github.com/encode/httpx) (Python) |
-| **Target Files** | `source/core/Ky.ts`, `source/utils/retry.ts`, `test/retry.ts` |
-| **Supported Languages** | `TypeScript`, `Python`, `Go` |
-| **Primary AI Traps** | `parseInt` on HTTP-date `Retry-After` header (`"Wed, 21 Oct..."`) · Retrying `POST` without `Idempotency-Key` · Re-sending a consumed stream body as `0` bytes |
+| Attribute                    | Details                                                                                                                                                        |
+| :--------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Case ID**                  | `M04`                                                                                                                                                          |
+| **Difficulty Level**         | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar)                                                                                                                |
+| **Task Archetype**           | Bugfix + Feature Extension                                                                                                                                     |
+| **Source GitHub Repository** | [`sindresorhus/ky`](https://github.com/sindresorhus/ky) (TypeScript) · [`encode/httpx`](https://github.com/encode/httpx) (Python)                              |
+| **Target Files**             | `source/core/Ky.ts`, `source/utils/retry.ts`, `test/retry.ts`                                                                                                  |
+| **Supported Languages**      | `TypeScript`, `Python`, `Go`                                                                                                                                   |
+| **Primary AI Traps**         | `parseInt` on HTTP-date `Retry-After` header (`"Wed, 21 Oct..."`) · Retrying `POST` without `Idempotency-Key` · Re-sending a consumed stream body as `0` bytes |
 
 ---
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
 ### Clean-Room Workspace Provisioning
+
 ```bash
 git clone https://github.com/sindresorhus/ky.git ky-interview
 cd ky-interview
@@ -25,6 +26,7 @@ npm test
 ```
 
 ### Seeded Defects to Inject Before the Session
+
 1. **Bug 1 (`Retry-After` HTTP-Date Parsing Bug)**: The existing `Retry-After` parser uses `Number(header)` or `parseInt(header, 10)`, which fails on RFC 7231 HTTP-date strings (`Retry-After: Wed, 21 Oct 2026 07:28:00 GMT`) or produces negative delays when server clock is slightly behind client clock!
 2. **Bug 2 (Unconditional `POST` Retry & Stream Body Consumption)**: Retrying a `POST` request on `503 Service Unavailable` either duplicates non-idempotent mutations when no `Idempotency-Key` header is present, or sends an empty `0-byte` body on attempt #2 if the body was a one-shot stream/generator!
 
@@ -33,10 +35,13 @@ npm test
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
 > ### Welcome to Your AI-Enabled SWE Coding Interview
+>
 > You are working on the retry middleware of an HTTP client (`ky`). You have full access to the AI Assistant and the test runner.
 >
 > ### Problem Context
+>
 > Production services using our retry middleware hit three reliability bugs during an upstream outage:
+>
 > 1. **`Retry-After` Header Bug (RFC 7231)**:
 >    - Servers return `Retry-After` on `429 Too Many Requests` and `503 Service Unavailable` in **two formats**:
 >      - Delay-seconds: `"120"` (wait `120,000 ms`)
@@ -53,6 +58,7 @@ npm test
 >    - If a request has a non-replayable body (a consumed `ReadableStream` where `body.locked` or `bodyUsed` is true and cannot be cloned), do NOT retry!
 >
 > ### Your Tasks
+>
 > 1. **Explore & Trace**: Inspect the retry delay calculation and request loop in `source/`.
 > 2. **Run & Uncomment Tests**: Run `npm test` and uncomment the failing `Retry-After`, idempotency, and stream-body retry tests.
 > 3. **Fix `Retry-After`, Idempotency Guard & Full-Jitter Backoff**: Implement all three requirements cleanly.
@@ -63,6 +69,7 @@ npm test
 ## 3. The AI Traps & Expected Solution (Confidential)
 
 ### Trap 1: Using `parseInt(retryAfter, 10)` Before Checking Date Format
+
 - **What Naive AI Writes**:
   ```ts
   const seconds = parseInt(retryAfterHeader, 10);
@@ -72,6 +79,7 @@ npm test
 - **Correct Fix**: Test `/^\d+$/.test(retryAfterHeader.trim())` for integer delay-seconds; otherwise parse with `Date.parse(retryAfterHeader)` and clamp `Math.max(0, parsedDate - now)`.
 
 ### Trap 2: Sleeping for `maxRetryAfter` Before Throwing When `Retry-After > maxRetryAfter`
+
 - **What Naive AI Writes**:
   ```ts
   const delay = Math.min(parsedRetryAfter, options.maxRetryAfter);
@@ -84,7 +92,7 @@ npm test
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > *"Do not write code. Trace how retry eligibility and delay calculation currently work in `source/core/Ky.ts` and `test/retry.ts`."*
+   > _"Do not write code. Trace how retry eligibility and delay calculation currently work in `source/core/Ky.ts` and `test/retry.ts`."_
 2. **Step 2 (`Plan`)**:
    - Extract a pure, unit-testable `calculateRetryDelay({ attempt, retryAfterHeader, options, now, randomFn })` function and a pure `canRetryRequest(request, response, options)` predicate.
 3. **Step 3 (`Prompt`)**:
@@ -97,18 +105,19 @@ npm test
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 
-| # | Criterion | Strong Hire / Hire (`Score 3–4`) | No Hire / Blind Vibe-Coder (`Score 1–2`) |
-| :-: | :--- | :--- | :--- |
-| **1** | **Problem Decomposition** | Extracts pure functions for `parseRetryAfter`, `calculateBackoff`, and `isRetryableRequest`. | Writes a 90-line nested `if/else` block directly inside the `while` loop. |
-| **2** | **Prompt Context Quality** | Specifies `/^\d+$/` strict integer check, injectable clock/random functions, and immediate abort when `> maxRetryAfter`. | Prompts *"Add Retry-After support and exponential backoff"*. |
-| **3** | **Not Blindly Trusting AI** | Catches `parseInt("2026-10-21")` returning `2026` and catches `Math.min(delay, maxRetryAfter)` sleeping instead of aborting. | Accepts `parseInt` and fails on ISO/RFC-850 dates starting with digits. |
-| **4** | **Code Reading Speed** | Quickly sees how `Ky` clones `Request` objects and manages `Headers` instances. | Checks `request.headers['Idempotency-Key']` as a plain object instead of `request.headers.get('idempotency-key')`, failing on lowercase headers! |
-| **5** | **Bug & Edge-Case Discovery** | Tests `Retry-After: 0`, past HTTP-date (clock skew `-5s`), lowercase `idempotency-key: "   "` (whitespace-only key must be rejected!), and locked `ReadableStream`. | Misses case-sensitivity of `Idempotency-Key` or accepts an empty `Idempotency-Key: ""`. |
-| **6** | **Testing Before Claiming Done** | Uses injectable `now` and `randomFn` to test backoff math deterministically in `< 50ms` without real multi-second sleeps. | Writes tests that call `setTimeout(..., 5000)` and slow down the test suite. |
-| **7** | **Explaining Correctness** | Explains why Full Jitter (`random(0, min(cap, base * 2^attempt))`) prevents synchronized retry waves (thundering herds) better than Equal/No Jitter. | Cannot explain why jitter is needed in distributed systems. |
+|   #   | Criterion                        | Strong Hire / Hire (`Score 3–4`)                                                                                                                                    | No Hire / Blind Vibe-Coder (`Score 1–2`)                                                                                                         |
+| :---: | :------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1** | **Problem Decomposition**        | Extracts pure functions for `parseRetryAfter`, `calculateBackoff`, and `isRetryableRequest`.                                                                        | Writes a 90-line nested `if/else` block directly inside the `while` loop.                                                                        |
+| **2** | **Prompt Context Quality**       | Specifies `/^\d+$/` strict integer check, injectable clock/random functions, and immediate abort when `> maxRetryAfter`.                                            | Prompts _"Add Retry-After support and exponential backoff"_.                                                                                     |
+| **3** | **Not Blindly Trusting AI**      | Catches `parseInt("2026-10-21")` returning `2026` and catches `Math.min(delay, maxRetryAfter)` sleeping instead of aborting.                                        | Accepts `parseInt` and fails on ISO/RFC-850 dates starting with digits.                                                                          |
+| **4** | **Code Reading Speed**           | Quickly sees how `Ky` clones `Request` objects and manages `Headers` instances.                                                                                     | Checks `request.headers['Idempotency-Key']` as a plain object instead of `request.headers.get('idempotency-key')`, failing on lowercase headers! |
+| **5** | **Bug & Edge-Case Discovery**    | Tests `Retry-After: 0`, past HTTP-date (clock skew `-5s`), lowercase `idempotency-key: "   "` (whitespace-only key must be rejected!), and locked `ReadableStream`. | Misses case-sensitivity of `Idempotency-Key` or accepts an empty `Idempotency-Key: ""`.                                                          |
+| **6** | **Testing Before Claiming Done** | Uses injectable `now` and `randomFn` to test backoff math deterministically in `< 50ms` without real multi-second sleeps.                                           | Writes tests that call `setTimeout(..., 5000)` and slow down the test suite.                                                                     |
+| **7** | **Explaining Correctness**       | Explains why Full Jitter (`random(0, min(cap, base * 2^attempt))`) prevents synchronized retry waves (thundering herds) better than Equal/No Jitter.                | Cannot explain why jitter is needed in distributed systems.                                                                                      |
 
 ### Interviewer Probing Questions (Final 10 Minutes)
-1. **Q**: *"Why does `parseInt(header, 10)` produce a subtle bug when parsing `Retry-After` headers?"*  
+
+1. **Q**: _"Why does `parseInt(header, 10)` produce a subtle bug when parsing `Retry-After` headers?"_  
    **Expected Answer**: `parseInt` parses leading digits and ignores trailing non-digit characters. If a server sends an ISO timestamp `"2026-10-24T00:00:00Z"` or `"24 Oct 2026..."`, `parseInt` returns `2026` or `24` seconds instead of parsing it as a date!
-2. **Q**: *"Why shouldn't an HTTP client automatically retry a failed `POST /payments` request unless an `Idempotency-Key` header is present?"*  
-   **Expected Answer**: A `502`/`504` gateway timeout or dropped TCP connection occurs *after* the request may have already reached the upstream server and charged the customer. Retrying without an `Idempotency-Key` risks charging the customer twice.
+2. **Q**: _"Why shouldn't an HTTP client automatically retry a failed `POST /payments` request unless an `Idempotency-Key` header is present?"_  
+   **Expected Answer**: A `502`/`504` gateway timeout or dropped TCP connection occurs _after_ the request may have already reached the upstream server and charged the customer. Retrying without an `Idempotency-Key` risks charging the customer twice.
