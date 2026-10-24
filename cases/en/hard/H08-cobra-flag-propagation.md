@@ -16,21 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/spf13/cobra`           |
+| **Base SHA (pre-merge)**           | `dbf85f6104904d539cabceebec234e817fa0df0c` |
+| **Merge SHA (reference solution)** | `22b617914c8890ba20db7ceafcdc2ef4ca4817d3` |
+| **Test Command**                   | `go test ./...`                            |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/spf13/cobra.git cobra-interview
-cd cobra-interview
+git clone https://github.com/spf13/cobra.git interview-workspace
+cd interview-workspace
+git checkout dbf85f6104904d539cabceebec234e817fa0df0c
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
 go test ./...
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-1. **Bug 1 (Persistent Flag Group Validation Timing in `flag_groups.go` / `command.go`)**: When a parent command defines `PersistentFlags().String("env", "", "")` and a child command calls `MarkFlagsMutuallyExclusive("env", "local")`, `ValidateFlagGroups()` either runs before `mergePersistentFlags()` or fails to reset merged flag state when `Execute()` is invoked a second time in tests.
-2. **Bug 2 (`EnableTraverseRunHooks` Asymmetrical `PersistentPostRun` Execution)**: In `Command.execute()` (`command.go`), when `EnableTraverseRunHooks = true` runs `PersistentPreRunE` from `root -> parent -> child`, if `parent.PersistentPreRunE` returns an error, cleanup hooks (`PersistentPostRunE`) either don't run for `root` or erroneously run for `child` (whose `PreRun` never executed!).
+- **Base SHA (`dbf85f610490`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`22b617914c88`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- command.go
+
+### Failing Tests to Enable
+
+- Failing tests to enable/verify: command_test.go. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -58,44 +74,29 @@ go test ./...
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Breaking Default Cobra Shadowing (`EnableTraverseRunHooks == false`)
+### Trap 1: Trusting the first plausible fix
 
-- **What Naive AI Writes**:
-  - When prompted to run `PersistentPreRunE` from `Root -> Parent -> Child`, the AI replaces the `for p := c; p != nil; p = p.Parent()` `break` statement unconditionally without checking `EnableTraverseRunHooks`!
-- **Why It Fails**: 25+ existing tests in `command_test.go` fail immediately because default Cobra behavior requires `break` after the first non-nil `PersistentPreRun` is found!
-- **Correct Fix**: Guard the root-to-child traversal and unwind stack behind `if EnableTraverseRunHooks` (while keeping the `break`-on-first-match loop for `EnableTraverseRunHooks == false`).
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`show flags that shadow parent persistent flag in child help`).
+- **Why It Fails**: The PR touches `command.go`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Running `PersistentPostRun` in `Root -> Child` Order or Running `Child.PostRun` After `Parent.PreRun` Fails
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  ```go
-  // Naive AI PostRun loop:
-  for p := c; p != nil; p = p.Parent() {
-      if p.PersistentPostRunE != nil {
-          p.PersistentPostRunE(c, argWoFlags)
-      }
-  }
-  ```
-- **Why It Fails**:
-  1. If `Parent.PersistentPreRunE` returned an error, `Command.execute()` returned early at line 915—so `Root.PersistentPostRunE` **never ran**, leaking whatever DB/telemetry connection `Root.PersistentPreRunE` opened!
-  2. If the AI puts `defer` or runs `PostRun` on error for _all_ ancestors from `c` upward, `Child.PersistentPostRunE` runs even though `Child.PersistentPreRunE` never ran!
-- **Correct Fix**: As each ancestor `p`'s `PersistentPreRun(E)` succeeds (from `Root` down to `Child`), push `p` onto an `executedPreRunAncestors []*Command` stack. Use a `defer` (or cleanup block before returning from `execute`) that iterates `executedPreRunAncestors` in **reverse (LIFO)** order (`i := len(stack) - 1; i >= 0; i--`) and invokes `PersistentPostRun(E)`.
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Read `command.go` around `execute()` and `flag_groups.go` around `ValidateFlagGroups()`. Show exact line numbers where `mergePersistentFlags()`, `PersistentPreRunE`, and `PersistentPostRunE` are called, and how `EnableTraverseRunHooks` currently works."_
+   > _"Do not write code. Trace the current behavior in `command.go, command_test.go` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Candidate plans the LIFO `executedAncestors` stack for `EnableTraverseRunHooks` and checks `mergePersistentFlags()` placement before `ValidateFlagGroups()`.
+   - Reproduce with the test command; list the minimal files to change.
 3. **Step 3 (`Prompt`)**:
-   - Prompt 1: Fix `flag_groups.go` / `mergePersistentFlags()` ordering.
-   - Prompt 2: Implement the LIFO unwind stack for `PersistentPreRun(E)` / `PersistentPostRun(E)` when `EnableTraverseRunHooks == true`.
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
 4. **Step 4 (`Review`) & Step 5 (`Test`)**:
-   - Run `go test ./...` and verify all legacy tests still pass.
-
----
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 

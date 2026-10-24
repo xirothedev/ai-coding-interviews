@@ -16,21 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/pallets/click`         |
+| **Base SHA (pre-merge)**           | `08ecfd0e7c238a2444886d239de6d0e9d83530ec` |
+| **Merge SHA (reference solution)** | `166b31261f55ba3126456bbc2ff9e16142115e56` |
+| **Test Command**                   | `pytest`                                   |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/pallets/click.git click-interview
-cd click-interview
+git clone https://github.com/pallets/click.git interview-workspace
+cd interview-workspace
+git checkout 08ecfd0e7c238a2444886d239de6d0e9d83530ec
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-pytest tests/test_options.py
+pytest
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-1. **Bug 1 (Falsy CLI Value Overridden by Environment Variable / Config)**: In parameter value resolution (`Parameter.consume_value` / `Option.consume_value` / `Option.value_from_envvar` in `src/click/core.py`, which uses the `UNSET` sentinel), replace an `is UNSET` check with truthiness (`if not value:`) or `cli_val or env_val or default` so that passing `--retries 0`, `--prefix ""`, or `--no-verify` (`False`) on the command line is ignored when `APP_RETRIES=5` or `APP_VERIFY=true` is set in `os.environ`!
-2. **Bug 2 (Boolean String Parsing in Environment Variables)**: Setting `APP_VERIFY="false"` or `APP_VERIFY="0"` in `os.environ` evaluates `bool("false") == True` in Python/JS if not parsed through the boolean type converter!
+- **Base SHA (`08ecfd0e7c23`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`166b31261f55`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- src/click/core.py
+
+### Failing Tests to Enable
+
+- Failing tests to enable/verify: test_options.py. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -61,37 +77,29 @@ pytest tests/test_options.py
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Comparing `if value == self.default: source = ParameterSource.DEFAULT`
+### Trap 1: Trusting the first plausible fix
 
-- **What Naive AI Writes**:
-  ```python
-  # AI tries to infer ParameterSource after the fact:
-  if value == self.default:
-      source = ParameterSource.DEFAULT
-  ```
-- **Why It Fails**: If `default = 0` and the user explicitly runs `my-cli --retries 0`, `value == self.default` (`0 == 0`) is `True`, so the AI falsely reports `ParameterSource.DEFAULT` instead of `ParameterSource.COMMANDLINE`! (And in Python, `False == 0` and `True == 1` in value comparisons!)
-- **Correct Fix**: Use Click's unique sentinel object (`UNSET` in `src/click/core.py`) during `Parameter.consume_value()` / `Option.consume_value()` and record `(value, ParameterSource)` at the exact step where the value is found (`opts` dict → `COMMANDLINE`, `default_map` → `DEFAULT_MAP`, `envvar` → `ENVIRONMENT`, fallback → `DEFAULT`).
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`Give Option.show_default higher priority wrt Context.show_default`).
+- **Why It Fails**: The PR touches `src/click/core.py`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Splitting Empty Env String `"".split(",") -> [""]` for `multiple=True`
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  ```python
-  return os.environ.get(self.envvar).split(",")
-  ```
-- **Why It Fails**: In Python and JavaScript, `"".split(",")` returns `[""]` (a 1-element list containing an empty string) instead of `[]`!
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Trace `Parameter.consume_value`, `Option.consume_value`, and `Option.value_from_envvar` in `src/click/core.py`. Show how `ParameterSource` is currently set on `ctx`."_
+   > _"Do not write code. Trace the current behavior in `src/click/core.py, test_options.py` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Candidate plans sentinel-based `is not _UNSET` checks at each of the 4 precedence tiers and checks `value_from_envvar` empty-string handling.
-3. **Step 3 (`Prompt`)** & **Step 4 (`Review`)**:
-   - Prompt the changes in `core.py`; audit for any truthiness check (`if val:` or `val or ...`) and `"".split()`.
-
----
+   - Reproduce with the test command; list the minimal files to change.
+3. **Step 3 (`Prompt`)**:
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
+4. **Step 4 (`Review`) & Step 5 (`Test`)**:
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 

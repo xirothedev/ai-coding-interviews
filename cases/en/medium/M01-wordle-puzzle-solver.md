@@ -16,35 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
-### Workspace Layout (Matching Meta CoderPad Environment in `natashalukmanto/dsa`)
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/jonhoo/roget`          |
+| **Base SHA (pre-merge)**           | `4482ad13db3c556703565f81419223f365c4f96b` |
+| **Merge SHA (reference solution)** | `a8ed2d8c9af28c5319bf7148b80a10031cd69424` |
+| **Test Command**                   | `cargo test`                               |
+
+### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/natashalukmanto/dsa.git meta-puzzle-interview
-cd meta-puzzle-interview/others/meta/puzzle
-pytest
+git clone https://github.com/jonhoo/roget.git interview-workspace
+cd interview-workspace
+git checkout 4482ad13db3c556703565f81419223f365c4f96b
+rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
+cargo test
 ```
 
-```text
-others/meta/puzzle/
-├── data/
-│   └── up_to_six_letters.txt       # 40,000+ words of lengths 1 to 6
-├── dictionary.py                   # get_test_dictionary() & get_prod_dictionary()
-├── main.py                         # Entrypoint runner
-├── puzzle.py                       # Match(YES, MOVE, NO), Puzzle.guess(), Puzzle.admit_defeat() / admitDefeat()
-├── solver.py                       # Solver stub to implement
-├── puzzle_test.py                  # Unit tests for Puzzle (or test_puzzle.py; some commented out)
-└── solver_test.py                  # Unit tests for Solver (or test_solver.py; some commented out)
-```
+### Reproducibility Verification
 
-### Seeded Defects in the Starter Codebase
+- **Base SHA (`4482ad13db3c`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`a8ed2d8c9af2`)**: the same tests must pass after checkout.
 
-1. **Bug 1 (`dictionary.py`)**: `_read_file_dictionary("up_to_six_letters.txt")` only searches `[Path("data")]` (relative to current working directory) and raises `FileNotFoundError` when tests are run from another directory or if blank/uppercase lines exist.
-2. **Bug 2 (`puzzle.py` — Duplicate Letter `Match.MOVE` Bug)**: `Puzzle.guess(word)` checks `elif letter in self._secret_word: result.append(Match.MOVE)` in a single pass without decrementing available letter counts!
-   - Example: If `secret = "area"` and `guess = "aaaa"`, `Puzzle.guess("aaaa")` returns `[YES, MOVE, MOVE, YES]` instead of `[YES, NO, NO, YES]`.
-   - Example: If `secret = "aloe"` and `guess = "ally"`, the second `"l"` in `"ally"` returns `Match.MOVE` even though `"aloe"` only has one `"l"` (already matched at index 1!).
-3. **Commented Tests**: Commented-out unit tests in `puzzle_test.py` (`test_puzzle.py`) and `solver_test.py` (`test_solver.py`) for duplicate-letter guesses, variable-length words, and `get_prod_dictionary()`.
+### Files Changed (Reference Solution)
 
----
+- src/solver.rs
+
+### Failing Tests to Enable
+
+- Failing tests to enable/verify: the repository's existing tests covering this issue. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -82,62 +84,29 @@ others/meta/puzzle/
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Single-Pass `Match.MOVE` Over-Counting Duplicate Letters
+### Trap 1: Trusting the first plausible fix
 
-- **What Naive AI Writes**:
-  ```python
-  return [
-      Match.YES if g == s else (Match.MOVE if g in secret else Match.NO)
-      for g, s in zip(guess, secret)
-  ]
-  ```
-- **Why It Fails**: If `secret = "aloe"` and `guess = "ally"`, index 1 (`'l' == 'l'`) consumes the only `'l'` in `"aloe"`. A single-pass check sees `'l' in "aloe"` at index 2 and returns `Match.MOVE`! Even worse, if `secret = "abbey"` and `guess = "babes"`, index 0 `'b'` would consume a `'b'` before index 2's exact `Match.YES`!
-- **Correct Fix (Two-Pass Frequency Algorithm)**:
-  ```python
-  def evaluate_guess(secret: str, guess: str) -> list[Match]:
-      result = [Match.NO] * len(guess)
-      remaining = Counter(secret)
-      # Pass 1: Exact matches (Match.YES) MUST be claimed first!
-      for i, (s_char, g_char) in enumerate(zip(secret, guess)):
-          if s_char == g_char:
-              result[i] = Match.YES
-              remaining[g_char] -= 1
-      # Pass 2: Misplaced matches (Match.MOVE) consume remaining unmatched counts
-      for i, g_char in enumerate(guess):
-          if result[i] == Match.NO and remaining[g_char] > 0:
-              result[i] = Match.MOVE
-              remaining[g_char] -= 1
-      return result
-  ```
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`Fix issue with cutoffs for small number of remaining items.`).
+- **Why It Fails**: The PR touches `src/solver.rs`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Inconsistent Filtering in `Solver` + Variable Word Lengths (`1..6`)
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  - Hardcodes `word_len = 5` (crashing on `get_test_dictionary()` which uses 4-letter words and `up_to_six_letters.txt` which has 1-to-6 letter words!).
-  - Writes ad-hoc filtering rules (`if match == Match.NO: candidates = [w for w in candidates if ch not in w]`) which **eliminates the true secret word** when a duplicate letter gets `Match.YES` at pos 1 and `Match.NO` at pos 2!
-- **The Brilliant Fix**: Reuse `evaluate_guess(candidate, guess) == feedback`!
-  - A candidate word `w` in `candidates` is consistent with `feedback` **if and only if** `evaluate_guess(secret=w, guess=last_guess) == feedback`! This is 1 line of code and handles duplicate letters with 100% mathematical perfection!
-
-### Trap 3: $O(|C|^2)$ Minimax / Entropy Timeout on `get_prod_dictionary()`
-
-- **Why It Fails**: Computing full pairwise entropy over 40,000 words takes $1.6 \times 10^9$ evaluations (`> 60 seconds`).
-- **Correct Fix**: Score remaining candidates in $O(|C| \cdot L)$ time using positional character frequencies (preferring words with high-frequency distinct letters in the first 1–2 guesses, or pre-grouping dictionary by `len(word)`).
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Read `dictionary.py`, `puzzle.py`, `solver.py`, `test_puzzle.py`, and `test_solver.py`. List the commented-out tests and explain what bugs currently exist in `dictionary.py` and `puzzle.py`."_
+   > _"Do not write code. Trace the current behavior in `src/solver.rs` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Candidate plans: (1) fix path resolution in `dictionary.py`, (2) extract pure helper `evaluate_guess(secret, guess)` using the 2-pass `Counter` algorithm in `puzzle.py`, (3) implement `Solver` by filtering `evaluate_guess(cand, guess) == feedback` and scoring candidates via $O(|C| \cdot L)$ positional letter frequency.
+   - Reproduce with the test command; list the minimal files to change.
 3. **Step 3 (`Prompt`)**:
-   - Prompt 1: Fix `dictionary.py` and 2-pass `evaluate_guess` in `puzzle.py`; run `test_puzzle.py`.
-   - Prompt 2: Implement `Solver` in `solver.py` using `evaluate_guess` for filtering + $O(N)$ frequency heuristic.
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
 4. **Step 4 (`Review`) & Step 5 (`Test`)**:
-   - Verify `Solver` never uses `if ch not in w` on `Match.NO`, handles lengths 1–6, and passes `test_solver.py` on `get_prod_dictionary()`.
-
----
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 

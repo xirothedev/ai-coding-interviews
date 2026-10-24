@@ -16,18 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/getlago/lago`          |
+| **Base SHA (pre-merge)**           | `4fae86e578f565907c2e6082856b460b2bfac0a8` |
+| **Merge SHA (reference solution)** | `878c66c1f01d6831016d340674b6e68c2138ccc3` |
+| **Test Command**                   | `make test`                                |
+
 ### Clean-Room Workspace Provisioning
 
-### Seeded Defects to Inject Before the Session
+```bash
+git clone https://github.com/getlago/lago.git interview-workspace
+cd interview-workspace
+git checkout 4fae86e578f565907c2e6082856b460b2bfac0a8
+rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
+make test
+```
 
-Choose a language implementation (`server/python/`, `server/node/`, `server/go/`, `server/java/`, `server/dotnet/`) from [`stripe-samples/subscription-use-cases`](https://github.com/stripe-samples/subscription-use-cases) (or [`getlago/lago`](https://github.com/getlago/lago) for Go / [`killbill/killbill`](https://github.com/killbill/killbill) for Java) and apply the "AI-Slop PR" commit containing the 4 interlocking defects below:
+### Reproducibility Verification
 
-1. **Bug 1 (Tautological / Over-Mocked Unit Tests)**: The previous developer asked an LLM to write unit tests; 3 of the tests mock out the internal calculation helper or only assert `assert report is not None` / `assert "$" in statement`, giving a false `100% PASS` green suite!
-2. **Bug 2 (Mutated Shared Tier/Tax Configuration Dictionary)**: Calculating a VIP or Tax-Exempt invoice mutates the module-level `DEFAULT_TAX_RATES` / `PLAN_RATES` dictionary in-place (`rates["enterprise"] *= 0.8`), permanently corrupting prices for all subsequent standard customers in the same process!
-3. **Bug 3 (Order-Dependent Discount Stacking & Negative Subtotal Tax Credit)**: Applying a `%` discount and a flat `$` voucher in whatever order they appear in the input array yields different prices, and a large flat voucher (`$100` off a `$60` cart) produces a negative pre-tax subtotal (`-$40`), generating a **negative tax refund**!
-4. **Bug 4 (Penny-Splitting Remainder Drift — Hamilton's Method)**: Splitting an invoice total across `k` equal or weighted cost-center installments uses `round(total / k, 2)` for each installment—so splitting `$100.00` across `3` cost centers produces `[$33.33, $33.33, $33.33]` (losing `$0.01`), or dumping all remainder cents onto the last installment (`$100.00 / 6` → `[16.66, 16.66, 16.66, 16.66, 16.66, 16.70]` instead of `[16.67, 16.67, 16.67, 16.67, 16.66, 16.66]`).
+- **Base SHA (`4fae86e578f5`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`878c66c1f01d`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- .github/workflows/release-docker-image.yml
+
+### Failing Tests to Enable
+
+- Failing tests to enable/verify: the repository's existing tests covering this issue. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -47,7 +66,7 @@ Choose a language implementation (`server/python/`, `server/node/`, `server/go/`
 > 3. **Strict Tax Jurisdiction Validation**: Unknown or expired tax jurisdiction codes must raise an explicit `InvalidTaxJurisdictionError` (never silently default to `0%` inside a broad `try/catch`).
 > 4. **Penny-Exact Installment & Cost-Center Allocation (Largest Remainder / Hamilton's Method)**:
 >    - All money math must operate in integer minor units (cents) using Banker's Rounding (`ROUND_HALF_EVEN`).
->    - When splitting an invoice of `T` cents across `N` equal installments (where `T = q * N + r`, `0 <= r < N`), the first `r` installments receive `q + 1` cents and the remaining `N - r` installments receive `q` cents (e.g., `$100.00` split `6` ways → `[$16.67, $16.67, $16.67, $16.67, $16.66, $16.66]`, and `sum(installments) == T` ALWAYS holds).
+>    - When splitting an invoice of `T` cents across `N` equal installments (where split the total into N installments with a remainder distributed across the first installments, remainder is non-negative and less than N), the first `r` installments receive the larger installment amount cents and the remaining the number of larger installments installments receive `q` cents (e.g., `$100.00` split `6` ways → `[$16.67, $16.67, $16.67, $16.67, $16.66, $16.66]`, and installments sum exactly to the total ALWAYS holds).
 >    - For weighted splits (`weights = [w_1, ..., w_N]`), allocate `floor(T * w_i / sum(W))` first, then distribute the remaining `r` single cents one by one to the entries with the **largest fractional remainders** (breaking ties by earlier index).
 >
 > ### Your Tasks
@@ -61,49 +80,29 @@ Choose a language implementation (`server/python/`, `server/node/`, `server/go/`
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Asking AI "Are the Tests Passing?" Instead of Reading the Test Assertions
+### Trap 1: Trusting the first plausible fix
 
-- **Why It Traps Blind Vibe-Coders**: A candidate who runs `pytest` / `npm test` at Minute 2 sees `5 passed in 0.03s` and assumes the existing behavior is tested! Even if they ask AI _"Review `billing.py` for bugs"_, the LLM rarely inspects the test file to point out that `mock_calculate.return_value = 1000` mocked out the entire engine under test!
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`fix(docker): Skip the build cleanup in a dry run`).
+- **Why It Fails**: The PR touches `.github/workflows/release-docker-image.yml`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Dumping All Remainder Cents onto the Last Installment (`installments[-1] += remainder`)
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  ```python
-  base = total_cents // n
-  installments = [base] * n
-  installments[-1] += total_cents - (base * n) # <-- WRONG for n = 6, total = 10000!
-  ```
-- **Why It Fails**: For `total_cents = 10000` (`$100.00`) and `n = 6`, `10000 // 6 = 1666` with remainder `4`. Dumping `+4` on `installments[-1]` yields `[1666, 1666, 1666, 1666, 1666, 1670]`—a `4-cent` jump on the last payment instead of `1-cent` distributed to each of the first `r = 4` payments (`[1667, 1667, 1667, 1667, 1666, 1666]`)!
-- **Correct Fix (Hamilton's / Largest Remainder Method)**:
-  ```python
-  # For weighted splits w_0 .. w_{n-1}:
-  total_weight = sum(weights)
-  exact_ numerators = [total_cents * w for w in weights]
-  quotients = [num // total_weight for num in exact_numerators]
-  remainders = [num % total_weight for num in exact_numerators]
-  shortfall = total_cents - sum(quotients)
-  # Sort indices by descending remainder, tie-breaking by ascending index i:
-  ranked_indices = sorted(range(len(weights)), key=lambda i: (-remainders[i], i))
-  for idx in ranked_indices[:shortfall]:
-      quotients[idx] += 1
-  ```
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Read both `billing` and `test_billing`. List: (1) every place where a module-level dictionary/list is mutated, (2) every `try/except` block that swallows errors, and (3) every unit test in `test_billing` that uses mocks or weak assertions."_
+   > _"Do not write code. Trace the current behavior in `.github/workflows/release-docker-image.yml` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Candidate writes down the 4 bugs and writes failing unit tests for each bug _before_ changing the engine.
+   - Reproduce with the test command; list the minimal files to change.
 3. **Step 3 (`Prompt`)**:
-   - Prompt 1: Replace shared mutable rate lookup with an immutable copy/lookup and strict `InvalidTaxJurisdictionError`.
-   - Prompt 2: Implement canonical discount sorting (`BUNDLE -> PERCENT -> FLAT`) and `max(0, subtotal_cents)` clamping.
-   - Prompt 3: Implement Hamilton's Largest Remainder Method using exact integer numerator arithmetic (`(total_cents * w) % total_weight`) to avoid floating-point remainder ties!
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
 4. **Step 4 (`Review`) & Step 5 (`Test`)**:
-   - Audit the weighted split for float vs integer remainder comparison (`num % total_weight` is exact; `(total_cents * w / total_weight) % 1` suffers from float inaccuracy!).
-
----
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 

@@ -16,21 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/TanStack/query`        |
+| **Base SHA (pre-merge)**           | `8c3f218b13b70424bb9d9733b2e60e5f6c1f06a8` |
+| **Merge SHA (reference solution)** | `f608f933a36da30670082e90d0a56b2569290563` |
+| **Test Command**                   | `pnpm test`                                |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/TanStack/query.git tanstack-query-interview
-cd tanstack-query-interview
+git clone https://github.com/TanStack/query.git interview-workspace
+cd interview-workspace
+git checkout 8c3f218b13b70424bb9d9733b2e60e5f6c1f06a8
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-pnpm install && pnpm --filter @tanstack/query-core test
+pnpm test
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-1. **Bug 1 (Premature Shared `AbortController` Cancellation in `query.ts`)**: When Observer A and Observer B both subscribe to the same active `Query` (`['todos']`), and Observer A unmounts and calls `query.cancel()` / removes its observer, the in-flight `fetch` aborts immediately even though Observer B is still mounted and waiting for the data!
-2. **Bug 2 (Overlapping Optimistic Mutation Snapshot Clobbering)**: Seed the interviewer-provided optimistic state helper (`OptimisticQueryController` in `packages/query-core/src/`, or tested directly via `packages/query-core/src/mutation.ts` and `packages/query-core/src/queryClient.ts`) that uses naive snapshot restoration (`onMutate` saves `previousData`, `onError` calls `setQueryData(previousData)`), which clobbers concurrent succeeding mutations when an earlier mutation fails out of order. Add the corresponding commented-out regression tests in `packages/query-core/src/__tests__/query.test.tsx`.
+- **Base SHA (`8c3f218b13b7`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`f608f933a36d`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- packages/query-core/src/queryObserver.ts
+
+### Failing Tests to Enable
+
+- Failing tests to enable/verify: queryObserver.test.tsx. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -60,43 +76,29 @@ pnpm install && pnpm --filter @tanstack/query-core test
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Snapshot-Based Rollback (`setQueryData(context.previous)`)
+### Trap 1: Trusting the first plausible fix
 
-- **What Naive AI Writes**:
-  - Because 99% of React Query blog posts on the internet use `const prev = getQueryData(); return { prev }`, LLMs stubbornly generate snapshot restoration even when told mutations overlap!
-- **Why It Fails**: Consider `(M1: +1 [FAIL at t=40], M2: +5 [FAIL at t=60])` starting from `10`:
-  - `M1` snapshots `prev = 10`, sets `11`.
-  - `M2` snapshots `prev = 11` (which includes `M1`!), sets `16`.
-  - At `t=40`, `M1` fails and restores `10` (clobbering `M2` while `M2` is still in flight!).
-  - Worse, at `t=60`, `M2` fails and restores _its_ snapshot `11`—**resurrecting failed `M1`'s `+1` permanently!**
-- **Correct Fix**: Do not store point-in-time snapshots of already-optimistic data! Store:
-  1. `authoritativeServerData: T` (updated only by confirmed server responses or non-stale fetches), and
-  2. `activeMutations: Array<{ id: string, updater: (prev: T) => T }>`.
-  - Whenever a mutation starts, settles, or rolls back, derive the visible cache data by reducing `activeMutations` on top of `authoritativeServerData`:
-    ```ts
-    const nextData = activeMutations.reduce((acc, m) => m.updater(acc), authoritativeServerData);
-    ```
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`use supplied options for optimistic fetches`).
+- **Why It Fails**: The PR touches `packages/query-core/src/queryObserver.ts`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Checking `signal.aborted` Instead of Tracking Lazy `get signal()` Consumption
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  - Always cancels the retryer or aborts the controller when observers drop to `0`, even when the `queryFn` did _not_ read `context.signal`.
-- **Why It Fails**: In TanStack Query, if a `queryFn` does not consume `signal` (e.g., a standard Promise that cannot be aborted over the network), unmounting the component should allow the Promise to finish in the background and populate the cache rather than discarding the response! `Object.defineProperty(queryFnContext, 'signal', { get() { abortSignalConsumed = true; ... } })` tracks this invariant.
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Read `packages/query-core/src/query.ts` around `fetch()`, `removeObserver()`, and `cancel()`. Explain how `abortSignalConsumed` works and when `this.#retryer.cancel()` vs `continueRetry()` is called."_
+   > _"Do not write code. Trace the current behavior in `packages/query-core/src/queryObserver.ts, queryObserver.test.tsx` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Candidate plans (1) observer demand reference check in `removeObserver` respecting `abortSignalConsumed`, and (2) an event-log reducer (`baseServerState` + `pendingUpdaters[]`) for optimistic mutations.
+   - Reproduce with the test command; list the minimal files to change.
 3. **Step 3 (`Prompt`)**:
-   - Prompt each module separately with explicit state transition tables.
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
 4. **Step 4 (`Review`) & Step 5 (`Test`)**:
-   - Test the exact counterexample `(M1 fails at t=40, M2 fails at t=60)` to prove `11` is never resurrected.
-
----
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 

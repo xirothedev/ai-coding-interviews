@@ -16,21 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/sindresorhus/ky`       |
+| **Base SHA (pre-merge)**           | `06375efbacfc1bdc96f7a4de7560684b765e1274` |
+| **Merge SHA (reference solution)** | `3419113b48e034fdcf8fa6bd3be3da7b3d0d758f` |
+| **Test Command**                   | `npm test`                                 |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/sindresorhus/ky.git ky-interview
-cd ky-interview
+git clone https://github.com/sindresorhus/ky.git interview-workspace
+cd interview-workspace
+git checkout 06375efbacfc1bdc96f7a4de7560684b765e1274
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
 npm test
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-1. **Bug 1 (`Retry-After` HTTP-Date Parsing Bug)**: The existing `Retry-After` parser uses `Number(header)` or `parseInt(header, 10)`, which fails on RFC 7231 HTTP-date strings (`Retry-After: Wed, 21 Oct 2026 07:28:00 GMT`) or produces negative delays when server clock is slightly behind client clock!
-2. **Bug 2 (Unconditional `POST` Retry & Stream Body Consumption)**: Retrying a `POST` request on `503 Service Unavailable` either duplicates non-idempotent mutations when no `Idempotency-Key` header is present, or sends an empty `0-byte` body on attempt #2 if the body was a one-shot stream/generator!
+- **Base SHA (`06375efbacfc`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`3419113b48e0`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- source/core/Ky.ts, source/core/retry-timing.ts, source/types/retry.ts
+
+### Failing Tests to Enable
+
+- Failing tests to enable/verify: test/retry.ts, test/main.ts. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -54,7 +70,7 @@ npm test
 >    - Safe/idempotent methods (`GET`, `HEAD`, `OPTIONS`, `PUT`, `DELETE`) may retry on configured retryable status codes (`408`, `429`, `500`, `502`, `503`, `504`).
 >    - `POST` and `PATCH` requests must **only** be retried if the request headers contain a non-empty `Idempotency-Key` (case-insensitive header lookup).
 > 3. **Full-Jitter Exponential Backoff & Unreplayable Stream Body Guard**:
->    - When `Retry-After` is absent, compute backoff delay using **Full Jitter**: `random(0, min(capMs, baseMs * 2 ** (attempt - 1)))` using an injectable `randomFn` (defaulting to `Math.random`) for deterministic testing.
+>    - When `Retry-After` is absent, compute backoff delay using **Full Jitter** with an injectable random function (defaulting to the platform RNG) so tests can be deterministic.
 >    - If a request has a non-replayable body (a consumed `ReadableStream` where `body.locked` or `bodyUsed` is true and cannot be cloned), do **not** retry.
 >
 > Please explore the codebase, re-enable any commented-out retry tests in the test suite, implement all three requirements, and verify edge cases (including past HTTP-dates, `Retry-After > maxRetryAfter` fast-fail without sleeping, case-insensitive `idempotency-key`, and stream bodies).
@@ -63,40 +79,29 @@ npm test
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Using `parseInt(retryAfter, 10)` Before Checking Date Format
+### Trap 1: Trusting the first plausible fix
 
-- **What Naive AI Writes**:
-  ```ts
-  const seconds = parseInt(retryAfterHeader, 10);
-  if (!Number.isNaN(seconds)) return seconds * 1000;
-  ```
-- **Why It Fails**: What if a non-standard date string starts with a digit (e.g., `"21 Oct 2026 07:28:00 GMT"` or ISO `"2026-10-21T..."`)? `parseInt("2026-10-21...", 10)` stops at the hyphen and returns `2026` seconds (`33 minutes`)!
-- **Correct Fix**: Test `/^\d+$/.test(retryAfterHeader.trim())` for integer delay-seconds; otherwise parse with `Date.parse(retryAfterHeader)` and clamp `Math.max(0, parsedDate - now)`.
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`Improve Retry-After handling`).
+- **Why It Fails**: The PR touches `source/core/Ky.ts, source/core/retry-timing.ts, source/types/retry.ts`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Sleeping for `maxRetryAfter` Before Throwing When `Retry-After > maxRetryAfter`
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  ```ts
-  const delay = Math.min(parsedRetryAfter, options.maxRetryAfter);
-  await sleep(delay);
-  ```
-- **Why It Fails**: If a rate-limited server says `Retry-After: 3600` (1 hour) and `maxRetryAfter` is `10s`, sleeping `10s` and retrying against a 1-hour ban wastes `10s` and hammers a banned endpoint! The spec requires **aborting immediately without sleeping** when `parsedRetryAfter > options.maxRetryAfter`.
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Trace how retry eligibility and delay calculation currently work in `source/core/Ky.ts`, `source/core/retry-timing.ts`, `test/retry.ts`, `test/retry-timing.ts`, and `test/retry-decisions.ts`."_
+   > _"Do not write code. Trace the current behavior in `source/core/Ky.ts, source/core/retry-timing.ts, source/types/retry.ts, test/retry.ts, test/main.ts` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Extract a pure, unit-testable `calculateRetryDelay({ attempt, retryAfterHeader, options, now, randomFn })` function and a pure `canRetryRequest(request, response, options)` predicate.
+   - Reproduce with the test command; list the minimal files to change.
 3. **Step 3 (`Prompt`)**:
-   - Prompt 1: Implement `calculateRetryDelay` handling `/^\d+$/`, HTTP-dates, `Math.max(0, ...)`, and `maxRetryAfter` threshold.
-   - Prompt 2: Implement `canRetryRequest` checking HTTP method, `Headers.has('idempotency-key')`, and stream body replayability.
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
 4. **Step 4 (`Review`) & Step 5 (`Test`)**:
-   - Audit regex `/^\d+$/` vs `parseInt`, and run `npm test`.
-
----
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 

@@ -16,21 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/Textualize/rich`       |
+| **Base SHA (pre-merge)**           | `5f0219786bbaf994061011df087602d5edff5d66` |
+| **Merge SHA (reference solution)** | `d39626143036188cb2c9e1619e836540f5b627f8` |
+| **Test Command**                   | `pytest`                                   |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/Textualize/rich.git rich-interview
-cd rich-interview
+git clone https://github.com/Textualize/rich.git interview-workspace
+cd interview-workspace
+git checkout 5f0219786bbaf994061011df087602d5edff5d66
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-pytest tests/test_cells.py tests/test_text.py
+pytest
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-1. **Bug 1 (Wide-Character Cropping & `max_width=1` Infinite Loop in `rich/cells.py` / `rich/text.py`)**: In `chop_cells(text, max_size)` or `set_cell_size()`, when a 2-cell CJK character (`"你好"`) or emoji (`"🚀"`) hits an odd column width boundary (e.g., `max_size = 5` on `"你好世界"`), either fail to pad the trailing 1-cell gap in `set_cell_size` (leaving 4 cells instead of 5 and misaligning table borders `│`) OR enter an infinite loop when `max_size = 1` and the character has cell width `2`.
-2. **Bug 2 ($O(L \times S)$ Quadratic Span Division in `Text.divide`)**: In `rich/text.py` (`Text.divide(offsets)`), replace the span assignment loop with a naive nested loop (`for line_start, line_end in ranges: for span in self._spans: ...`), which passes small unit tests in `3ms` but takes **`> 5.0 seconds`** when wrapping a 5,000-line log containing 10,000 syntax-highlighted spans!
+- **Base SHA (`5f0219786bba`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`d39626143036`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- rich/cells.py, rich/_cell_widths.py
+
+### Failing Tests to Enable
+
+- Failing tests to enable/verify: test_cells.py. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -49,7 +65,7 @@ pytest tests/test_cells.py tests/test_text.py
 > Users have reported two critical bugs:
 >
 > 1. **Wide-Character Cropping & Wrapping Alignment**:
->    - In `set_cell_size("你好世界", 5)` (where each character is 2 cells wide): only `"你好"` (4 cells) fits inside 5 cells because `"世"` requires 2 cells (`4 + 2 = 6 > 5`). However, `set_cell_size(..., 5)` must return a string of **exact cell length `5`** by padding the remaining 1-cell gap with a space: `"你好 "` (`cell_len == 5`).
+>    - In a multi-byte string with a target display width (where each character is 2 cells wide): only `"你好"` (4 cells) fits inside 5 cells because `"世"` requires 2 cells (the accumulated width exceeds the target). However, `set_cell_size(..., 5)` must return a string of **exact cell length `5`** by padding the remaining 1-cell gap with a space: `"你好 "` (the resulting display width matches the target).
 >    - In `chop_cells(text, max_size=1)` on `"你好"`, because a 2-cell character can never fit inside `max_size=1`, the function must **not** enter an infinite loop emitting empty strings `""` forever.
 >    - Zero-width combining characters (e.g., `"e\u0301"`) must never be split onto a new line separated from their preceding base character.
 > 2. **Quadratic Performance Cliff in `Text.divide(offsets)`**:
@@ -63,56 +79,29 @@ pytest tests/test_cells.py tests/test_text.py
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Sorting Spans by `span.start` and Using `bisect` on `spans` per Line (Drops Multi-Line Outer Spans!)
+### Trap 1: Trusting the first plausible fix
 
-- **What Naive AI Writes**:
-  ```python
-  # AI's broken "optimization" in Text.divide():
-  sorted_spans = sorted(self._spans, key=attrgetter("start"))
-  span_starts = [s.start for s in sorted_spans]
-  for line_start, line_end in line_ranges:
-      idx = bisect_left(span_starts, line_start) # <-- BUG!
-      # Only checks spans where span.start >= line_start!
-  ```
-- **Why It Fails**: Suppose `Span(0, 1000, "bold")` covers the entire paragraph, and Line 2 is `(80, 160)`. Because `span.start == 0 < 80`, `bisect_left(span_starts, 80)` **skips `Span(0, 1000)` completely**, losing all multi-line styles on Line 2..N!
-- **The Brilliant Fix (Invert the Loop — Bisect `line_ranges` per Span!)**:
-  - `line_ranges` is **already a strictly disjoint, monotonically sorted array** of `(start, end)` intervals covering `[0, len(text)]`!
-  - Instead of searching `spans` for each `line`, iterate each `Span(span_start, span_end, style)` once, and use binary search (`bisect_right` / `bisect_left`) on the `line_ranges` boundaries to find the exact slice of lines `[first_line_idx .. last_line_idx]` that this span overlaps!
-  ```python
-  # O(S log L + total_clipped_spans) - handles 100% of overlapping & multi-line spans!
-  for span_start, span_end, style in self._spans:
-      lower_bound = bisect_right(end_offsets, span_start)
-      upper_bound = bisect_left(start_offsets, span_end)
-      for line_index in range(lower_bound, upper_bound):
-          ...
-  ```
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`Fix width measurement of 353 emoji`).
+- **Why It Fails**: The PR touches `rich/cells.py, rich/_cell_widths.py, rich/emoji.py`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Infinite Loop in `chop_cells(text, max_size=1)` on 2-Cell Characters
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  ```python
-  if total_width + char_width > max_size:
-      lines.append("".join(current_line))
-      current_line = [character] # <-- Wait: what if char_width (2) > max_size (1)?
-  ```
-  Or worse, pushes `character` back onto the queue without advancing the index when `current_line` is empty!
-- **Correct Fix**: Ensure every step makes forward progress even when `char_width > max_size` and `current_line` is empty (or clamp/replace according to `chop_cells` contract).
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Read `rich/cells.py` (`set_cell_size`, `chop_cells`) and `rich/text.py` (`Text.divide`). Trace how `Text.divide` currently maps `self._spans` onto `lines`."_
+   > _"Do not write code. Trace the current behavior in `rich/cells.py, rich/_cell_widths.py, rich/emoji.py, test_cells.py` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Candidate recognizes that `line_ranges` are disjoint and sorted, so bisecting `line_ranges` for each `Span` is $O(S \log L)$ and never misses a long outer span!
+   - Reproduce with the test command; list the minimal files to change.
 3. **Step 3 (`Prompt`)**:
-   - Prompt 1: Fix `set_cell_size` trailing space padding and `chop_cells` combining mark / `max_size=1` edge cases in `rich/cells.py`.
-   - Prompt 2: Refactor `Text.divide` in `rich/text.py` by iterating `self._spans` and bisecting `line_ranges`.
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
 4. **Step 4 (`Review`) & Step 5 (`Test`)**:
-   - Run `pytest tests/test_cells.py tests/test_text.py` and verify the 10k-span benchmark runs in `< 0.10s`.
-
----
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 

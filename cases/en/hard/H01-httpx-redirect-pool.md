@@ -16,23 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/encode/httpx`          |
+| **Base SHA (pre-merge)**           | `4f8068a7ade1f4d10403e325ed2354109df1724f` |
+| **Merge SHA (reference solution)** | `4401d55ecf0d95be237098b6c73c45420d54d499` |
+| **Test Command**                   | `pytest`                                   |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/encode/httpx.git httpx-interview
-cd httpx-interview
+git clone https://github.com/encode/httpx.git interview-workspace
+cd interview-workspace
+git checkout 4f8068a7ade1f4d10403e325ed2354109df1724f
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
+pytest
 ```
 
-### Seeded Defects to Inject (or Checkout) Before the Session
+### Reproducibility Verification
 
-In `httpx/_client.py`:
+- **Base SHA (`4f8068a7ade1`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`4401d55ecf0d`)**: the same tests must pass after checkout.
 
-1. **Bug 1 (Origin Port/Scheme Downgrade Leak)**: In module-level `_same_origin(url, other)` and `_is_https_redirect(request.url, url)` (and `BaseClient._redirect_headers()`) in `httpx/_client.py`, replace the port/scheme check so `url.host == other.host` is treated as same-origin without verifying `port` normalization or `https -> http` downgrade, and mutate `request.headers` in-place when removing `Content-Length` on `303 See Other`.
-2. **Bug 2 (Async Cancellation Connection Leak)**: In `AsyncClient._send_handling_redirects()`, catch `except Exception:` instead of `except BaseException:` around `await response.aread()` before following a redirect (in Python 3.8+, `asyncio.CancelledError` inherits from `BaseException`, so cancelling a request mid-redirect skips `await response.aclose()` and leaks the connection slot!).
-3. **Commented Tests**: Comment out `test_cross_domain_redirect_with_auth_header` and `test_https_to_http_downgrade_strips_auth` in `tests/client/test_redirects.py`, and add `test_async_redirect_cancellation_releases_connection` as a commented-out test during this interviewer seed step in `tests/client/test_redirects.py`.
+### Files Changed (Reference Solution)
 
----
+- httpx/_client.py, httpx/_utils.py
+
+### Failing Tests to Enable
+
+- Failing tests to enable/verify: test_redirects.py, test_utils.py. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -70,56 +84,29 @@ In `httpx/_client.py`:
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Mutating `request.headers` In-Place
+### Trap 1: Trusting the first plausible fix
 
-- **What Naive AI Writes**:
-  ```python
-  if method != request.method and method == "GET":
-      request.headers.pop("Content-Length", None)
-      request.headers.pop("Transfer-Encoding", None)
-  ```
-- **Why It Fails**: `request` is the previous hop's `Request` object stored in `response.history`. Mutating `request.headers` alters historical audit data!
-- **Correct Fix**: Always clone `headers = Headers(request.headers)` first and mutate only the new copy passed to the next `Request`.
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`Preserve Authorization header on HTTPS redirect`).
+- **Why It Fails**: The PR touches `httpx/_client.py, httpx/_utils.py`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Catching `Exception` Instead of `BaseException`
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  ```python
-  try:
-      await response.aread()
-  except Exception:
-      await response.aclose()
-      raise
-  ```
-- **Why It Fails**: In Python 3.8+, `asyncio.CancelledError` subclasses `BaseException`, not `Exception`. When an async request is cancelled via `task.cancel()`, `except Exception:` is bypassed completely and the underlying socket is never returned to the connection pool!
-- **Correct Fix**: Use `except BaseException:` (or `try ... finally:` when closing intermediate redirect responses).
-
-### Trap 3: Naive `visited_urls: set[URL]` Breaking Login & `303` Flows
-
-- **What Naive AI Writes**:
-  ```python
-  if redirect_url in visited_urls:
-      raise TooManyRedirects("Redirect loop detected", request=request)
-  ```
-- **Why It Fails**:
-  1. `POST /items` returning `303 See Other` with `Location: /items` redirects to `GET /items` (same URL, different method!).
-  2. `GET /me` → `302 /sso` (`Set-Cookie: token=xyz`) → `302 /me` visits `/me` twice, but the cookie jar state changed in between!
-- **Correct Fix**: Key the visited set by `(request.method, canonical_url)` AND clear `visited` (or include a cookie-state epoch counter) whenever a redirect response contains a `Set-Cookie` header that updates `self._cookies`.
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code yet. Read `httpx/_client.py` and `httpx/_urls.py`. Trace `_send_handling_redirects` and `_build_redirect_request`. Explain: (1) how `URL.port` behaves when no explicit port is in the URL string, (2) where `request.headers` is copied vs mutated, and (3) what happens if `response.aread()` raises `asyncio.CancelledError`."_
+   > _"Do not write code. Trace the current behavior in `httpx/_client.py, httpx/_utils.py, test_redirects.py, test_utils.py` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Candidate identifies the 3 isolated changes in `httpx/_client.py`: `_redirect_headers` immutability + port-aware origin check, `BaseException` cleanup in `AsyncClient`, and `(method, url, cookie_epoch)` loop detection.
+   - Reproduce with the test command; list the minimal files to change.
 3. **Step 3 (`Prompt`)**:
-   - Prompt each helper method individually (`_redirect_headers` first, then `_send_handling_redirects`), specifying exact invariants.
-4. **Step 4 (`Review`)** & **Step 5 (`Test`)**:
-   - Audit diff for `BaseException` and header cloning; run `pytest tests/client/test_redirects.py`.
-
----
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
+4. **Step 4 (`Review`) & Step 5 (`Test`)**:
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 

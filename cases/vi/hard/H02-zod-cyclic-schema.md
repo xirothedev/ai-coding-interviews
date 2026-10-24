@@ -16,27 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/colinhacks/zod`        |
+| **Base SHA (pre-merge)**           | `c5b9bcb39b7953c6a984849c6527863acdae0af7` |
+| **Merge SHA (reference solution)** | `36f17960d1defca5d0896d9424f4e1059fbbf081` |
+| **Test Command**                   | `pnpm test`                                |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/colinhacks/zod.git zod-interview
-cd zod-interview
-# Option A: Pin v3 standalone layout (src/types.ts, src/helpers/parseUtil.ts, src/__tests__/*.test.ts)
-git checkout v3.23.8
+git clone https://github.com/colinhacks/zod.git interview-workspace
+cd interview-workspace
+git checkout c5b9bcb39b7953c6a984849c6527863acdae0af7
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-npm install && npm test
-
-# Option B: Use main monorepo layout (packages/zod/src/v3/types.ts, packages/zod/src/v3/helpers/parseUtil.ts, packages/zod/src/v3/tests/*.test.ts)
-# pnpm install && pnpm test
+pnpm test
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-1. **Bug 1 (Mutable `path` Array in `ParseContext`)**: In `src/helpers/parseUtil.ts` (or `packages/zod/src/v3/helpers/parseUtil.ts` on `main`) or `ZodUnion._parse`, pass a shared mutable `ctx.path` array into child schemas (`path.push(key)` / `path.pop()`) so that when `parseAsync` runs union branches or object keys via `Promise.all()`, interleaved async resolutions corrupt the reported `issue.path`!
-2. **Bug 2 (Unbounded Stack Overflow on Cyclic Objects in `ZodLazy`)**: `z.lazy(() => CategorySchema)` enters infinite recursion (`RangeError: Maximum call stack size exceeded`) when given a runtime object with a circular reference (`node.parent = node`).
-3. **Commented Tests**: Comment out the async union path isolation test and cyclic graph tests in `src/__tests__/recursive.test.ts` and `src/__tests__/unions.test.ts` (or `packages/zod/src/v3/tests/recursive.test.ts` and `packages/zod/src/v3/tests/unions.test.ts` on `main`).
+- **Base SHA (`c5b9bcb39b79`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`36f17960d1de`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- packages/zod/src/v4/core/memoizer.ts
+
+### Failing Tests to Enable
+
+- Failing tests to enable/verify: cyclic-data.test.ts. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -63,53 +73,29 @@ npm install && npm test
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Global `WeakSet` Rejecting Valid Shared DAG Siblings
+### Trap 1: Trusting the first plausible fix
 
-- **What Naive AI Writes**:
-  ```ts
-  // Inside ParseContext or ZodLazy._parse:
-  if (typeof input.data === "object" && input.data !== null) {
-    if (ctx.common.seen.has(input.data)) {
-      addIssueToContext(ctx, { code: ZodIssueCode.custom, message: "Circular reference detected" });
-      return INVALID;
-    }
-    ctx.common.seen.add(input.data);
-  }
-  ```
-- **Why It Fails**: `ctx.common.seen` is a global visited set across the entire parse run, NOT an active ancestor stack! In `const root = { left: leaf, right: leaf }`, parsing `root.left` adds `leaf` to `seen`. When the parser moves to sibling `root.right`, `seen.has(leaf)` is `true`—falsely rejecting a valid acyclic object!
-- **Correct Fix**: Track the **active ancestor set** along the current recursion branch (DFS gray set):
-  - For synchronous `_parse`: `ancestors.add(obj)` before recursing, and `ancestors.delete(obj)` in a `finally` block after returning!
-  - For asynchronous `_parseAsync`: Either pass an immutable/cloned ancestor `Set` down child `ParseContext` frames (or remove `obj` inside `.finally()` after the child Promise resolves).
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`stop the memoizer from pinning a finished parse`).
+- **Why It Fails**: The PR touches `packages/zod/src/v4/core/memoizer.ts`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Deleting from Shared `ancestors` Before Async Promise Resolves
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  ```ts
-  ancestors.add(data);
-  try {
-    return this._getter()._parse(input); // <-- Returns a Promise in async mode!
-  } finally {
-    ancestors.delete(data); // <-- Runs synchronously BEFORE the Promise resolves!
-  }
-  ```
-- **Why It Fails**: In `parseAsync`, `this._getter()._parse(input)` returns a `Promise<SyncParseReturnType>`. The `finally` block executes immediately before the async branch descends into child properties, completely disabling cycle detection in async mode!
-- **Correct Fix**: Check `isAsync(result)`: if synchronous, `ancestors.delete(data)` immediately; if async (`result instanceof Promise`), chain `result.finally(() => ancestors.delete(data))` (or scope `ancestors` per-path branch).
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Trace `ParseContext`, `ParseInput`, and `Lazy._parse` in `src/types.ts` and `src/helpers/parseUtil.ts`. Show how `ctx.path` is constructed and how sync vs async return types (`SyncParseReturnType` vs `AsyncParseReturnType`) work inside `_parse`."_
+   > _"Do not write code. Trace the current behavior in `packages/zod/src/v4/core/memoizer.ts, cyclic-data.test.ts` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Candidate notes that `ZodLazy._parse` can return either a sync result or a `Promise`, and that DAG siblings require an **ancestor stack** rather than a global `WeakSet`.
+   - Reproduce with the test command; list the minimal files to change.
 3. **Step 3 (`Prompt`)**:
-   - Prompt 1: Fix `ParseContext` path propagation in union/object async branches.
-   - Prompt 2: Implement ancestor tracking in `ZodLazy._parse` handling both sync and `Promise` return values.
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
 4. **Step 4 (`Review`) & Step 5 (`Test`)**:
-   - Candidate checks whether `finally` runs prematurely on Promises and writes tests for both `safeParse` and `safeParseAsync` on cyclic and DAG inputs.
-
----
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 

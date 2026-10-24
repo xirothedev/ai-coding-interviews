@@ -16,22 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/honojs/hono`           |
+| **Base SHA (pre-merge)**           | `52febbcc30bc509d5e4987577e63906fe08fc471` |
+| **Merge SHA (reference solution)** | `08807ce12aa3aa27c8c5adf63e677bbab6bceda9` |
+| **Test Command**                   | `npm test`                                 |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/honojs/hono.git hono-router-interview
-cd hono-router-interview
+git clone https://github.com/honojs/hono.git interview-workspace
+cd interview-workspace
+git checkout 52febbcc30bc509d5e4987577e63906fe08fc471
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-npx vitest run src/router/trie-router
+npm test
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-1. **Bug 1 (No Backtracking from Failed Static Prefix in `node.ts` / `tree.go`)**: In `Node.search()` (`src/router/trie-router/node.ts`, which traverses `#children`, `#patterns`, and `#params`), seed a greedy return `if (staticChild) { return search(staticChild, ...); }` without falling back to `#patterns` (`:param` / `*` wildcard) when `staticChild`'s subtree fails to match the remaining URL segments!
-   - Example: Routes registered are `GET /users/admin/audit-log` and `GET /users/:username/followers`. Requesting `GET /users/admin/followers` enters static child `"admin"`, fails to find `"followers"`, and returns `404` instead of backtracking to `:username = "admin"`!
-2. **Bug 2 (Polluted `#params` / `params` Dictionary Across Backtracked Branches)**: Mutate a shared `params: Record<string, string>` object across candidate branches in `node.ts` so that a parameter captured in a higher-priority branch that fails at a deeper segment remains inside `params` when a fallback branch succeeds!
+- **Base SHA (`52febbcc30bc`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`08807ce12aa3`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- src/router/trie-router/node.ts
+
+### Failing Tests to Enable
+
+- Failing tests to enable/verify: node.test.ts, common.case.test.ts, router.test.ts. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -66,42 +81,29 @@ npx vitest run src/router/trie-router
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Mutating `params[paramName] = part` Without Snapshot/Rollback on Backtrack
+### Trap 1: Trusting the first plausible fix
 
-- **What Naive AI Writes**:
-  ```ts
-  // Inside recursive search(node, parts, index, params):
-  if (node.paramChild) {
-    params[node.paramChild.name] = parts[index];
-    const match = search(node.paramChild, parts, index + 1, params);
-    if (match) return match;
-    // AI forgets to delete params[name] (or deletes a key that an ancestor already set!)
-  }
-  ```
-- **Why It Fails**: If `params` is mutated in-place and not restored (or if `delete params[name]` deletes a parent param of the same name), failed branches corrupt the returned `params` map!
-- **Correct Fix**: Either pass an immutable/copied `nextParams = { ...curParams, [name]: value }` down parameter edges (as `hono`'s `node.ts` does per candidate `curNode` in `nextCurNodes`) OR record `prevValue = params[name]; hadKey = name in params` and restore on backtrack!
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`keep first value for duplicate path params`).
+- **Why It Fails**: The PR touches `src/router/trie-router/node.ts`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Wildcard `*` Consuming Only One Segment Instead of the Remainder of the Path
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  - Treats `*` identically to `:param` (advancing `index + 1` instead of matching the rest of the path or checking terminal wildcard vs mid-path wildcard).
-- **Correct Fix**: A terminal `*` (or `*filepath`) matches `parts.slice(index).join('/')`, whereas a mid-path wildcard `/prefix/*/suffix` must backtrack across remaining segment positions.
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Trace `insert()` and `search()` in `src/router/trie-router/node.ts`. Explain how `#children`, `#patterns`, and `#params` are stored and traversed."_
+   > _"Do not write code. Trace the current behavior in `src/router/trie-router/node.ts, node.test.ts, common.case.test.ts, router.test.ts` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Candidate plans ordered candidate exploration (`Static > Regex Param > Plain Param > Wildcard`) with isolated `params` maps per candidate node.
+   - Reproduce with the test command; list the minimal files to change.
 3. **Step 3 (`Prompt`)**:
-   - Prompt 1: Update `node.ts` traversal to backtrack across `Static -> Param -> Wildcard` in deterministic priority order while isolating captured `params`.
-   - Prompt 2: Verify multi-segment wildcard capture and registration-order independence.
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
 4. **Step 4 (`Review`) & Step 5 (`Test`)**:
-   - Run `npx vitest run src/router/trie-router` and add a permutation test registering 5 overlapping routes in all `5! = 120` orders.
-
----
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 

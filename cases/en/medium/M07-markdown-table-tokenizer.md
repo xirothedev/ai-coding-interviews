@@ -16,25 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/markedjs/marked`       |
+| **Base SHA (pre-merge)**           | `ef0704c58459e927c805b92a5cc7d0c629e6fe43` |
+| **Merge SHA (reference solution)** | `4ee44f7f2167bec4079255e32b520dd47f16486c` |
+| **Test Command**                   | `npm test`                                 |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/executablebooks/markdown-it-py.git markdown-interview
-cd markdown-interview
+git clone https://github.com/markedjs/marked.git interview-workspace
+cd interview-workspace
+git checkout ef0704c58459e927c805b92a5cc7d0c629e6fe43
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-pytest
+npm test
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-In `markdown_it/rules_block/table.py` (`escapedSplit(string: str) -> list[str]` and `table` block rule):
+- **Base SHA (`ef0704c58459`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`4ee44f7f2167`)**: the same tests must pass after checkout.
 
-1. **Bug 1 (Native Escape-Parity Bug in `escapedSplit` & Naive Pipe Splitting Inside Code Spans)**:
-   - Notice that `escapedSplit(string: str) -> list[str]` in `markdown_it/rules_block/table.py` (line 50) **already has a native even-backslash escape parity bug**: at the end of its character loop, it sets `isEscaped = ch == "\\"` instead of toggling `isEscaped = not isEscaped` when `ch == "\\"`, so an **even** number of backslashes before a pipe (`| a \\| b |`) leaves `isEscaped = True` and fails to split the column!
-   - Furthermore, `escapedSplit` does not track inline code backtick spans (``| `a | b` | c |``), splitting on raw pipes inside inline code!
-2. **Commented Tests**: Comment out the inline-code pipe tests, even-backslash escape tests (`| a \\| b |`), and colspan/long-line benchmark tests in `tests/test_port/test_fixtures.py`.
+### Files Changed (Reference Solution)
 
----
+- src/Lexer.ts, src/Tokenizer.ts
+
+### Failing Tests to Enable
+
+- Failing tests to enable/verify: quadratic_unterminated_links.cjs. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -68,44 +80,29 @@ In `markdown_it/rules_block/table.py` (`escapedSplit(string: str) -> list[str]` 
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Using Regex `r'(?<!\\)\|'` to Split Table Cells
+### Trap 1: Trusting the first plausible fix
 
-- **What Naive AI Writes**:
-  ```python
-  cells = re.split(r'(?<!\\)\|', line)
-  ```
-- **Why It Fails on ALL 3 Counts**:
-  1. Fails on `| a \\| b |`: Because the character before `|` is `\`, `(?<!\\)\|` thinks `|` is escaped, even though the first `\` escaped the second `\`!
-  2. Splits pipes inside inline code spans: ``| `a | b` |`` is split in the middle of the code span!
-  3. If the AI tries to write a giant nested regex to match balanced backticks and escapes, it either fails on multi-backtick spans (``` ``a ` | b`` ```) or triggers **catastrophic $O(2^N)$ ReDoS backtracking** on unclosed backticks!
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`fast-fail link tokenizing when no ')' remains ahead`).
+- **Why It Fails**: The PR touches `src/Lexer.ts, src/Tokenizer.ts`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Greedy Single-Pass Backtick State Machine Failing on Unclosed Backticks
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  - Toggles `in_code = not in_code` whenever it sees `` ` `` in a single pass.
-- **Why It Fails**:
-  1. If a cell contains an unclosed backtick ``| `foo | bar |``, toggling `in_code = True` at `` `foo `` swallows the rest of the entire table row as a single cell instead of recognizing that the backtick was never closed!
-  2. Inside ``` ``a ` | b`` ```, a single `` ` `` does NOT close a double-backtick ` `` ` span!
-- **The Correct $O(N)$ Solution**:
-  - Track `escaped` boolean parity (`escaped = not escaped` on `\`, reset to `False` on any other char).
-  - Pre-scan (or track backtick run lengths `k`) so a run of `k` backticks only opens a code span if a matching closing run of **exact length `k`** exists later on the same line!
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Read `markdown_it/rules_block/table.py` and trace how lines are split into cells and when inline tokenization happens."_
+   > _"Do not write code. Trace the current behavior in `src/Lexer.ts, src/Tokenizer.ts, quadratic_unterminated_links.cjs` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Design an $O(N)$ character scanner for splitting a table row that:
-     1. Tracks backslash escape parity (`backslash_count % 2 == 1`) outside code spans.
-     2. Identifies matched backtick runs of exact length `k` (ignoring unclosed backtick runs!).
+   - Reproduce with the test command; list the minimal files to change.
 3. **Step 3 (`Prompt`)**:
-   - Prompt the row-splitting scanner function in isolation and unit-test it on the 4 tricky cases (`\|`, `\\|`, `` `a | b` ``, and `` `unclosed | b ``).
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
 4. **Step 4 (`Review`) & Step 5 (`Test`)**:
-   - Verify no backtracking regexes are used and run `pytest`.
-
----
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 
