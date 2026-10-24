@@ -33,11 +33,22 @@ copy_locale() {
   if [[ -f "${src_wiki}/Home.md" ]]; then
     cp "${src_wiki}/Home.md" "${dest}/${prefix}Home.md"
   fi
-  if [[ -f "${src_wiki}/_Sidebar.md" ]]; then
-    cp "${src_wiki}/_Sidebar.md" "${dest}/${prefix}_Sidebar.md"
-  fi
-  if [[ -f "${src_wiki}/_Footer.md" ]]; then
-    cp "${src_wiki}/_Footer.md" "${dest}/${prefix}_Footer.md"
+  # GitHub Wiki supports only one global sidebar/footer. Locale variants are published
+  # as ordinary pages (no leading underscore) so they cannot override the global one.
+  if [[ -z "${prefix}" ]]; then
+    if [[ -f "${src_wiki}/_Sidebar.md" ]]; then
+      cp "${src_wiki}/_Sidebar.md" "${dest}/_Sidebar.md"
+    fi
+    if [[ -f "${src_wiki}/_Footer.md" ]]; then
+      cp "${src_wiki}/_Footer.md" "${dest}/_Footer.md"
+    fi
+  else
+    if [[ -f "${src_wiki}/_Sidebar.md" ]]; then
+      cp "${src_wiki}/_Sidebar.md" "${dest}/${prefix}Sidebar.md"
+    fi
+    if [[ -f "${src_wiki}/_Footer.md" ]]; then
+      cp "${src_wiki}/_Footer.md" "${dest}/${prefix}Footer.md"
+    fi
   fi
 
   for file in "${src_docs}"/*.md; do
