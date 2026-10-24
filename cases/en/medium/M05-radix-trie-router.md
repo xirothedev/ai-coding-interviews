@@ -16,22 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/honojs/hono`           |
+| **Base SHA (pre-merge)**           | `52febbcc30bc509d5e4987577e63906fe08fc471` |
+| **Merge SHA (reference solution)** | `08807ce12aa3aa27c8c5adf63e677bbab6bceda9` |
+| **Test Command**                   | `npm test`                                 |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/honojs/hono.git hono-router-interview
-cd hono-router-interview
+git clone https://github.com/honojs/hono.git interview-workspace
+cd interview-workspace
+git checkout 52febbcc30bc509d5e4987577e63906fe08fc471
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-npx vitest run src/router/trie-router
+npm test
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-1. **Bug 1 (No Backtracking from Failed Static Prefix in `node.ts` / `tree.go`)**: In `Node.search()` (`src/router/trie-router/node.ts`, which traverses `#children`, `#patterns`, and `#params`), seed a greedy return `if (staticChild) { return search(staticChild, ...); }` without falling back to `#patterns` (`:param` / `*` wildcard) when `staticChild`'s subtree fails to match the remaining URL segments!
-   - Example: Routes registered are `GET /users/admin/audit-log` and `GET /users/:username/followers`. Requesting `GET /users/admin/followers` enters static child `"admin"`, fails to find `"followers"`, and returns `404` instead of backtracking to `:username = "admin"`!
-2. **Bug 2 (Polluted `#params` / `params` Dictionary Across Backtracked Branches)**: Mutate a shared `params: Record<string, string>` object across candidate branches in `node.ts` so that a parameter captured in a higher-priority branch that fails at a deeper segment remains inside `params` when a fallback branch succeeds!
+- **Base SHA (`52febbcc30bc`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`08807ce12aa3`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- src/router/trie-router/node.ts
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `npm test` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 

@@ -16,25 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/markedjs/marked`       |
+| **Base SHA (pre-merge)**           | `ef0704c58459e927c805b92a5cc7d0c629e6fe43` |
+| **Merge SHA (reference solution)** | `4ee44f7f2167bec4079255e32b520dd47f16486c` |
+| **Test Command**                   | `npm test`                                 |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/executablebooks/markdown-it-py.git markdown-interview
-cd markdown-interview
+git clone https://github.com/markedjs/marked.git interview-workspace
+cd interview-workspace
+git checkout ef0704c58459e927c805b92a5cc7d0c629e6fe43
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-pytest
+npm test
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-In `markdown_it/rules_block/table.py` (`escapedSplit(string: str) -> list[str]` and `table` block rule):
+- **Base SHA (`ef0704c58459`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`4ee44f7f2167`)**: the same tests must pass after checkout.
 
-1. **Bug 1 (Native Escape-Parity Bug in `escapedSplit` & Naive Pipe Splitting Inside Code Spans)**:
-   - Notice that `escapedSplit(string: str) -> list[str]` in `markdown_it/rules_block/table.py` (line 50) **already has a native even-backslash escape parity bug**: at the end of its character loop, it sets `isEscaped = ch == "\\"` instead of toggling `isEscaped = not isEscaped` when `ch == "\\"`, so an **even** number of backslashes before a pipe (`| a \\| b |`) leaves `isEscaped = True` and fails to split the column!
-   - Furthermore, `escapedSplit` does not track inline code backtick spans (``| `a | b` | c |``), splitting on raw pipes inside inline code!
-2. **Commented Tests**: Comment out the inline-code pipe tests, even-backslash escape tests (`| a \\| b |`), and colspan/long-line benchmark tests in `tests/test_port/test_fixtures.py`.
+### Files Changed (Reference Solution)
 
----
+- src/Lexer.ts, src/Tokenizer.ts
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `npm test` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 

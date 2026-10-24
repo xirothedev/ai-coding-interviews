@@ -16,24 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/sourcegraph/conc`      |
+| **Base SHA (pre-merge)**           | `30a99cd85b339bce498627582d604740385a3ba8` |
+| **Merge SHA (reference solution)** | `8427ccd11dde5f56ccacfbbd184f42ce865d2f0d` |
+| **Test Command**                   | `go test ./...`                            |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/sourcegraph/conc.git conc-interview
-cd conc-interview
+git clone https://github.com/sourcegraph/conc.git interview-workspace
+cd interview-workspace
+git checkout 30a99cd85b339bce498627582d604740385a3ba8
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-go test -race ./...
-# (Or use RezaSi/go-interview-practice/challenge-11 for a standalone template)
+go test ./...
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-1. **Bug 1 (`cancel()` Before `addErr(err)` Race Condition in `pool/context_pool.go` & Unbuffered `errCh` Goroutine Leak)**:
-   - In `sourcegraph/conc/pool/context_pool.go` (lines 48–52), notice the critical comment: `p.addErr(err)` **must** be called _before_ `p.cancel()`, otherwise cancelling `ctx` wakes up other workers which immediately abort with `context.Canceled` and race to record `context.Canceled` as the first error before the actual root-cause `err` is recorded!
-   - Alternatively, in channel-based pools (`challenge-11`), workers send errors to an unbuffered `errCh := make(chan error)` where the coordinator only reads `<-errCh` once and returns—leaving `N - 1` workers permanently blocked!
-2. **Bug 2 (Data Race on Shared Results Slice in `pool/result_context_pool.go` / `iter/map.go`)**: Workers append directly to `results = append(results, res)` without a mutex or indexed slot assignment, failing `go test -race`.
+- **Base SHA (`30a99cd85b33`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`8427ccd11dde`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- pool/result_context_pool.go, pool/result_pool.go
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `go test ./...` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 

@@ -16,21 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/sindresorhus/ky`       |
+| **Base SHA (pre-merge)**           | `06375efbacfc1bdc96f7a4de7560684b765e1274` |
+| **Merge SHA (reference solution)** | `3419113b48e034fdcf8fa6bd3be3da7b3d0d758f` |
+| **Test Command**                   | `npm test`                                 |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/sindresorhus/ky.git ky-interview
-cd ky-interview
+git clone https://github.com/sindresorhus/ky.git interview-workspace
+cd interview-workspace
+git checkout 06375efbacfc1bdc96f7a4de7560684b765e1274
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
 npm test
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-1. **Bug 1 (`Retry-After` HTTP-Date Parsing Bug)**: The existing `Retry-After` parser uses `Number(header)` or `parseInt(header, 10)`, which fails on RFC 7231 HTTP-date strings (`Retry-After: Wed, 21 Oct 2026 07:28:00 GMT`) or produces negative delays when server clock is slightly behind client clock!
-2. **Bug 2 (Unconditional `POST` Retry & Stream Body Consumption)**: Retrying a `POST` request on `503 Service Unavailable` either duplicates non-idempotent mutations when no `Idempotency-Key` header is present, or sends an empty `0-byte` body on attempt #2 if the body was a one-shot stream/generator!
+- **Base SHA (`06375efbacfc`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`3419113b48e0`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- source/core/Ky.ts, source/core/retry-timing.ts, source/types/retry.ts
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `npm test` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 

@@ -16,21 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/pallets/click`         |
+| **Base SHA (pre-merge)**           | `08ecfd0e7c238a2444886d239de6d0e9d83530ec` |
+| **Merge SHA (reference solution)** | `166b31261f55ba3126456bbc2ff9e16142115e56` |
+| **Test Command**                   | `pytest`                                   |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/pallets/click.git click-interview
-cd click-interview
+git clone https://github.com/pallets/click.git interview-workspace
+cd interview-workspace
+git checkout 08ecfd0e7c238a2444886d239de6d0e9d83530ec
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-pytest tests/test_options.py
+pytest
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-1. **Bug 1 (Falsy CLI Value Overridden by Environment Variable / Config)**: In parameter value resolution (`Parameter.consume_value` / `Option.consume_value` / `Option.value_from_envvar` in `src/click/core.py`, which uses the `UNSET` sentinel), replace an `is UNSET` check with truthiness (`if not value:`) or `cli_val or env_val or default` so that passing `--retries 0`, `--prefix ""`, or `--no-verify` (`False`) on the command line is ignored when `APP_RETRIES=5` or `APP_VERIFY=true` is set in `os.environ`!
-2. **Bug 2 (Boolean String Parsing in Environment Variables)**: Setting `APP_VERIFY="false"` or `APP_VERIFY="0"` in `os.environ` evaluates `bool("false") == True` in Python/JS if not parsed through the boolean type converter!
+- **Base SHA (`08ecfd0e7c23`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`166b31261f55`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- src/click/core.py
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `pytest` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 

@@ -16,23 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/hashicorp/golang-lru`  |
+| **Base SHA (pre-merge)**           | `6010c21139ad468ba7c4f0027720edff1930ce62` |
+| **Merge SHA (reference solution)** | `9c13c57de0bedd6b3e21183b34072e417ffa69d1` |
+| **Test Command**                   | `go test ./...`                            |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/hashicorp/golang-lru.git cache-interview
-cd cache-interview
+git clone https://github.com/hashicorp/golang-lru.git interview-workspace
+cd interview-workspace
+git checkout 6010c21139ad468ba7c4f0027720edff1930ce62
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-go test -race ./expirable/...
+go test ./...
 ```
 
-_(Or use [`isaacs/node-lru-cache`](https://github.com/isaacs/node-lru-cache) `src/index.ts` for TypeScript.)_
+### Reproducibility Verification
 
-### Seeded Defects to Inject Before the Session
+- **Base SHA (`6010c21139ad`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`9c13c57de0be`)**: the same tests must pass after checkout.
 
-1. **Bug 1 (Expired Items Evicting Live LRU Keys in `expirable/expirable_lru.go`)**: Notice that in `hashicorp/golang-lru/expirable/expirable_lru.go`, when `Add(key, value)` is called at full capacity (`c.evictList.Length() > c.size`), it calls `c.removeOldest()` (which evicts the tail of the LRU list `c.evictList.Back()`) **without checking whether other entries in the cache have already expired by TTL (`time.Now().After(ent.expiresAt)`)**! If key `"B"` was recently read (`MoveToFront`) right before its short TTL expired, while key `"A"` has a longer TTL and sits at the LRU tail, inserting `"C"` evicts **live** key `"A"` while **expired** key `"B"` continues occupying a capacity slot!
-2. **Bug 2 (Expired Read Promoting Item in LRU List)**: In `Get(key)`, seed or inspect the check so an expired entry is promoted via `c.evictList.MoveToFront(ent)` or left in `c.items` instead of calling `c.removeElement(ent)` immediately on expired read!
+### Files Changed (Reference Solution)
 
----
+- expirable/expirable_lru.go
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `go test ./...` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 

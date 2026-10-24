@@ -16,25 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                                     |
+| :--------------------------------- | :-------------------------------------------------------- |
+| **Repository**                     | `https://github.com/HARRIFIED/Event-sourced-core-banking` |
+| **Base SHA (pre-merge)**           | `ceaa8bf4b086467d8eb6f91e22ebbe765f9be280`                |
+| **Merge SHA (reference solution)** | `fdc15b21361947176577c5fd353f03352a9df5fd`                |
+| **Test Command**                   | `npm test`                                                |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/MARKASCHARAN/ChronoLedger.git ledger-interview
-cd ledger-interview/backend
+git clone https://github.com/HARRIFIED/Event-sourced-core-banking.git interview-workspace
+cd interview-workspace
+git checkout ceaa8bf4b086467d8eb6f91e22ebbe765f9be280
+rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
 npm test
-# (Or clone https://github.com/Zubimendi/ReplayLedger.git for Go: go test ./...)
 ```
 
-### Scenario Context & Seeded Defects
+### Reproducibility Verification
 
-This case simulates Stripe/Fintech-style interviews where a candidate works on an event-sourced payment state machine & webhook reconciliation service (`ChronoLedger` in TypeScript or `ReplayLedger` in Go).
-The starter code contains **3 realistic domain bugs**:
+- **Base SHA (`ceaa8bf4b086`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`fdc15b213619`)**: the same tests must pass after checkout.
 
-1. **Bug 1 (Duplicate Webhook Replay)**: Payment gateways deliver webhooks with at-least-once semantics (`event_id`). Re-delivering an `AUTH_HOLD` or `DEPOSIT` event applies the balance change twice!
-2. **Bug 2 (Partial Capture Remainder Leak)**: When a customer has an active `AUTH_HOLD` of `$100.00` (e.g., hotel or gas station pre-auth) and the final `CAPTURE` event is for `$75.00` (`final=true`), the existing code deducts `$75.00` from `settled_balance` but only reduces `held_balance` by `$75.00` instead of releasing the entire `$100.00` hold—leaving `$25.00` permanently frozen in `held_balance`!
-3. **Bug 3 (Out-of-Order Webhook Delivery)**: Due to distributed queue jitter, a `CAPTURE(auth_id="a1", amount=5000)` or `VOID(auth_id="a1")` webhook can arrive `50ms` **before** its corresponding `AUTH_HOLD(auth_id="a1", amount=5000)` webhook! Currently, the processor throws `UnknownAuthHoldError` or silently drops the `CAPTURE`.
+### Files Changed (Reference Solution)
 
----
+- src/modules/accounts/domain/account.aggregate.ts
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `npm test` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 

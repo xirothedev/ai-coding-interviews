@@ -16,28 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                                           |
+| :--------------------------------- | :-------------------------------------------------------------- |
+| **Repository**                     | `https://github.com/JLLeitschuh/refactoring-interview-question` |
+| **Base SHA (pre-merge)**           | `c519ac981cdf744c6d3afa5551a00c18b9462183`                      |
+| **Merge SHA (reference solution)** | `56150ed77832eb66fce658c8be37defbd160b2d1`                      |
+| **Test Command**                   | `./gradlew test`                                                |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/JLLeitschuh/refactoring-interview-question.git refactoring-interview
-cd refactoring-interview
+git clone https://github.com/JLLeitschuh/refactoring-interview-question.git interview-workspace
+cd interview-workspace
+git checkout c519ac981cdf744c6d3afa5551a00c18b9462183
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
 ./gradlew test
 ```
 
-### Actual Architecture & Native Defects in `JLLeitschuh/refactoring-interview-question`
+### Reproducibility Verification
 
-The repository is a multi-module Gradle build with two modules (`:monolith` and `:library`):
+- **Base SHA (`c519ac981cdf`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`56150ed77832`)**: the same tests must pass after checkout.
 
-- **`monolith` module (`org.MechanizedLogic.monolith`)**:
-  - `AlgorithmEngine.java` orchestrates graph path calculations using database-backed services (`GraphService`, `PathsService`, `EventService`, `GraphUsersService`) and delegates to `Algorithm`.
-  - `monolith/.../Algorithm.java` and `monolith/.../Dijkstra.java` are tightly coupled to `monolith`'s database services (`GraphService`, `PathsService`, `EventService`, `GraphUsersService`).
-  - Inside `Algorithm.runForAll()`, the loop calls `graphService.getAllUuids()` and then re-fetches `graphService.getByUuid(uuid)` inside `run(uuid)` (`N+1` database round-trips!).
-  - `Dijkstra.java` stores mutable instance state (`private Node source;` and `GraphService` calls inside `retrieveNodes()`), making `Dijkstra` stateful across runs and impossible to run without `GraphService`.
-- **`library` module (`org.MechanizedLogic.library`)**:
-  - Contains `library/.../Algorithm.java` and `library/.../Dijkstra.java` alongside `@Disabled` unit tests in `library/src/test/java/org/MechanizedLogic/library/AlgorithmTest.java` and `DijkstraTest.java` waiting to be decoupled from `monolith` services and enabled!
+### Files Changed (Reference Solution)
 
----
+- library/src/test/java/org/company/library/algorithm/AlgorithmTest.java
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `./gradlew test` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 

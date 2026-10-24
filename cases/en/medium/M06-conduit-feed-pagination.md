@@ -16,22 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
-### Clean-Room Workspace Provisioning & Native Defects
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                                               |
+| :--------------------------------- | :------------------------------------------------------------------ |
+| **Repository**                     | `https://github.com/gothinkster/node-express-realworld-example-app` |
+| **Base SHA (pre-merge)**           | `df9b999187d6edeeefc31f1981e46b9a7710148d`                          |
+| **Merge SHA (reference solution)** | `17131d32f247c99bcb03de1c85189bc80284a97d`                          |
+| **Test Command**                   | `npm test`                                                          |
+
+### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/nsidnev/fastapi-realworld-example-app.git conduit-interview
-cd conduit-interview
+git clone https://github.com/gothinkster/node-express-realworld-example-app.git interview-workspace
+cd interview-workspace
+git checkout df9b999187d6edeeefc31f1981e46b9a7710148d
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-pytest
+npm test
 ```
 
-Notice that **`nsidnev/fastapi-realworld-example-app` natively exhibits both classic Conduit backend bugs** out of the box (no artificial bug seeding required!):
+### Reproducibility Verification
 
-1. **Native Bug 1 (`articles_count=len(articles)` in `app/api/routes/articles/articles_resource.py` lines 69 & 98)**: Both `get_articles_feed` and `retrieve_articles` return `ListOfArticlesInResponse(articles=articles, articles_count=len(articles))`—reporting the **page slice length** (`<= limit`) instead of the total number of matching articles before `limit`/`offset`!
-2. **Native Bug 2 (`1 + 5N` Query Comprehension in `app/db/repositories/articles.py` lines 257–264)**: `ArticlesRepository.filter_articles()` fetches the list of article rows and then runs an async list comprehension `[await self._get_article_from_db_record(...) for article_row in article_rows]`, where every single article fires **5 separate SQL queries** (`get_tags_for_article_by_slug`, `get_favorites_count_for_article_by_slug`, `is_article_favorited_by_user`, `get_profile_by_username`, `is_user_following_for_another`)—executing `1 + 5 * 20 = 101` SQL queries for a single 20-article page!
-3. **Bug 3 (Unstable Timestamp Pagination)**: Sorting only by `ORDER BY created_at DESC` causes articles created in the same millisecond to duplicate or vanish across pages.
+- **Base SHA (`df9b999187d6`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`17131d32f247`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- routes/api/articles.js
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `npm test` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 

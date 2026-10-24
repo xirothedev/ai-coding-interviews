@@ -16,35 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
-### Workspace Layout (Matching Meta CoderPad Environment in `natashalukmanto/dsa`)
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/jonhoo/roget`          |
+| **Base SHA (pre-merge)**           | `4482ad13db3c556703565f81419223f365c4f96b` |
+| **Merge SHA (reference solution)** | `a8ed2d8c9af28c5319bf7148b80a10031cd69424` |
+| **Test Command**                   | `cargo test`                               |
+
+### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/natashalukmanto/dsa.git meta-puzzle-interview
-cd meta-puzzle-interview/others/meta/puzzle
-pytest
+git clone https://github.com/jonhoo/roget.git interview-workspace
+cd interview-workspace
+git checkout 4482ad13db3c556703565f81419223f365c4f96b
+rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
+cargo test
 ```
 
-```text
-others/meta/puzzle/
-├── data/
-│   └── up_to_six_letters.txt       # 40,000+ words of lengths 1 to 6
-├── dictionary.py                   # get_test_dictionary() & get_prod_dictionary()
-├── main.py                         # Entrypoint runner
-├── puzzle.py                       # Match(YES, MOVE, NO), Puzzle.guess(), Puzzle.admit_defeat() / admitDefeat()
-├── solver.py                       # Solver stub to implement
-├── puzzle_test.py                  # Unit tests for Puzzle (or test_puzzle.py; some commented out)
-└── solver_test.py                  # Unit tests for Solver (or test_solver.py; some commented out)
-```
+### Reproducibility Verification
 
-### Seeded Defects in the Starter Codebase
+- **Base SHA (`4482ad13db3c`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`a8ed2d8c9af2`)**: the same tests must pass after checkout.
 
-1. **Bug 1 (`dictionary.py`)**: `_read_file_dictionary("up_to_six_letters.txt")` only searches `[Path("data")]` (relative to current working directory) and raises `FileNotFoundError` when tests are run from another directory or if blank/uppercase lines exist.
-2. **Bug 2 (`puzzle.py` — Duplicate Letter `Match.MOVE` Bug)**: `Puzzle.guess(word)` checks `elif letter in self._secret_word: result.append(Match.MOVE)` in a single pass without decrementing available letter counts!
-   - Example: If `secret = "area"` and `guess = "aaaa"`, `Puzzle.guess("aaaa")` returns `[YES, MOVE, MOVE, YES]` instead of `[YES, NO, NO, YES]`.
-   - Example: If `secret = "aloe"` and `guess = "ally"`, the second `"l"` in `"ally"` returns `Match.MOVE` even though `"aloe"` only has one `"l"` (already matched at index 1!).
-3. **Commented Tests**: Commented-out unit tests in `puzzle_test.py` (`test_puzzle.py`) and `solver_test.py` (`test_solver.py`) for duplicate-letter guesses, variable-length words, and `get_prod_dictionary()`.
+### Files Changed (Reference Solution)
 
----
+- src/solver.rs
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `cargo test` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
