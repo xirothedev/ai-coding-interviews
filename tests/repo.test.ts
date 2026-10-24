@@ -19,13 +19,13 @@ function getMarkdownFiles(dir: string): string[] {
 }
 
 describe("AI Coding Interviews Repository Integrity", () => {
-  const easyCases = readdirSync(join(ROOT, "cases/easy"))
+  const easyCases = readdirSync(join(ROOT, "cases/en/easy"))
     .filter((f) => /^E\d{2}-.*\.md$/.test(f))
     .sort();
-  const mediumCases = readdirSync(join(ROOT, "cases/medium"))
+  const mediumCases = readdirSync(join(ROOT, "cases/en/medium"))
     .filter((f) => /^M\d{2}-.*\.md$/.test(f))
     .sort();
-  const hardCases = readdirSync(join(ROOT, "cases/hard"))
+  const hardCases = readdirSync(join(ROOT, "cases/en/hard"))
     .filter((f) => /^H\d{2}-.*\.md$/.test(f))
     .sort();
 
@@ -37,9 +37,9 @@ describe("AI Coding Interviews Repository Integrity", () => {
 
   test("every case file contains the 5 mandatory rubric and setup sections", () => {
     const allCases = [
-      ...easyCases.map((f) => join(ROOT, "cases/easy", f)),
-      ...mediumCases.map((f) => join(ROOT, "cases/medium", f)),
-      ...hardCases.map((f) => join(ROOT, "cases/hard", f)),
+      ...easyCases.map((f) => join(ROOT, "cases/en/easy", f)),
+      ...mediumCases.map((f) => join(ROOT, "cases/en/medium", f)),
+      ...hardCases.map((f) => join(ROOT, "cases/en/hard", f)),
     ];
 
     const requiredHeadings = [
@@ -68,7 +68,7 @@ describe("AI Coding Interviews Repository Integrity", () => {
 
   test("root README.md and wiki/_Sidebar.md index all 30 case IDs", () => {
     const readme = readFileSync(join(ROOT, "README.md"), "utf8");
-    const sidebar = readFileSync(join(ROOT, "wiki/_Sidebar.md"), "utf8");
+    const sidebar = readFileSync(join(ROOT, "wiki/en/_Sidebar.md"), "utf8");
 
     for (let i = 1; i <= 10; i++) {
       const num = String(i).padStart(2, "0");
@@ -101,6 +101,8 @@ describe("AI Coding Interviews Repository Integrity", () => {
         }
         const [pathPart] = rawTarget.split("#");
         if (!pathPart) continue;
+        // Wiki page slugs (no file extension) are not filesystem paths
+        if (!pathPart.includes(".")) continue;
         const resolvedRelative = resolve(dirname(mdFile), pathPart);
         const resolvedFromRoot = resolve(ROOT, pathPart);
         const exists = existsSync(resolvedRelative) || existsSync(resolvedFromRoot);
@@ -112,7 +114,21 @@ describe("AI Coding Interviews Repository Integrity", () => {
     }
   });
 
-  test("publish-wiki.sh --dry-run builds all 43 Wiki pages cleanly", () => {
+  test("i18n parity: every English content file has a Vietnamese counterpart", () => {
+    const roots = ["wiki", "docs", "templates", "cases"];
+    for (const root of roots) {
+      const enDir = join(ROOT, root, "en");
+      if (!existsSync(enDir)) continue;
+      const enFiles = getMarkdownFiles(enDir);
+      for (const enFile of enFiles) {
+        const rel = enFile.slice(enDir.length + 1);
+        const viFile = join(ROOT, root, "vi", rel);
+        expect(existsSync(viFile)).toBe(true);
+      }
+    }
+  });
+
+  test("publish-wiki.sh --dry-run builds all 86 Wiki pages cleanly", () => {
     const proc = Bun.spawnSync(["bash", "./scripts/publish-wiki.sh", "--dry-run"], {
       cwd: ROOT,
       stdout: "pipe",
@@ -120,6 +136,6 @@ describe("AI Coding Interviews Repository Integrity", () => {
     });
     const output = proc.stdout.toString();
     expect(proc.exitCode).toBe(0);
-    expect(output).toContain("Compiled 43 Wiki pages");
+    expect(output).toContain("Compiled 86 Wiki pages");
   });
 });

@@ -16,5 +16,5 @@
 - [ ] Includes the **4-Checkpoint Candidate Flow** (_Explore & Trace → Fix Bug → Core Feature/Scale → Edge Cases & Defense_).
 - [ ] Documents a verified **AI Trap** (explaining why naive copy-paste prompting fails or produces subtle bugs).
 - [ ] Includes a **Divide-and-Conquer Prompt Walkthrough** (`Understand → Plan → Prompt → Review → Test`).
-- [ ] Maps observable **Green Flags & Red Flags** to **[The 7 Evaluation Criteria](docs/01-THE-7-EVALUATION-CRITERIA.md)**.
+- [ ] Maps observable **Green Flags & Red Flags** to **[The 7 Evaluation Criteria](docs/en/01-THE-7-EVALUATION-CRITERIA.md)**.
 - [ ] Indexed in the master table in [`README.md`](README.md).
