@@ -1,3 +1,5 @@
+> 🌐 Ngôn ngữ: <a href="CASE_TEMPLATE">English</a> · **Tiếng Việt**
+
 # [CASE-ID] <Tiêu đề Bài toán>
 
 | Thuộc tính            | Chi tiết                                                                                                        |

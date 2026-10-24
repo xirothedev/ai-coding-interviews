@@ -1,3 +1,5 @@
+> 🌐 Ngôn ngữ: <a href="02-EMPLOYEE-MINDSET-AND-PROMPT-PLAYBOOK">English</a> · **Tiếng Việt**
+
 # Tư duy Nhân viên & Sổ tay Prompt: Divide and Conquer
 
 > **Quy tắc Vàng của Phỏng vấn hỗ trợ AI:**  
