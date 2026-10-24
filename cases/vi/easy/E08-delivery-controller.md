@@ -1,7 +1,5 @@
 # E08 — Delivery Controller Event Replay & Next-Stop ETA
 
-> 🌐 Ngôn ngữ: <a href="E08-delivery-controller">English</a> · **Tiếng Việt**
-
 [⬅️ Back to Easy Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                                                                 |

@@ -1,7 +1,5 @@
 # Deep Research: What Makes an AI-Enabled Coding Interview Truly "HARD"?
 
-> 🌐 Language: **English** · <a href="vi/04-HARD-LEVEL-RESEARCH-AND-AI-TRAPS">Tiếng Việt</a>
-
 ## 1. Why Traditional "LeetCode Hard" Is Obsolete in AI Interviews
 
 In a traditional coding interview without AI, a problem is **Hard** if it requires recalling an obscure algorithm (e.g., Tarjan's strongly connected components, Dinic's max flow, or a 3D dynamic programming recurrence) and typing 80 lines of bug-free code from memory in 40 minutes.

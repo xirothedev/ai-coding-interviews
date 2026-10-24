@@ -1,5 +1,3 @@
-> 🌐 Ngôn ngữ: <a href="04-HARD-LEVEL-RESEARCH-AND-AI-TRAPS">English</a> · **Tiếng Việt**
-
 # Nghiên cứu Chuyên sâu: Điều gì Khiến Phỏng vấn Lập trình hỗ trợ AI Thật sự "HARD"?
 
 ## 1. Vì sao "LeetCode Hard" Truyền thống Đã Lỗi thời trong Phỏng vấn AI

@@ -2,8 +2,6 @@
 
 [🏠 Quay lại Hub Chính](../../../README.md) · [🟡 Cấp Medium](../medium/README.md) · [🔴 Cấp Hard](../hard/README.md)
 
-> 🌐 Ngôn ngữ: <a href="README">English</a> · **Tiếng Việt**
-
 > **Hiệu chỉnh Warm-Up Junior / Mid-Level (`L3–L4`):**  
 > Xây trên các repo kata mã nguồn mở polyglot hỗ trợ **Python, TypeScript, Go, Java, Rust và C#**.  
 > Mỗi bài dưới đây có **trang độc lập** chứa:

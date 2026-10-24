@@ -1,7 +1,5 @@
 # E03 — Theatrical Players Statement Formatter & HTML Loyalty Credits
 
-> 🌐 Language: **English** · <a href="vi/E03-theatrical-players">Tiếng Việt</a>
-
 [⬅️ Back to Easy Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                                                             |

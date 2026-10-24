@@ -1,7 +1,5 @@
 # E09 — Expense Report Meal Cap Auditor & Multi-Currency Conversion
 
-> 🌐 Ngôn ngữ: <a href="E09-expense-report">English</a> · **Tiếng Việt**
-
 [⬅️ Back to Easy Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                                                                                        |

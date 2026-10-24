@@ -1,7 +1,5 @@
 # H09 — ANSI Wide-Character Table Layout Engine & Wrapping Perf Cliff
 
-> 🌐 Ngôn ngữ: <a href="H09-rich-wide-char-table">English</a> · **Tiếng Việt**
-
 [⬅️ Back to Hard Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                         |

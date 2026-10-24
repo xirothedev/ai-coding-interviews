@@ -1,7 +1,5 @@
 # H01 — Async HTTP Connection Pool & Cross-Origin Redirect Auth Leak
 
-> 🌐 Ngôn ngữ: <a href="H01-httpx-redirect-pool">English</a> · **Tiếng Việt**
-
 [⬅️ Back to Hard Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                         |

@@ -1,7 +1,5 @@
 # M09 — CLI Subcommand Option Parser & Env-Var Fallback Precedence
 
-> 🌐 Ngôn ngữ: <a href="M09-cli-option-precedence">English</a> · **Tiếng Việt**
-
 [⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                             |

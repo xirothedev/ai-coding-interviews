@@ -1,7 +1,5 @@
 # M06 — Conduit Article Feed Pagination & N+1 Tag Hydration
 
-> 🌐 Language: **English** · <a href="vi/M06-conduit-feed-pagination">Tiếng Việt</a>
-
 [⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                                                                                                                                                                                                                         |

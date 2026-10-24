@@ -1,7 +1,5 @@
 # H02 — Recursive Schema Validation & Cyclic Object Graph Tracker
 
-> 🌐 Language: **English** · <a href="vi/H02-zod-cyclic-schema">Tiếng Việt</a>
-
 [⬅️ Back to Hard Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                                                                                                                                                                                                            |

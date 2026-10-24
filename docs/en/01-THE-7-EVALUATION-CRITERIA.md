@@ -1,7 +1,5 @@
 # The 7 Evaluation Criteria of AI-Enabled Coding Interviews
 
-> 🌐 Language: **English** · <a href="vi/01-THE-7-EVALUATION-CRITERIA">Tiếng Việt</a>
-
 In traditional algorithmic interviews (LeetCode-style), interviewers evaluated syntax recall and memorized data-structure patterns on a blank file. In modern **AI-Enabled SWE Interviews** (used by companies such as Meta, Canva, and Stripe), candidates have full access to frontier LLMs (Claude, GPT, Gemini) inside a multi-file codebase.
 
 When AI can generate syntax in seconds, **speed of typing is no longer the signal—technical judgment and control over the AI are.**

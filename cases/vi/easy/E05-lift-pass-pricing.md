@@ -1,7 +1,5 @@
 # E05 — Lift Pass Dynamic Pricing & Holiday Blackout Calendar
 
-> 🌐 Ngôn ngữ: <a href="E05-lift-pass-pricing">English</a> · **Tiếng Việt**
-
 [⬅️ Back to Easy Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                   |

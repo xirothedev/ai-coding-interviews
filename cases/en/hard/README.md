@@ -1,7 +1,5 @@
 # 🔴 Hard Tier — Catalog & Routing Index (`10 Cases`, `60–75 Mins`)
 
-> 🌐 Language: **English** · <a href="vi/README">Tiếng Việt</a>
-
 [🏠 Back to Master Hub](../../../README.md) · [🟢 Easy Tier](../easy/README.md) · [🟡 Medium Tier](../medium/README.md) · [🔬 Hard Level Research](../../../docs/en/04-HARD-LEVEL-RESEARCH-AND-AI-TRAPS.md)
 
 > **Senior / Staff Engineering Calibration (`L5–L6+`):**  

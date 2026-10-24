@@ -1,7 +1,5 @@
 # M07 — Markdown Table & Footnote AST Tokenizer
 
-> 🌐 Language: **English** · <a href="vi/M07-markdown-table-tokenizer">Tiếng Việt</a>
-
 [⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                                               |

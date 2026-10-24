@@ -1,7 +1,5 @@
 # H06 — Model Validator Inheritance MRO & Default Factory Mutation Leak
 
-> 🌐 Language: **English** · <a href="vi/H06-pydantic-validator-mro">Tiếng Việt</a>
-
 [⬅️ Back to Hard Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                          |

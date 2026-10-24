@@ -1,7 +1,5 @@
 # [CASE-ID] <Case Title>
 
-> 🌐 Language: **English** · <a href="vi/CASE_TEMPLATE">Tiếng Việt</a>
-
 | Attribute                    | Details                                                                                                         |
 | :--------------------------- | :-------------------------------------------------------------------------------------------------------------- |
 | **Difficulty Level**         | `Easy` / `Medium` / `Hard`                                                                                      |

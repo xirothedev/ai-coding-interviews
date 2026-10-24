@@ -1,7 +1,5 @@
 # M08 — In-Memory TTL Cache with LRU Eviction & Stampede Lock
 
-> 🌐 Language: **English** · <a href="vi/M08-ttl-lru-cache-stampede">Tiếng Việt</a>
-
 [⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                                                                 |

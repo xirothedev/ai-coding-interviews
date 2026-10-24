@@ -1,7 +1,5 @@
 # M10 — Event-Sourced Bank Ledger & Out-of-Order Webhook Reconciliation
 
-> 🌐 Ngôn ngữ: <a href="M10-event-sourced-ledger">English</a> · **Tiếng Việt**
-
 [⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                                                                                                                                                                                                              |

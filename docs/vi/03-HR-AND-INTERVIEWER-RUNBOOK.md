@@ -1,5 +1,3 @@
-> 🌐 Ngôn ngữ: <a href="03-HR-AND-INTERVIEWER-RUNBOOK">English</a> · **Tiếng Việt**
-
 # Sổ tay HR & Người phỏng vấn: Điều hành Phỏng vấn Lập trình hỗ trợ AI
 
 Sổ tay này trang bị cho **Chuyên viên HR / Talent Acquisition**, **Engineering Manager** và **Người phỏng vấn Kỹ thuật** để điều hành nhất quán các buổi phỏng vấn SWE lập trình hỗ trợ AI 60 phút chất lượng cao, dùng các bài toán GitHub mã nguồn mở trong kho này.

@@ -1,7 +1,5 @@
 # H08 — Hierarchical CLI Flag Propagation & PersistentPreRun Hook Shadowing
 
-> 🌐 Language: **English** · <a href="vi/H08-cobra-flag-propagation">Tiếng Việt</a>
-
 [⬅️ Back to Hard Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                  |

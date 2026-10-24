@@ -1,7 +1,5 @@
 # H10 — Multi-Language Legacy Billing & Rule Engine ("AI-Slop" Rescue)
 
-> 🌐 Ngôn ngữ: <a href="H10-legacy-billing-ai-slop-rescue">English</a> · **Tiếng Việt**
-
 [⬅️ Back to Hard Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                      | Details                                                                                                                                                                                                                                                                                 |

@@ -1,7 +1,5 @@
 # M01 — Secret Word Puzzle & Entropy Solver Engine _(Meta Flagship)_
 
-> 🌐 Ngôn ngữ: <a href="M01-wordle-puzzle-solver">English</a> · **Tiếng Việt**
-
 [⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                                                                                                |

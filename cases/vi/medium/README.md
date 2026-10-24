@@ -2,8 +2,6 @@
 
 [🏠 Quay lại Hub Chính](../../../README.md) · [🟢 Cấp Easy](../easy/README.md) · [🔴 Cấp Hard](../hard/README.md)
 
-> 🌐 Ngôn ngữ: <a href="README">English</a> · **Tiếng Việt**
-
 > **Chuẩn Meta / Canva / Stripe (`L4–L5`):**  
 > Các bài Medium bao phủ tích hợp hệ thống, concurrency và scale production. Mỗi bài có **trang độc lập** với thiết lập, prompt ứng viên, bẫy AI, quy trình prompt tham khảo và rubric chấm điểm.
 

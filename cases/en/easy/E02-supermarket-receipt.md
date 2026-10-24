@@ -1,7 +1,5 @@
 # E02 — Supermarket Receipt Discount Stacking & Bundle Rounding
 
-> 🌐 Language: **English** · <a href="vi/E02-supermarket-receipt">Tiếng Việt</a>
-
 [⬅️ Back to Easy Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                                             |

@@ -1,5 +1,3 @@
-> 🌐 Ngôn ngữ: <a href="01-THE-7-EVALUATION-CRITERIA">English</a> · **Tiếng Việt**
-
 # 7 Tiêu chí Đánh giá của Phỏng vấn Lập trình hỗ trợ AI
 
 Trong các buổi phỏng vấn thuật toán truyền thống (kiểu LeetCode), người phỏng vấn đánh giá khả năng nhớ cú pháp và các mẫu cấu trúc dữ liệu đã thuộc lòng trên một file trống. Trong **Phỏng vấn SWE hỗ trợ AI hiện đại** (được các công ty như Meta, Canva và Stripe sử dụng), ứng viên có toàn quyền truy cập các LLM tiên tiến (Claude, GPT, Gemini) trong một codebase nhiều file.

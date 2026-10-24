@@ -2,8 +2,6 @@
 
 [🏠 Quay lại Hub Chính](../../../README.md) · [🟢 Cấp Easy](../easy/README.md) · [🟡 Cấp Medium](../medium/README.md)
 
-> 🌐 Ngôn ngữ: <a href="README">English</a> · **Tiếng Việt**
-
 > **Mức Senior / Staff (`L5–L6+`):**  
 > Các bài Hard xây trên repo OSS production thực tế và kết hợp nhiều trụ cột phân loại (trừu tượng lừa dối, quy mô toy-vs-production, bất biến xung đột, concurrency/idempotency, cứu hộ AI-slop). Mỗi bài có **trang độc lập** với thiết lập, prompt ứng viên, bẫy AI, quy trình prompt tham khảo và rubric chấm điểm.
 

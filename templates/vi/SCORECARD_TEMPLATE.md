@@ -1,5 +1,3 @@
-> 🌐 Ngôn ngữ: <a href="SCORECARD_TEMPLATE">English</a> · **Tiếng Việt**
-
 # Phỏng vấn Lập trình hỗ trợ AI — Scorecard Ứng viên
 
 | Metadata Phiên                 | Chi tiết                                                                         |

@@ -1,7 +1,5 @@
 # H03 — Concurrent TUI Event Loop & Command Batching Deadlock
 
-> 🌐 Language: **English** · <a href="vi/H03-bubbletea-event-loop">Tiếng Việt</a>
-
 [⬅️ Back to Hard Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                           |

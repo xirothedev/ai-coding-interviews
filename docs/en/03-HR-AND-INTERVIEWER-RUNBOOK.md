@@ -1,7 +1,5 @@
 # HR & Interviewer Runbook: Conducting AI-Enabled Coding Interviews
 
-> 🌐 Language: **English** · <a href="vi/03-HR-AND-INTERVIEWER-RUNBOOK">Tiếng Việt</a>
-
 This runbook equips **HR / Talent Acquisition Specialists**, **Engineering Managers**, and **Technical Interviewers** to run consistent, high-signal 60-minute AI-Enabled SWE Coding Interviews using the open-source GitHub cases in this repository.
 
 ---

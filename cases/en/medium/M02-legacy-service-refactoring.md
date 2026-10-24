@@ -1,7 +1,5 @@
 # M02 — Legacy Service Refactoring & Dependency Inversion
 
-> 🌐 Language: **English** · <a href="vi/M02-legacy-service-refactoring">Tiếng Việt</a>
-
 [⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                                                                                                                                                 |

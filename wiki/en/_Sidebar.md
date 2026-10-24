@@ -1,7 +1,5 @@
 ### 🧠 **[Wiki Home](Home)**
 
-> 🌐 <a href="vi/Home">Tiếng Việt</a>
-
 <details open>
 <summary><b>📘 Core Playbooks & Research</b></summary>
 

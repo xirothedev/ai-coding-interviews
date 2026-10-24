@@ -1,7 +1,5 @@
 # AI-Enabled Coding Interview — Candidate Scorecard
 
-> 🌐 Language: **English** · <a href="vi/SCORECARD_TEMPLATE">Tiếng Việt</a>
-
 | Session Metadata              | Details                                                                          |
 | :---------------------------- | :------------------------------------------------------------------------------- |
 | **Candidate / Employee Name** |                                                                                  |

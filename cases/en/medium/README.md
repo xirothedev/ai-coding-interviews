@@ -1,7 +1,5 @@
 # 🟡 Medium Tier — Catalog & Routing Index (`10 Cases`, `45–60 Mins`)
 
-> 🌐 Language: **English** · <a href="vi/README">Tiếng Việt</a>
-
 [🏠 Back to Master Hub](../../../README.md) · [🟢 Easy Tier](../easy/README.md) · [🔴 Hard Tier](../hard/README.md)
 
 > **Standard AI-Enabled SWE Calibration (`L4–L5`, Meta / Canva / Stripe Bar):**  

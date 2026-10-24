@@ -1,7 +1,5 @@
 # E06 — Build Pipeline Notification Router & Flaky Step Retry
 
-> 🌐 Language: **English** · <a href="vi/E06-build-pipeline">Tiếng Việt</a>
-
 [⬅️ Back to Easy Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                               |

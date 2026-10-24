@@ -1,7 +1,5 @@
 # H04 — Polymorphic JSON `TypeAdapter` & Number Precision Trap
 
-> 🌐 Language: **English** · <a href="vi/H04-gson-polymorphic-adapter">Tiếng Việt</a>
-
 [⬅️ Back to Hard Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                                                                                                                                                                                                                                                                                                                       |

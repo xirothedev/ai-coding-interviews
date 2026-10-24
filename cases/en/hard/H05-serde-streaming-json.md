@@ -1,7 +1,5 @@
 # H05 — Zero-Copy Streaming JSON Deserializer & Buffer Boundary
 
-> 🌐 Language: **English** · <a href="vi/H05-serde-streaming-json">Tiếng Việt</a>
-
 [⬅️ Back to Hard Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                          |

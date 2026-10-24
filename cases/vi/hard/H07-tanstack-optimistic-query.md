@@ -1,7 +1,5 @@
 # H07 — Async Query Cache Deduplication & Optimistic Rollback Race
 
-> 🌐 Ngôn ngữ: <a href="H07-tanstack-optimistic-query">English</a> · **Tiếng Việt**
-
 [⬅️ Back to Hard Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                                                  |

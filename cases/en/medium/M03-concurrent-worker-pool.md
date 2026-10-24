@@ -1,7 +1,5 @@
 # M03 — Concurrent Worker Pool & Graceful Context Cancellation
 
-> 🌐 Language: **English** · <a href="vi/M03-concurrent-worker-pool">Tiếng Việt</a>
-
 [⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                                                                                                                                                                              |

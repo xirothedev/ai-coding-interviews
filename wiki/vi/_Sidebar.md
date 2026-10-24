@@ -1,5 +1,3 @@
-> 🌐 Ngôn ngữ: <a href="Home">English</a> · **Tiếng Việt**
-
 ### 🧠 **[Wiki Home](vi/Home)**
 
 <details open>

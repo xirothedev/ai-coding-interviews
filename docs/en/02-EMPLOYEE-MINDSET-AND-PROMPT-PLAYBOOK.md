@@ -1,7 +1,5 @@
 # Employee Mindset & Prompt Playbook: Divide and Conquer
 
-> 🌐 Language: **English** · <a href="vi/02-EMPLOYEE-MINDSET-AND-PROMPT-PLAYBOOK">Tiếng Việt</a>
-
 > **The Golden Rule of AI-Enabled Interviews:**  
 > You must know **what** you want the AI to do and **why** _before_ you write a prompt.  
 > If you paste the problem statement and blindly accept the generated code, you might move fast for 5 minutes—but the interviewer will see **zero technical judgment**, and you will walk straight into seeded **AI Traps**.

@@ -1,7 +1,5 @@
 # E04 — Tennis Match Tie-Break & Advantage State Machine
 
-> 🌐 Ngôn ngữ: <a href="E04-tennis-score">English</a> · **Tiếng Việt**
-
 [⬅️ Back to Easy Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                                     |

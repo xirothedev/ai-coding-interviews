@@ -1,7 +1,5 @@
 # M04 — HTTP Retry Middleware & Exponential Backoff Jitter
 
-> 🌐 Language: **English** · <a href="vi/M04-http-retry-middleware">Tiếng Việt</a>
-
 [⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                                        |

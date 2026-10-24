@@ -1,7 +1,5 @@
 # E07 — Yatzy Category Scorer & Wild Joker Die Rule
 
-> 🌐 Ngôn ngữ: <a href="E07-yatzy-scorer">English</a> · **Tiếng Việt**
-
 [⬅️ Back to Easy Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                                                 |

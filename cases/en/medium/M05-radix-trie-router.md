@@ -1,7 +1,5 @@
 # M05 — Radix Trie URL Router & Wildcard Param Precedence
 
-> 🌐 Language: **English** · <a href="vi/M05-radix-trie-router">Tiếng Việt</a>
-
 [⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                 |

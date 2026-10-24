@@ -1,7 +1,5 @@
 # E01 — Gilded Rose Inventory Bugfix & Conjured Decay Cap
 
-> 🌐 Language: **English** · <a href="vi/E01-gilded-rose">Tiếng Việt</a>
-
 [⬅️ Back to Easy Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                              |

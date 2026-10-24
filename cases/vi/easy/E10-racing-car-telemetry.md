@@ -1,7 +1,5 @@
 # E10 — Racing Car Telemetry Alarm & Sliding Window Drift Detector
 
-> 🌐 Ngôn ngữ: <a href="E10-racing-car-telemetry">English</a> · **Tiếng Việt**
-
 [⬅️ Back to Easy Catalog](README.md) · [🏠 Master Hub](../../../README.md)
 
 | Attribute                    | Details                                                                                                                                                                                                                     |

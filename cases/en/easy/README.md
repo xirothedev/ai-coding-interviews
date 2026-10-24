@@ -1,7 +1,5 @@
 # 🟢 Easy Tier — Catalog & Routing Index (`10 Cases`, `30–45 Mins`)
 
-> 🌐 Language: **English** · <a href="vi/README">Tiếng Việt</a>
-
 [🏠 Back to Master Hub](../../../README.md) · [🟡 Medium Tier](../medium/README.md) · [🔴 Hard Tier](../hard/README.md)
 
 > **Junior / Mid-Level & Warm-Up Calibration (`L3–L4`):**  
