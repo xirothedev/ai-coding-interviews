@@ -46,7 +46,7 @@ mvn test
 
 ### Failing Tests to Enable
 
-- Re-enable any commented-out or skipped tests covering the issue; run `mvn test` to confirm red on Base SHA and green on Merge SHA.
+- Failing tests to enable/verify: MoreSpecificTypeSerializationTest.java. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -74,34 +74,29 @@ mvn test
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Calling `JsonPrimitive.getAsDouble()` Inside `JsonTreeReader.nextString()` / `ObjectTypeAdapter`
+### Trap 1: Trusting the first plausible fix
 
-- **What Naive AI Writes**:
-  - In `ObjectTypeAdapter`, when token is `JsonToken.NUMBER`, AI sees `in instanceof JsonTreeReader` and calls `in.nextDouble()` and casts `(long) d` if `d == Math.rint(d)`!
-- **Why It Fails**: Any IEEE-754 `double` only has 53 bits of significand precision (`MAX_SAFE_INTEGER = 9007199254740991`). Passing `9007199254740993L` through `double` rounds it to `9007199254740992.0`, which is an exact integer (`d == Math.rint(d)` is `true`!), so `(long) d` silently produces the **wrong 64-bit ID (`...992L`)**!
-- **Correct Fix**: `JsonPrimitive` stores parsed JSON numbers lazily as `LazilyParsedNumber` (backed by the exact `String` representation from `Streams.parse`). `ToNumberPolicy.LONG_OR_DOUBLE.readNumber(in)` calls `in.nextString()`, then attempts `Long.parseLong(value)` _first_, falling back to `Double.valueOf(value)` only if `NumberFormatException` occurs! Ensure `JsonTreeReader.nextString()` returns `((JsonPrimitive) popStack()).getAsString()` without routing through `double`.
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`Use the runtime type for a wildcard element type`).
+- **Why It Fails**: The PR touches `gson/.../TypeAdapterRuntimeTypeWrapper.java`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Silencing the Duplicate Field Check in `RuntimeTypeAdapterFactory` Unconditionally
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  - AI simply deletes the `if (jsonObject.has(typeFieldName))` check during serialization!
-- **Why It Fails**: Deleting the check completely breaks the existing unit test `testSerializeCollidingTypeFieldWithDifferentValue`, where a POJO has `int type = 42` (or `String type = "wrong_label"`) that conflicts with the polymorphic discriminator!
-- **Correct Fix**: Allow `jsonObject.has(typeFieldName)` _only_ when `maintainType` is enabled (or when the serialized value equals `new JsonPrimitive(label)`), and throw `JsonParseException` if it contradicts `label`.
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not modify code yet. Trace how `RuntimeTypeAdapterFactory` buffers a `JsonReader` into a `JsonElement` and passes it to `delegate.fromJsonTree(jsonElement)`. Specifically, show what `JsonTreeReader` and `ToNumberPolicy.LONG_OR_DOUBLE` do when reading a `NUMBER` token."_
+   > _"Do not write code. Trace the current behavior in `gson/.../TypeAdapterRuntimeTypeWrapper.java, MoreSpecificTypeSerializationTest.java` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Candidate isolates the 3 files (`JsonTreeReader.java` / `ToNumberPolicy.java`, `RuntimeTypeAdapterFactory.java`, and `Gson.java`).
+   - Reproduce with the test command; list the minimal files to change.
 3. **Step 3 (`Prompt`)**:
-   - Prompt each fix independently, specifying that `9007199254740993L` must never pass through a 64-bit `double` conversion.
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
 4. **Step 4 (`Review`) & Step 5 (`Test`)**:
-   - Run `mvn test` on the targeted test classes and verify all boundary numbers (`Long.MAX_VALUE`, `Long.MIN_VALUE`, `9007199254740993L`, `3.14159`).
-
----
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 

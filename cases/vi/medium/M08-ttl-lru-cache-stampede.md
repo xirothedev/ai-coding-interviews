@@ -46,7 +46,7 @@ go test ./...
 
 ### Failing Tests to Enable
 
-- Re-enable any commented-out or skipped tests covering the issue; run `go test ./...` to confirm red on Base SHA and green on Merge SHA.
+- Failing tests to enable/verify: expirable_lru_test.go. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -78,53 +78,29 @@ go test ./...
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Holding the Global Cache Mutex While `loaderFn(key)` Executes!
+### Trap 1: Trusting the first plausible fix
 
-- **What Naive AI Writes**:
-  ```go
-  func (c *Cache) GetOrLoad(key string, ttl time.Duration, loader func() (any, error)) (any, error) {
-      c.mu.Lock()
-      defer c.mu.Unlock() // <-- CATASTROPHIC! Locks the entire cache during network I/O!
-      if val, ok := c.getUnlocked(key); ok { return val, nil }
-      val, err := loader()
-      ...
-  }
-  ```
-- **Why It Fails**: Holding `c.mu.Lock()` across `loader()` (which may take `200ms` of network I/O) blocks every `Get()` and `Set()` on completely unrelated keys across the entire application! Even worse, if `loader()` itself calls `c.Get("other-key")`, the goroutine **deadlocks on its own non-reentrant `sync.Mutex`**!
-- **Correct Fix (Two-Phase Singleflight Pattern)**:
-  1. Acquire `c.mu.Lock()` briefly:
-     - Check if `key` is in cache and unexpired → return immediately.
-     - Check if `call, ok := c.inflight[key]` exists → if so, `c.mu.Unlock()`, wait on `<-call.done`, and return `(call.val, call.err)`.
-     - Otherwise, create `call := &inflightCall{done: make(chan struct{})}`, store `c.inflight[key] = call`, and **`c.mu.Unlock()` BEFORE calling `loader()`**!
-  2. Execute `loader()` **outside** `c.mu.Lock()` (with `defer` cleanup that re-acquires `c.mu.Lock()`, stores result if `err == nil`, deletes `c.inflight[key]`, and closes `call.done` even if `loader()` panics!).
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`invoke expirable onEvict callbacks outside the cache lock`).
+- **Why It Fails**: The PR touches `expirable/expirable_lru.go`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: In TypeScript/JS, Forgetting `.finally()` Cleanup on Rejected In-Flight Promises
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes (TypeScript)**:
-  ```ts
-  const promise = loaderFn(key).then((val) => {
-    this.set(key, val, ttl);
-    this.inflight.delete(key);
-    return val;
-  });
-  this.inflight.set(key, promise);
-  return promise;
-  ```
-- **Why It Fails**: If `loaderFn(key)` rejects, the `.then()` callback never runs, so `this.inflight.delete(key)` is never called! Every future call to `getOrLoad(key)` forever returns the permanently cached rejected Promise!
-- **Correct Fix**: Use `try { ... } finally { this.inflight.delete(key); }`.
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Trace how `Get`, `Set`, and LRU eviction currently interact with TTL expiration."_
+   > _"Do not write code. Trace the current behavior in `expirable/expirable_lru.go, expirable_lru_test.go` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Plan: (1) Fix lazy deletion on `Get` and purge expired items before evicting live LRU tail on `Set`; (2) Implement `GetOrLoad` with an `inflight` map where `loaderFn` runs outside the global lock and `defer`/`finally` guarantees `inflight` cleanup.
-3. **Step 3 (`Prompt`)** & **Step 4 (`Review`)**:
-   - Prompt each part separately; audit lock scope around `loaderFn` and panic/error cleanup.
-
----
+   - Reproduce with the test command; list the minimal files to change.
+3. **Step 3 (`Prompt`)**:
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
+4. **Step 4 (`Review`) & Step 5 (`Test`)**:
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 

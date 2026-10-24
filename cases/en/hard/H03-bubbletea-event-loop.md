@@ -46,7 +46,7 @@ go test ./...
 
 ### Failing Tests to Enable
 
-- Re-enable any commented-out or skipped tests covering the issue; run `go test ./...` to confirm red on Base SHA and green on Merge SHA.
+- Failing tests to enable/verify: tea_test.go. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -77,52 +77,29 @@ go test ./...
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Closing `p.msgs` When `QuitMsg` Arrives (`panic: send on closed channel`)
+### Trap 1: Trusting the first plausible fix
 
-- **What Naive AI Writes**:
-  ```go
-  case QuitMsg:
-      close(p.msgs) // <-- FATAL PANIC!
-      return model, nil
-  ```
-- **Why It Fails**: In Go, closing a channel while multiple producer goroutines (`Cmd` runners and external `p.Send()` callers) are still sending to `p.msgs` causes an immediate runtime crash: `panic: send on closed channel`.
-- **Correct Fix**: Never close `p.msgs` while producers exist. Instead, cancel `p.ctx` (`cancel()`) when `eventLoop` exits, and wrap every channel send in `select`:
-  ```go
-  select {
-  case p.msgs <- msg:
-  case <-p.ctx.Done():
-      return
-  }
-  ```
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`handle nested SequenceMsg in event loop`).
+- **Why It Fails**: The PR touches `tea.go`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Executing `Sequence` Synchronously Inside the `cmds` Reader Loop
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  ```go
-  // Inside the single goroutine reading `case cmd := <-p.cmds:`
-  case sequenceMsg:
-      for _, c := range msg {
-          p.msgs <- c() // <-- Deadlocks if c() returns another BatchMsg or SequenceMsg!
-      }
-  ```
-- **Why It Fails**: If `handleCommands` blocks its own `for select` loop waiting for `c()` to complete, and `Update()` responds to `c()`'s message by queuing a new `Cmd` onto `p.cmds` (an unbuffered channel!), `eventLoop` blocks writing to `p.cmds` while `handleCommands` is blocked writing to `p.msgs` — a classic **AB-BA channel deadlock**!
-- **Correct Fix**: Spawn a managed goroutine (`wg.Add(1)`) for the `sequenceMsg` that iterates through the slice sequentially, respecting `p.ctx.Done()` at each step and delegating nested `BatchMsg`/`sequenceMsg` properly.
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Trace all producers and consumers of `p.msgs` and `p.cmds` in `tea.go`. Identify which goroutine owns closing each channel and how `wg sync.WaitGroup` tracks running commands during shutdown."_
+   > _"Do not write code. Trace the current behavior in `tea.go, tea_test.go` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Candidate notes that `p.ctx.Done()` is the shutdown broadcast signal, so all `p.msgs <-` and `p.cmds <-` sends must `select` on `<-p.ctx.Done()`.
+   - Reproduce with the test command; list the minimal files to change.
 3. **Step 3 (`Prompt`)**:
-   - Prompt 1: Fix `handleCommands` and `Send` channel sends + `sequenceMsg` goroutine handling in `tea.go`.
-   - Prompt 2: Add `BatchLimit(limit int, cmds ...Cmd)` using a semaphore channel (`sem := make(chan struct{}, limit)`) that selects on `<-p.ctx.Done()` before acquiring a token.
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
 4. **Step 4 (`Review`) & Step 5 (`Test`)**:
-   - Candidate audits for any `close(p.msgs)` or unguarded channel sends, then runs `go test -race -count=10 ./...`.
-
----
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 

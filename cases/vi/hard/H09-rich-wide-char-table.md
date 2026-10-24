@@ -46,7 +46,7 @@ pytest
 
 ### Failing Tests to Enable
 
-- Re-enable any commented-out or skipped tests covering the issue; run `pytest` to confirm red on Base SHA and green on Merge SHA.
+- Failing tests to enable/verify: test_cells.py. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -79,56 +79,29 @@ pytest
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Sorting Spans by `span.start` and Using `bisect` on `spans` per Line (Drops Multi-Line Outer Spans!)
+### Trap 1: Trusting the first plausible fix
 
-- **What Naive AI Writes**:
-  ```python
-  # AI's broken "optimization" in Text.divide():
-  sorted_spans = sorted(self._spans, key=attrgetter("start"))
-  span_starts = [s.start for s in sorted_spans]
-  for line_start, line_end in line_ranges:
-      idx = bisect_left(span_starts, line_start) # <-- BUG!
-      # Only checks spans where span.start >= line_start!
-  ```
-- **Why It Fails**: Suppose `Span(0, 1000, "bold")` covers the entire paragraph, and Line 2 is `(80, 160)`. Because `span.start == 0 < 80`, `bisect_left(span_starts, 80)` **skips `Span(0, 1000)` completely**, losing all multi-line styles on Line 2..N!
-- **The Brilliant Fix (Invert the Loop — Bisect `line_ranges` per Span!)**:
-  - `line_ranges` is **already a strictly disjoint, monotonically sorted array** of `(start, end)` intervals covering `[0, len(text)]`!
-  - Instead of searching `spans` for each `line`, iterate each `Span(span_start, span_end, style)` once, and use binary search (`bisect_right` / `bisect_left`) on the `line_ranges` boundaries to find the exact slice of lines `[first_line_idx .. last_line_idx]` that this span overlaps!
-  ```python
-  # O(S log L + total_clipped_spans) - handles 100% of overlapping & multi-line spans!
-  for span_start, span_end, style in self._spans:
-      lower_bound = bisect_right(end_offsets, span_start)
-      upper_bound = bisect_left(start_offsets, span_end)
-      for line_index in range(lower_bound, upper_bound):
-          ...
-  ```
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`Fix width measurement of 353 emoji`).
+- **Why It Fails**: The PR touches `rich/cells.py, rich/_cell_widths.py, rich/emoji.py`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Infinite Loop in `chop_cells(text, max_size=1)` on 2-Cell Characters
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  ```python
-  if total_width + char_width > max_size:
-      lines.append("".join(current_line))
-      current_line = [character] # <-- Wait: what if char_width (2) > max_size (1)?
-  ```
-  Or worse, pushes `character` back onto the queue without advancing the index when `current_line` is empty!
-- **Correct Fix**: Ensure every step makes forward progress even when `char_width > max_size` and `current_line` is empty (or clamp/replace according to `chop_cells` contract).
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Read `rich/cells.py` (`set_cell_size`, `chop_cells`) and `rich/text.py` (`Text.divide`). Trace how `Text.divide` currently maps `self._spans` onto `lines`."_
+   > _"Do not write code. Trace the current behavior in `rich/cells.py, rich/_cell_widths.py, rich/emoji.py, test_cells.py` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Candidate recognizes that `line_ranges` are disjoint and sorted, so bisecting `line_ranges` for each `Span` is $O(S \log L)$ and never misses a long outer span!
+   - Reproduce with the test command; list the minimal files to change.
 3. **Step 3 (`Prompt`)**:
-   - Prompt 1: Fix `set_cell_size` trailing space padding and `chop_cells` combining mark / `max_size=1` edge cases in `rich/cells.py`.
-   - Prompt 2: Refactor `Text.divide` in `rich/text.py` by iterating `self._spans` and bisecting `line_ranges`.
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
 4. **Step 4 (`Review`) & Step 5 (`Test`)**:
-   - Run `pytest tests/test_cells.py tests/test_text.py` and verify the 10k-span benchmark runs in `< 0.10s`.
-
----
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 

@@ -46,7 +46,7 @@ make test
 
 ### Failing Tests to Enable
 
-- Re-enable any commented-out or skipped tests covering the issue; run `make test` to confirm red on Base SHA and green on Merge SHA.
+- Failing tests to enable/verify: the repository's existing tests covering this issue. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -80,49 +80,29 @@ make test
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Asking AI "Are the Tests Passing?" Instead of Reading the Test Assertions
+### Trap 1: Trusting the first plausible fix
 
-- **Why It Traps Blind Vibe-Coders**: A candidate who runs `pytest` / `npm test` at Minute 2 sees `5 passed in 0.03s` and assumes the existing behavior is tested! Even if they ask AI _"Review `billing.py` for bugs"_, the LLM rarely inspects the test file to point out that `mock_calculate.return_value = 1000` mocked out the entire engine under test!
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`fix(docker): Skip the build cleanup in a dry run`).
+- **Why It Fails**: The PR touches `.github/workflows/release-docker-image.yml`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Dumping All Remainder Cents onto the Last Installment (`installments[-1] += remainder`)
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  ```python
-  base = total_cents // n
-  installments = [base] * n
-  installments[-1] += total_cents - (base * n) # <-- WRONG for n = 6, total = 10000!
-  ```
-- **Why It Fails**: For `total_cents = 10000` (`$100.00`) and `n = 6`, `10000 // 6 = 1666` with remainder `4`. Dumping `+4` on `installments[-1]` yields `[1666, 1666, 1666, 1666, 1666, 1670]`—a `4-cent` jump on the last payment instead of `1-cent` distributed to each of the first `r = 4` payments (`[1667, 1667, 1667, 1667, 1666, 1666]`)!
-- **Correct Fix (Hamilton's / Largest Remainder Method)**:
-  ```python
-  # For weighted splits w_0 .. w_{n-1}:
-  total_weight = sum(weights)
-  exact_ numerators = [total_cents * w for w in weights]
-  quotients = [num // total_weight for num in exact_numerators]
-  remainders = [num % total_weight for num in exact_numerators]
-  shortfall = total_cents - sum(quotients)
-  # Sort indices by descending remainder, tie-breaking by ascending index i:
-  ranked_indices = sorted(range(len(weights)), key=lambda i: (-remainders[i], i))
-  for idx in ranked_indices[:shortfall]:
-      quotients[idx] += 1
-  ```
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Read both `billing` and `test_billing`. List: (1) every place where a module-level dictionary/list is mutated, (2) every `try/except` block that swallows errors, and (3) every unit test in `test_billing` that uses mocks or weak assertions."_
+   > _"Do not write code. Trace the current behavior in `.github/workflows/release-docker-image.yml` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Candidate writes down the 4 bugs and writes failing unit tests for each bug _before_ changing the engine.
+   - Reproduce with the test command; list the minimal files to change.
 3. **Step 3 (`Prompt`)**:
-   - Prompt 1: Replace shared mutable rate lookup with an immutable copy/lookup and strict `InvalidTaxJurisdictionError`.
-   - Prompt 2: Implement canonical discount sorting (`BUNDLE -> PERCENT -> FLAT`) and `max(0, subtotal_cents)` clamping.
-   - Prompt 3: Implement Hamilton's Largest Remainder Method using exact integer numerator arithmetic (`(total_cents * w) % total_weight`) to avoid floating-point remainder ties!
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
 4. **Step 4 (`Review`) & Step 5 (`Test`)**:
-   - Audit the weighted split for float vs integer remainder comparison (`num % total_weight` is exact; `(total_cents * w / total_weight) % 1` suffers from float inaccuracy!).
-
----
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 

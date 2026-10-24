@@ -46,7 +46,7 @@ npm test
 
 ### Failing Tests to Enable
 
-- Re-enable any commented-out or skipped tests covering the issue; run `npm test` to confirm red on Base SHA and green on Merge SHA.
+- Failing tests to enable/verify: the repository's existing tests covering this issue. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -88,37 +88,29 @@ npm test
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Subtracting `capture.amount` Instead of `hold.amount` from `held_balance`
+### Trap 1: Trusting the first plausible fix
 
-- **What Naive AI Writes**:
-  ```python
-  account.settled_balance -= event.amount_cents
-  account.held_balance -= event.amount_cents # <-- BUG when capture ($65) < hold ($100)!
-  ```
-- **Why It Fails**: If `hold = 10000` (`$100`) and `capture = 6500` (`$65`), subtracting `6500` from `held_balance` leaves `3500` (`$35`) stuck in `held_balance` forever!
-- **Correct Fix**: Transition the authorization state machine (`PENDING -> CAPTURED`), deduct `capture.amount_cents` from `settled_balance`, and deduct `hold.remaining_held_cents` (`10000`) from `held_balance`!
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`Command idempotency`).
+- **Why It Fails**: The PR touches `src/modules/accounts/domain/account.aggregate.ts`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Double-Deducting or Negative `held_balance` When `CAPTURE` Arrives Before `AUTH_HOLD`
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  - When `CAPTURE(auth_id="a1", amount=6500)` arrives first (no `hold` found yet), the AI subtracts `6500` from `settled_balance` AND subtracts `6500` from `held_balance` (making `held_balance = -6500`!). Then when `AUTH_HOLD(auth_id="a1", amount=10000)` arrives later, it adds `10000` to `held_balance`, leaving `held_balance = +3500`!
-- **Correct Fix (Explicit per-`auth_id` State Machine)**:
-  Track each `auth_id` with state:
-  - `UNSEEN` → if `CAPTURE(c)` arrives first: deduct `c` from `settled_balance`, set auth state to `CAPTURED_EARLY(captured_amount=c)` (`held_balance` unchanged = `0`). When `AUTH_HOLD(h)` arrives later for an already-`CAPTURED_EARLY` `auth_id`: verify `h >= c` and treat as already settled (do NOT add `h` to `held_balance`!).
-  - Similarly, if `VOID` arrives first: set auth state to `VOIDED_EARLY`. When `AUTH_HOLD(h)` arrives later: no-op!
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Trace how `AUTH_HOLD`, `CAPTURE`, and `VOID` currently mutate `settled_balance` and `held_balance`. Show what happens on a partial capture (`hold=100, capture=65`) and out-of-order `[CAPTURE, AUTH_HOLD]`."_
+   > _"Do not write code. Trace the current behavior in `src/modules/accounts/domain/account.aggregate.ts` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Design the per-`auth_id` state machine (`OPEN(hold_cents)`, `CAPTURED(capture_cents)`, `VOIDED`) so any arrival order of `HOLD`, `CAPTURE`, and `VOID` transitions deterministically.
-3. **Step 3 (`Prompt`)** & **Step 4 (`Review`)**:
-   - Prompt the `AuthorizationRecord` state machine first, then wire `event_id` idempotency and balance updates.
-
----
+   - Reproduce with the test command; list the minimal files to change.
+3. **Step 3 (`Prompt`)**:
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
+4. **Step 4 (`Review`) & Step 5 (`Test`)**:
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 

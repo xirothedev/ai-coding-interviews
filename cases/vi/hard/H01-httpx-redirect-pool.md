@@ -46,7 +46,7 @@ pytest
 
 ### Failing Tests to Enable
 
-- Re-enable any commented-out or skipped tests covering the issue; run `pytest` to confirm red on Base SHA and green on Merge SHA.
+- Failing tests to enable/verify: test_redirects.py, test_utils.py. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -84,56 +84,29 @@ pytest
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Mutating `request.headers` In-Place
+### Trap 1: Trusting the first plausible fix
 
-- **What Naive AI Writes**:
-  ```python
-  if method != request.method and method == "GET":
-      request.headers.pop("Content-Length", None)
-      request.headers.pop("Transfer-Encoding", None)
-  ```
-- **Why It Fails**: `request` is the previous hop's `Request` object stored in `response.history`. Mutating `request.headers` alters historical audit data!
-- **Correct Fix**: Always clone `headers = Headers(request.headers)` first and mutate only the new copy passed to the next `Request`.
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`Preserve Authorization header on HTTPS redirect`).
+- **Why It Fails**: The PR touches `httpx/_client.py, httpx/_utils.py`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Catching `Exception` Instead of `BaseException`
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  ```python
-  try:
-      await response.aread()
-  except Exception:
-      await response.aclose()
-      raise
-  ```
-- **Why It Fails**: In Python 3.8+, `asyncio.CancelledError` subclasses `BaseException`, not `Exception`. When an async request is cancelled via `task.cancel()`, `except Exception:` is bypassed completely and the underlying socket is never returned to the connection pool!
-- **Correct Fix**: Use `except BaseException:` (or `try ... finally:` when closing intermediate redirect responses).
-
-### Trap 3: Naive `visited_urls: set[URL]` Breaking Login & `303` Flows
-
-- **What Naive AI Writes**:
-  ```python
-  if redirect_url in visited_urls:
-      raise TooManyRedirects("Redirect loop detected", request=request)
-  ```
-- **Why It Fails**:
-  1. `POST /items` returning `303 See Other` with `Location: /items` redirects to `GET /items` (same URL, different method!).
-  2. `GET /me` → `302 /sso` (`Set-Cookie: token=xyz`) → `302 /me` visits `/me` twice, but the cookie jar state changed in between!
-- **Correct Fix**: Key the visited set by `(request.method, canonical_url)` AND clear `visited` (or include a cookie-state epoch counter) whenever a redirect response contains a `Set-Cookie` header that updates `self._cookies`.
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code yet. Read `httpx/_client.py` and `httpx/_urls.py`. Trace `_send_handling_redirects` and `_build_redirect_request`. Explain: (1) how `URL.port` behaves when no explicit port is in the URL string, (2) where `request.headers` is copied vs mutated, and (3) what happens if `response.aread()` raises `asyncio.CancelledError`."_
+   > _"Do not write code. Trace the current behavior in `httpx/_client.py, httpx/_utils.py, test_redirects.py, test_utils.py` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Candidate identifies the 3 isolated changes in `httpx/_client.py`: `_redirect_headers` immutability + port-aware origin check, `BaseException` cleanup in `AsyncClient`, and `(method, url, cookie_epoch)` loop detection.
+   - Reproduce with the test command; list the minimal files to change.
 3. **Step 3 (`Prompt`)**:
-   - Prompt each helper method individually (`_redirect_headers` first, then `_send_handling_redirects`), specifying exact invariants.
-4. **Step 4 (`Review`)** & **Step 5 (`Test`)**:
-   - Audit diff for `BaseException` and header cloning; run `pytest tests/client/test_redirects.py`.
-
----
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
+4. **Step 4 (`Review`) & Step 5 (`Test`)**:
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 

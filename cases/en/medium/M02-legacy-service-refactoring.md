@@ -46,7 +46,7 @@ rm -rf .git && git init && git add . && git commit -m "Initial interview baselin
 
 ### Failing Tests to Enable
 
-- Re-enable any commented-out or skipped tests covering the issue; run `./gradlew test` to confirm red on Base SHA and green on Merge SHA.
+- Failing tests to enable/verify: AlgorithmTest.java, DijkstraTest.java. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -74,38 +74,29 @@ rm -rf .git && git init && git add . && git commit -m "Initial interview baselin
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Breaking `monolith`'s `AlgorithmEngine` & `AlgorithmEngineTest` Signatures
+### Trap 1: Trusting the first plausible fix
 
-- **What Naive AI Writes**:
-  - Deletes `monolith`'s constructors/methods or changes `AlgorithmEngine` constructor signatures, breaking `AlgorithmEngineTest.java` in `:monolith`.
-- **Correct Fix**: Use the **Adapter / Seam Pattern**: define clean interfaces in `:library`, have `:monolith` implement or adapt `GraphService` / `PathsService` / `EventService` / `GraphUsersService`, and keep `AlgorithmEngine`'s public API 100% intact.
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`Point candidates at tests with obvious TODOs`).
+- **Why It Fails**: The PR touches `the changed source files`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Leaving Mutable `private Node source` on `Dijkstra` or Persisting Before Validation in `runForAll(true)`
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  ```java
-  for (Graph graph : graphs) {
-      Path p = dijkstra.compute(graph);
-      pathsService.saveNew(p); // <-- BUG! Persists graphs 0..i-1 before graph i throws in failFast=true!
-  }
-  ```
-- **Why It Fails**: When `failFast = true` and graph `#3` is corrupted (e.g., disconnected source or negative edge weight), graphs `#0`, `#1`, and `#2` have already been saved to `PathsService.saveNew(...)`!
-- **Correct Fix**: Stage all computed `(Graph, Path)` results in memory first during `runForAll(true)`, and only invoke `saveNew(...)` and `EventService` notifications after all graphs in the batch succeed!
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Inspect `:monolith` and `:library` in `JLLeitschuh/refactoring-interview-question`. List the differences between `monolith`'s and `library`'s `Dijkstra.java` and `Algorithm.java`, and explain why `DijkstraTest` and `AlgorithmTest` are `@Disabled`."_
+   > _"Do not write code. Trace the current behavior in `AlgorithmTest.java, DijkstraTest.java` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Step A: Refactor `Dijkstra` in `:library` to take `Graph`/`Collection<Node>` directly without `GraphService` or mutable `source` state; enable `DijkstraTest`.
-   - Step B: Define domain interfaces in `:library` for `Algorithm`, enable `AlgorithmTest`, and wire `:monolith`'s `AlgorithmEngine` to delegate to `:library` without breaking `AlgorithmEngineTest`.
-   - Step C: Implement `runForAll(boolean failFast)` with two-phase compute-then-persist staging when `failFast = true`.
-3. **Step 3 (`Prompt`)** & **Step 4 (`Review`)**:
-   - Run `./gradlew test` after each step to verify both `:library:test` and `:monolith:test` pass.
-
----
+   - Reproduce with the test command; list the minimal files to change.
+3. **Step 3 (`Prompt`)**:
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
+4. **Step 4 (`Review`) & Step 5 (`Test`)**:
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 

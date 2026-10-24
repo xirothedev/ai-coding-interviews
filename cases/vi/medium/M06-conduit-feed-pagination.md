@@ -46,7 +46,7 @@ npm test
 
 ### Failing Tests to Enable
 
-- Re-enable any commented-out or skipped tests covering the issue; run `npm test` to confirm red on Base SHA and green on Merge SHA.
+- Failing tests to enable/verify: the repository's existing tests covering this issue. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -79,49 +79,29 @@ npm test
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Applying `LIMIT` to a 1-to-Many `LEFT JOIN` Query
+### Trap 1: Trusting the first plausible fix
 
-- **What Naive AI Writes**:
-  ```sql
-  SELECT a.*, t.name AS tag_name
-  FROM articles a
-  LEFT JOIN article_tags at ON a.id = at.article_id
-  LEFT JOIN tags t ON t.id = at.tag_id
-  ORDER BY a.created_at DESC
-  LIMIT 20 OFFSET 0; -- <-- BUG! 4 articles with 5 tags each = 20 rows = only 4 articles returned!
-  ```
-- **Also**: If a `WHERE t.name = 'dragons'` clause is put on the outer join, `t.name` only returns `'dragons'`, stripping all other tags (`'magic'`, `'training'`) from the response's `tagList`!
-- **Correct Fix**:
-  1. Query 1: Fetch the paginated article IDs/rows using `WHERE EXISTS (SELECT 1 FROM article_tags ... WHERE tag = :tag)` (or subquery) with `ORDER BY a.created_at DESC, a.id DESC LIMIT :limit`.
-  2. Query 2: Batch-load all tags (`WHERE article_id IN (:article_ids)`) and favorites in bulk, grouping by `article_id` in memory! This takes exactly 2–3 queries total ($O(1)$ queries) and never truncates `LIMIT` or strips sibling tags!
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`Fix for update article with tag list`).
+- **Why It Fails**: The PR touches `routes/api/articles.js`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Single-Column Cursor (`WHERE created_at < :cursor_ts`)
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  - Encodes only `created_at` in the cursor and filters `WHERE created_at < :cursor_ts`.
-- **Why It Fails**: If 10 articles have `created_at = '2026-10-24T00:00:00Z'` and `limit = 5`, Page 1 returns the first 5 (`id` 10..6), and Page 2 (`WHERE created_at < '2026-10-24T00:00:00Z'`) **skips `id` 5..1 completely**!
-- **Correct Fix**: Encode `(created_at, id)` in the cursor and filter:
-  ```sql
-  WHERE (a.created_at < :cursor_ts)
-     OR (a.created_at = :cursor_ts AND a.id < :cursor_id)
-  ORDER BY a.created_at DESC, a.id DESC
-  ```
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Trace `GET /api/articles` and count how many SQL queries execute for `limit=20`. Show where `tag` filtering and `limit/offset` happen."_
+   > _"Do not write code. Trace the current behavior in `routes/api/articles.js` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Candidate plans the 2-query batch hydration strategy (`WHERE EXISTS` on `articles` with `LIMIT`, followed by `WHERE article_id IN (...)` for tags/favorites) and the composite `(created_at, id)` keyset predicate.
+   - Reproduce with the test command; list the minimal files to change.
 3. **Step 3 (`Prompt`)**:
-   - Prompt 1: Fix filtered query + total count + batch tag hydration.
-   - Prompt 2: Add composite `(created_at, id)` base64 cursor encoding/decoding and SQL predicate.
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
 4. **Step 4 (`Review`) & Step 5 (`Test`)**:
-   - Verify query counter asserts `<= 4` queries for `50` articles and run all pagination tests.
-
----
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 

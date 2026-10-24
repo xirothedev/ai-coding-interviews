@@ -46,7 +46,7 @@ cargo test
 
 ### Failing Tests to Enable
 
-- Re-enable any commented-out or skipped tests covering the issue; run `cargo test` to confirm red on Base SHA and green on Merge SHA.
+- Failing tests to enable/verify: tests/stream.rs. Run the test command to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
@@ -74,38 +74,29 @@ cargo test
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Trying to Return `Reference::Borrowed<'de>` from `IoRead`'s Scratch Buffer
+### Trap 1: Trusting the first plausible fix
 
-- **What Naive AI Writes**:
-  - The AI sees `Reference::Borrowed` in `SliceRead` and tries to return `Reference::Borrowed(str_from_scratch)` in `IoRead`, hits Rust compiler error `lifetime may not live long enough ('s vs 'de)`, and then proposes:
-    ```rust
-    // AI HALLUCINATION - UNSOUND!
-    unsafe { std::mem::transmute::<&'s str, &'de str>(s) }
-    ```
-- **Why It Fails**: `IoRead` clears `self.scratch` on the very next JSON string token! Returning `Reference::Borrowed<'de>` from `IoRead` causes a **use-after-free / buffer aliasing bug** if the caller deserializes a `&'de str`! `IoRead` MUST return `Reference::Copied(&'s str)` so Serde copies the string into an owned `String`.
+- **What Naive AI Writes**: A minimal edit that makes the happy path pass but ignores the edge cases exercised by the real PR (`Return None after stream deserializer has failed`).
+- **Why It Fails**: The PR touches `src/de.rs, src/read.rs, src/lib.rs`; a shallow change leaves the underlying defect (ordering, caching, type resolution, or retry semantics) in place, so hidden tests still fail.
+- **Correct Fix**: Reproduce the failing tests on Base SHA, then implement the same behavior change as the merged PR (study its diff), including edge cases and invariants.
 
-### Trap 2: Calling `std::str::from_utf8` on Incomplete Multi-Byte Chunks
+### Trap 2: Over-editing unrelated code
 
-- **What Naive AI Writes**:
-  - Validates `std::str::from_utf8(chunk)` immediately after each `read()` call and maps any `Err(_)` to `ErrorCode::InvalidUnicodeCodePoint`.
-- **Why It Fails**: When `chunk` ends with `[0xF0, 0x9F]` (the first 2 bytes of `🦀`), `from_utf8` returns `Err(e)` where `e.error_len()` is `None` (indicating up to 3 trailing bytes are an incomplete multi-byte character waiting for the next `read()`, NOT invalid UTF-8!).
-- **Correct Fix**: either append raw bytes into `scratch` up to the closing unescaped `"` or backslash `\` (which are single-byte ASCII `< 0x80` and can never appear as continuation bytes `0x80..0xBF` of a multi-byte UTF-8 sequence!) and validate `str::from_utf8(&self.scratch)` once the complete ASCII-delimited segment is buffered!
-
----
+- **What Naive AI Writes**: Refactors surrounding modules "while at it", changing public APIs.
+- **Why It Fails**: Breaks callers and the hidden regression tests; the reference solution is minimal and scoped to the PR's changed lines.
+- **Correct Fix**: Limit edits to the files/lines indicated by the failing tests; keep diffs small and behavior-focused.
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code yet. Read `src/read.rs` and `src/de.rs`. Explain: (1) the difference between `'de` and `'s` in `Reference<'de, 's, str>`, (2) why ASCII bytes `"` (`0x22`) and `\` (`0x5C`) can never appear inside a multi-byte UTF-8 character, and (3) how `StreamDeserializer::next` checks for trailing characters after a scalar vs an object/array."_
+   > _"Do not write code. Trace the current behavior in `src/de.rs, src/read.rs, src/lib.rs, tests/stream.rs` and identify why the failing tests fail on Base SHA."_
 2. **Step 2 (`Plan`)**:
-   - Candidate notes the fundamental UTF-8 self-synchronizing property: ASCII bytes (`0x00..0x7F`) never appear as trailing bytes of multi-byte UTF-8 codepoints (`0x80..0xFF`). Therefore, scanning byte-by-byte into `scratch` until `"` or `\` and only running UTF-8 validation on complete segments between escapes never splits a multi-byte character!
+   - Reproduce with the test command; list the minimal files to change.
 3. **Step 3 (`Prompt`)**:
-   - Prompt 1: Fix `StreamDeserializer::next()` lookahead delimiter check (`eat_char` only when needed; require whitespace/EOF/self-delimiter after numbers/booleans/null).
-   - Prompt 2: Fix `IoRead::parse_str` to buffer into `scratch` up to ASCII delimiters before validating UTF-8, returning `Reference::Copied`.
+   - Prompt 1: Implement the fix matching the merged PR's behavior, scoped to the failing tests.
+   - Prompt 2: Add/adjust tests for edge cases (empty input, boundary values, error paths).
 4. **Step 4 (`Review`) & Step 5 (`Test`)**:
-   - Verify zero `unsafe` blocks were added; write `ChunkedReader` test with 1-byte reads in `tests/stream.rs` and run `cargo test`.
-
----
+   - Run the full test command; confirm all previously-failing tests pass and no regressions.
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 
