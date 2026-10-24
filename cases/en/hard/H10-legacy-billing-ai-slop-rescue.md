@@ -16,18 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/getlago/lago`          |
+| **Base SHA (pre-merge)**           | `4fae86e578f565907c2e6082856b460b2bfac0a8` |
+| **Merge SHA (reference solution)** | `878c66c1f01d6831016d340674b6e68c2138ccc3` |
+| **Test Command**                   | `make test`                                |
+
 ### Clean-Room Workspace Provisioning
 
-### Seeded Defects to Inject Before the Session
+```bash
+git clone https://github.com/getlago/lago.git interview-workspace
+cd interview-workspace
+git checkout 4fae86e578f565907c2e6082856b460b2bfac0a8
+rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
+make test
+```
 
-Choose a language implementation (`server/python/`, `server/node/`, `server/go/`, `server/java/`, `server/dotnet/`) from [`stripe-samples/subscription-use-cases`](https://github.com/stripe-samples/subscription-use-cases) (or [`getlago/lago`](https://github.com/getlago/lago) for Go / [`killbill/killbill`](https://github.com/killbill/killbill) for Java) and apply the "AI-Slop PR" commit containing the 4 interlocking defects below:
+### Reproducibility Verification
 
-1. **Bug 1 (Tautological / Over-Mocked Unit Tests)**: The previous developer asked an LLM to write unit tests; 3 of the tests mock out the internal calculation helper or only assert `assert report is not None` / `assert "$" in statement`, giving a false `100% PASS` green suite!
-2. **Bug 2 (Mutated Shared Tier/Tax Configuration Dictionary)**: Calculating a VIP or Tax-Exempt invoice mutates the module-level `DEFAULT_TAX_RATES` / `PLAN_RATES` dictionary in-place (`rates["enterprise"] *= 0.8`), permanently corrupting prices for all subsequent standard customers in the same process!
-3. **Bug 3 (Order-Dependent Discount Stacking & Negative Subtotal Tax Credit)**: Applying a `%` discount and a flat `$` voucher in whatever order they appear in the input array yields different prices, and a large flat voucher (`$100` off a `$60` cart) produces a negative pre-tax subtotal (`-$40`), generating a **negative tax refund**!
-4. **Bug 4 (Penny-Splitting Remainder Drift — Hamilton's Method)**: Splitting an invoice total across `k` equal or weighted cost-center installments uses `round(total / k, 2)` for each installment—so splitting `$100.00` across `3` cost centers produces `[$33.33, $33.33, $33.33]` (losing `$0.01`), or dumping all remainder cents onto the last installment (`$100.00 / 6` → `[16.66, 16.66, 16.66, 16.66, 16.66, 16.70]` instead of `[16.67, 16.67, 16.67, 16.67, 16.66, 16.66]`).
+- **Base SHA (`4fae86e578f5`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`878c66c1f01d`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- .github/workflows/release-docker-image.yml
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `make test` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 

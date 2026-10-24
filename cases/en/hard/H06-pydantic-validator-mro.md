@@ -16,21 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/pydantic/pydantic`     |
+| **Base SHA (pre-merge)**           | `28e83965098c52536af2beb54dcd4da777a4fcd2` |
+| **Merge SHA (reference solution)** | `a13a3cb12ebf31279129bc465d37548db06cb731` |
+| **Test Command**                   | `pytest`                                   |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/pydantic/pydantic.git pydantic-interview
-cd pydantic-interview
+git clone https://github.com/pydantic/pydantic.git interview-workspace
+cd interview-workspace
+git checkout 28e83965098c52536af2beb54dcd4da777a4fcd2
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-pytest tests/test_validators.py
+pytest
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-1. **Bug 1 (Validator Override & Diamond MRO Bug in `_decorators.py`)**: In `DecoratorInfos.build(model_dc)`, iterate `model_dc.__mro__` in an order or dictionary-keying scheme where overriding a `@model_validator(mode='after')` method in a child class with the **same method name** either runs _both_ parent and child validators or reverses the execution order between `mode='before'` and `mode='after'`.
-2. **Bug 2 (Shallow Mutation Leak in `BaseModel.model_copy`)**: In `pydantic/main.py` (`model_copy`), when `update={...}` is provided alongside nested mutable default containers (`list`, `dict`, `set`) or `__pydantic_extra__`, mutating a list on the copied instance mutates the original instance unless isolated.
+- **Base SHA (`28e83965098c`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`a13a3cb12ebf`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- pydantic/_internal/_decorators.py, pydantic/_internal/_generate_schema.py
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `pytest` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 

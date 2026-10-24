@@ -16,21 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/Textualize/rich`       |
+| **Base SHA (pre-merge)**           | `5f0219786bbaf994061011df087602d5edff5d66` |
+| **Merge SHA (reference solution)** | `d39626143036188cb2c9e1619e836540f5b627f8` |
+| **Test Command**                   | `pytest`                                   |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/Textualize/rich.git rich-interview
-cd rich-interview
+git clone https://github.com/Textualize/rich.git interview-workspace
+cd interview-workspace
+git checkout 5f0219786bbaf994061011df087602d5edff5d66
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-pytest tests/test_cells.py tests/test_text.py
+pytest
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-1. **Bug 1 (Wide-Character Cropping & `max_width=1` Infinite Loop in `rich/cells.py` / `rich/text.py`)**: In `chop_cells(text, max_size)` or `set_cell_size()`, when a 2-cell CJK character (`"你好"`) or emoji (`"🚀"`) hits an odd column width boundary (e.g., `max_size = 5` on `"你好世界"`), either fail to pad the trailing 1-cell gap in `set_cell_size` (leaving 4 cells instead of 5 and misaligning table borders `│`) OR enter an infinite loop when `max_size = 1` and the character has cell width `2`.
-2. **Bug 2 ($O(L \times S)$ Quadratic Span Division in `Text.divide`)**: In `rich/text.py` (`Text.divide(offsets)`), replace the span assignment loop with a naive nested loop (`for line_start, line_end in ranges: for span in self._spans: ...`), which passes small unit tests in `3ms` but takes **`> 5.0 seconds`** when wrapping a 5,000-line log containing 10,000 syntax-highlighted spans!
+- **Base SHA (`5f0219786bba`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`d39626143036`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- rich/cells.py, rich/_cell_widths.py
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `pytest` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 

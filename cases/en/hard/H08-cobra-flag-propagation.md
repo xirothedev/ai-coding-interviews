@@ -16,21 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/spf13/cobra`           |
+| **Base SHA (pre-merge)**           | `dbf85f6104904d539cabceebec234e817fa0df0c` |
+| **Merge SHA (reference solution)** | `22b617914c8890ba20db7ceafcdc2ef4ca4817d3` |
+| **Test Command**                   | `go test ./...`                            |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/spf13/cobra.git cobra-interview
-cd cobra-interview
+git clone https://github.com/spf13/cobra.git interview-workspace
+cd interview-workspace
+git checkout dbf85f6104904d539cabceebec234e817fa0df0c
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
 go test ./...
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-1. **Bug 1 (Persistent Flag Group Validation Timing in `flag_groups.go` / `command.go`)**: When a parent command defines `PersistentFlags().String("env", "", "")` and a child command calls `MarkFlagsMutuallyExclusive("env", "local")`, `ValidateFlagGroups()` either runs before `mergePersistentFlags()` or fails to reset merged flag state when `Execute()` is invoked a second time in tests.
-2. **Bug 2 (`EnableTraverseRunHooks` Asymmetrical `PersistentPostRun` Execution)**: In `Command.execute()` (`command.go`), when `EnableTraverseRunHooks = true` runs `PersistentPreRunE` from `root -> parent -> child`, if `parent.PersistentPreRunE` returns an error, cleanup hooks (`PersistentPostRunE`) either don't run for `root` or erroneously run for `child` (whose `PreRun` never executed!).
+- **Base SHA (`dbf85f610490`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`22b617914c88`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- command.go
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `go test ./...` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 

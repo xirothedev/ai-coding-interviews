@@ -16,21 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/TanStack/query`        |
+| **Base SHA (pre-merge)**           | `8c3f218b13b70424bb9d9733b2e60e5f6c1f06a8` |
+| **Merge SHA (reference solution)** | `f608f933a36da30670082e90d0a56b2569290563` |
+| **Test Command**                   | `pnpm test`                                |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/TanStack/query.git tanstack-query-interview
-cd tanstack-query-interview
+git clone https://github.com/TanStack/query.git interview-workspace
+cd interview-workspace
+git checkout 8c3f218b13b70424bb9d9733b2e60e5f6c1f06a8
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-pnpm install && pnpm --filter @tanstack/query-core test
+pnpm test
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-1. **Bug 1 (Premature Shared `AbortController` Cancellation in `query.ts`)**: When Observer A and Observer B both subscribe to the same active `Query` (`['todos']`), and Observer A unmounts and calls `query.cancel()` / removes its observer, the in-flight `fetch` aborts immediately even though Observer B is still mounted and waiting for the data!
-2. **Bug 2 (Overlapping Optimistic Mutation Snapshot Clobbering)**: Seed the interviewer-provided optimistic state helper (`OptimisticQueryController` in `packages/query-core/src/`, or tested directly via `packages/query-core/src/mutation.ts` and `packages/query-core/src/queryClient.ts`) that uses naive snapshot restoration (`onMutate` saves `previousData`, `onError` calls `setQueryData(previousData)`), which clobbers concurrent succeeding mutations when an earlier mutation fails out of order. Add the corresponding commented-out regression tests in `packages/query-core/src/__tests__/query.test.tsx`.
+- **Base SHA (`8c3f218b13b7`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`f608f933a36d`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- packages/query-core/src/queryObserver.ts
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `pnpm test` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 

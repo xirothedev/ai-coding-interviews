@@ -16,22 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/google/gson`           |
+| **Base SHA (pre-merge)**           | `b3f4ca20087f9066de4c340522ff84e0558e1ad1` |
+| **Merge SHA (reference solution)** | `698ba9ebfdbf629ca4ccc393d9cecd69c1e7115f` |
+| **Test Command**                   | `mvn test`                                 |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/google/gson.git gson-interview
-cd gson-interview
+git clone https://github.com/google/gson.git interview-workspace
+cd interview-workspace
+git checkout b3f4ca20087f9066de4c340522ff84e0558e1ad1
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-mvn test-compile
+mvn test
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-1. **Bug 1 (64-Bit Long Truncation in `JsonTreeReader` + `ObjectTypeAdapter`)**: When a polymorphic adapter buffers a JSON object into a `JsonElement` via `Streams.parse(in)` and delegates reading via `new JsonTreeReader(jsonElement)`, `ObjectTypeAdapter` (configured with `ToNumberPolicy.LONG_OR_DOUBLE`) calls `in.nextDouble()` or loses precision on 64-bit integers `> 2^53` (e.g., `9007199254740993L` becomes `9007199254740992L` or a `Double`!).
-2. **Bug 2 (Duplicate Discriminator Key Crash on Serialization)**: In `RuntimeTypeAdapterFactory`, when `maintainType = true` AND the subtype class also defines a Java field mapped to the type field name (e.g., `String type = "credit_card"`), serializing throws `JsonParseException: cannot serialize ... because it already defines a field named type` instead of allowing consistent discriminator serialization.
-3. **Bug 3 (`FutureTypeAdapter` Concurrent Cache Publication)**: In `Gson.getAdapter(TypeToken<T>)`, publishing the intermediate `FutureTypeAdapter` to `typeTokenCache` before `factory.create()` finishes causes concurrent threads to read an unresolved delegate.
+- **Base SHA (`b3f4ca20087f`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`698ba9ebfdbf`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- gson/src/main/java/com/google/gson/internal/bind/TypeAdapterRuntimeTypeWrapper.java
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `mvn test` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 

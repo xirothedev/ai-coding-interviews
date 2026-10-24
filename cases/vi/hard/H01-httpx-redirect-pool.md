@@ -16,23 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/encode/httpx`          |
+| **Base SHA (pre-merge)**           | `4f8068a7ade1f4d10403e325ed2354109df1724f` |
+| **Merge SHA (reference solution)** | `4401d55ecf0d95be237098b6c73c45420d54d499` |
+| **Test Command**                   | `pytest`                                   |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/encode/httpx.git httpx-interview
-cd httpx-interview
+git clone https://github.com/encode/httpx.git interview-workspace
+cd interview-workspace
+git checkout 4f8068a7ade1f4d10403e325ed2354109df1724f
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
+pytest
 ```
 
-### Seeded Defects to Inject (or Checkout) Before the Session
+### Reproducibility Verification
 
-In `httpx/_client.py`:
+- **Base SHA (`4f8068a7ade1`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`4401d55ecf0d`)**: the same tests must pass after checkout.
 
-1. **Bug 1 (Origin Port/Scheme Downgrade Leak)**: In module-level `_same_origin(url, other)` and `_is_https_redirect(request.url, url)` (and `BaseClient._redirect_headers()`) in `httpx/_client.py`, replace the port/scheme check so `url.host == other.host` is treated as same-origin without verifying `port` normalization or `https -> http` downgrade, and mutate `request.headers` in-place when removing `Content-Length` on `303 See Other`.
-2. **Bug 2 (Async Cancellation Connection Leak)**: In `AsyncClient._send_handling_redirects()`, catch `except Exception:` instead of `except BaseException:` around `await response.aread()` before following a redirect (in Python 3.8+, `asyncio.CancelledError` inherits from `BaseException`, so cancelling a request mid-redirect skips `await response.aclose()` and leaks the connection slot!).
-3. **Commented Tests**: Comment out `test_cross_domain_redirect_with_auth_header` and `test_https_to_http_downgrade_strips_auth` in `tests/client/test_redirects.py`, and add `test_async_redirect_cancellation_releases_connection` as a commented-out test during this interviewer seed step in `tests/client/test_redirects.py`.
+### Files Changed (Reference Solution)
 
----
+- httpx/_client.py, httpx/_utils.py
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `pytest` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 

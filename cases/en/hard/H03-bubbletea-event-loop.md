@@ -16,24 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                        |
+| :--------------------------------- | :------------------------------------------- |
+| **Repository**                     | `https://github.com/charmbracelet/bubbletea` |
+| **Base SHA (pre-merge)**           | `c76509a9d4974207cd66255707d14f4f938f7f52`   |
+| **Merge SHA (reference solution)** | `f5da8d068af74764b271a197de54e2bc2bfedb38`   |
+| **Test Command**                   | `go test ./...`                              |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/charmbracelet/bubbletea.git bubbletea-interview
-cd bubbletea-interview
+git clone https://github.com/charmbracelet/bubbletea.git interview-workspace
+cd interview-workspace
+git checkout c76509a9d4974207cd66255707d14f4f938f7f52
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-go test -race ./...
+go test ./...
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-In `tea.go` and `commands.go`:
+- **Base SHA (`c76509a9d497`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`f5da8d068af7`)**: the same tests must pass after checkout.
 
-1. **Bug 1 (Unconditional Channel Send Deadlock on Shutdown)**: In `handleCommands()` (where `Cmd` goroutines send `p.msgs <- msg`), remove the `case <-p.ctx.Done():` branch from the `select` statement so `p.msgs <- msg` blocks forever if `eventLoop()` has already exited upon receiving `QuitMsg`.
-2. **Bug 2 (`Sequence` Running Concurrently Instead of Sequentially)**: In `commands.go` / `tea.go`, handle `sequenceMsg` by spawning goroutines in parallel (like `BatchMsg`), breaking the deterministic execution order contract of `tea.Sequence(cmd1, cmd2, cmd3)`.
-3. **Commented Tests**: Comment out upstream `TestSequence` and `TestBatch` in `commands_test.go`, and stage `TestProgramQuitDeadlockUnderLoad` (in `tea_test.go`) and `TestSequenceOrderGuarantee` (in `commands_test.go`) as commented-out tests during the interviewer setup step.
+### Files Changed (Reference Solution)
 
----
+- tea.go
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `go test ./...` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 

@@ -16,27 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/colinhacks/zod`        |
+| **Base SHA (pre-merge)**           | `c5b9bcb39b7953c6a984849c6527863acdae0af7` |
+| **Merge SHA (reference solution)** | `36f17960d1defca5d0896d9424f4e1059fbbf081` |
+| **Test Command**                   | `pnpm test`                                |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/colinhacks/zod.git zod-interview
-cd zod-interview
-# Option A: Pin v3 standalone layout (src/types.ts, src/helpers/parseUtil.ts, src/__tests__/*.test.ts)
-git checkout v3.23.8
+git clone https://github.com/colinhacks/zod.git interview-workspace
+cd interview-workspace
+git checkout c5b9bcb39b7953c6a984849c6527863acdae0af7
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-npm install && npm test
-
-# Option B: Use main monorepo layout (packages/zod/src/v3/types.ts, packages/zod/src/v3/helpers/parseUtil.ts, packages/zod/src/v3/tests/*.test.ts)
-# pnpm install && pnpm test
+pnpm test
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-1. **Bug 1 (Mutable `path` Array in `ParseContext`)**: In `src/helpers/parseUtil.ts` (or `packages/zod/src/v3/helpers/parseUtil.ts` on `main`) or `ZodUnion._parse`, pass a shared mutable `ctx.path` array into child schemas (`path.push(key)` / `path.pop()`) so that when `parseAsync` runs union branches or object keys via `Promise.all()`, interleaved async resolutions corrupt the reported `issue.path`!
-2. **Bug 2 (Unbounded Stack Overflow on Cyclic Objects in `ZodLazy`)**: `z.lazy(() => CategorySchema)` enters infinite recursion (`RangeError: Maximum call stack size exceeded`) when given a runtime object with a circular reference (`node.parent = node`).
-3. **Commented Tests**: Comment out the async union path isolation test and cyclic graph tests in `src/__tests__/recursive.test.ts` and `src/__tests__/unions.test.ts` (or `packages/zod/src/v3/tests/recursive.test.ts` and `packages/zod/src/v3/tests/unions.test.ts` on `main`).
+- **Base SHA (`c5b9bcb39b79`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`36f17960d1de`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- packages/zod/src/v4/core/memoizer.ts
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `pnpm test` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 

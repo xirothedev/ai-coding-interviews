@@ -16,21 +16,37 @@
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
+### Source Repository & Pull Request (Confidential)
+
+| Field                              | Value                                      |
+| :--------------------------------- | :----------------------------------------- |
+| **Repository**                     | `https://github.com/serde-rs/json`         |
+| **Base SHA (pre-merge)**           | `fd6741f4b0b3fc90a58a6f578e33a9adc6403f3f` |
+| **Merge SHA (reference solution)** | `4c81923102dccbf62a735499bbb9494b05dd7b79` |
+| **Test Command**                   | `cargo test`                               |
+
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/serde-rs/json.git serde-json-interview
-cd serde-json-interview
+git clone https://github.com/serde-rs/json.git interview-workspace
+cd interview-workspace
+git checkout fd6741f4b0b3fc90a58a6f578e33a9adc6403f3f
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-cargo test --test stream
+cargo test
 ```
 
-### Seeded Defects to Inject Before the Session
+### Reproducibility Verification
 
-1. **Bug 1 (`StreamDeserializer` Adjacent Scalar / Self-Delimiting Framing Bug)**: In `src/de.rs` (`StreamDeserializer::next`), alter the post-value delimiter check so that either self-delimiting adjacent composites (`{"a":1}{"b":2}` or `[1][2]`) falsely fail with `ErrorCode::TrailingCharacters`, OR adjacent non-delimited scalars (`123true` or `123"abc"`) are erroneously accepted without whitespace!
-2. **Bug 2 (Multi-Byte UTF-8 Split Across `IoRead` Chunk Refill)**: In `src/read.rs` (`IoRead::parse_str`), validate UTF-8 per read chunk in a way that fails with `ErrorCode::InvalidUnicodeCodePoint` when an `io::Read` implementation splits a 3- or 4-byte UTF-8 character (like `€` or `🦀`) across two consecutive `read()` calls.
+- **Base SHA (`fd6741f4b0b3`)**: the test suite must contain at least one failing test related to the issue.
+- **Merge SHA (`4c81923102dc`)**: the same tests must pass after checkout.
 
----
+### Files Changed (Reference Solution)
+
+- src/de.rs, src/read.rs
+
+### Failing Tests to Enable
+
+- Re-enable any commented-out or skipped tests covering the issue; run `cargo test` to confirm red on Base SHA and green on Merge SHA.
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
