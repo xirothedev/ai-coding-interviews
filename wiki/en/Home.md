@@ -1,6 +1,6 @@
 # 🧠 Welcome to the AI-Enabled Coding Interviews Wiki
 
-> 🌐 Language: **English** · <a href="vi/Home">Tiếng Việt</a>
+> 🌐 Language: **English** · <a href="vi-Home">Tiếng Việt</a>
 
 > **The Complete Open-Source Knowledge Base, 7-Criteria HR Rubric, Divide-and-Conquer Prompt Playbook, and 30 GitHub-Backed Cases for AI-Enabled SWE Interviews.**
 
