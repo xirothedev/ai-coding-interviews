@@ -16,7 +16,7 @@
 <summary><b>🔴 Hard Cases (Senior / Staff)</b></summary>
 
 - **[Hard Tier Index](Hard-Tier-Catalog)**
-- [H01: Async HTTP Pool (`httpx`)](H01-httpx-redirect-pool)
+- [H01: Async HTTP Pool & Redirect Auth Leak](H01-httpx-redirect-pool)
 - [H02: Cyclic Schema (`zod`)](H02-zod-cyclic-schema)
 - [H03: TUI Event Loop (`bubbletea`)](H03-bubbletea-event-loop)
 - [H04: JSON Adapter (`gson`)](H04-gson-polymorphic-adapter)
@@ -57,7 +57,7 @@
 - [E05: Lift Pass Pricing](E05-lift-pass-pricing)
 - [E06: Build Pipeline Retry](E06-build-pipeline)
 - [E07: Yatzy Wild Joker](E07-yatzy-scorer)
-- [E08: Delivery ETA & Replay](E08-delivery-controller)
+- [E08: Delivery Replay & Next-Stop ETA](E08-delivery-controller)
 - [E09: Expense Multi-Currency](E09-expense-report)
 - [E10: Racing Car Telemetry](E10-racing-car-telemetry)
 

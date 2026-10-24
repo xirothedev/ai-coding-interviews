@@ -25,7 +25,7 @@ rm -rf ../.git && git init && git add . && git commit -m "Initial interview base
 pytest
 ```
 
-### How the Existing Codebase Works & Native Defects
+### Native Defects in the Source Repository
 
 In `emilybache/DeliveryController-Refactoring-Kata` (`python/`):
 
@@ -44,7 +44,7 @@ In `emilybache/DeliveryController-Refactoring-Kata` (`python/`):
 > ### What We Need You to Do
 >
 > 1. **Decouple External Dependencies & Fix Core Time/Speed Calculations**:
->    - Right now, running the unit test suite fails because `DeliveryController` hardcodes a live local SMTP email gateway and map service on construction. Make `email_gateway` and `map_service` injectable via `DeliveryController.__init__(self, delivery_schedule, email_gateway=None, map_service=None)` while preserving defaults for existing callers.
+>    - Right now, running the unit test suite fails because `DeliveryController` hardcodes a live local SMTP email gateway and map service on construction. Make the email gateway and map service injectable through the controller constructor while preserving defaults for existing callers.
 >    - Fix the 10-minute grace window check: a delivery arriving within `<= 10 minutes` of its scheduled time (`time_difference <= timedelta(minutes=10)`) is `on_time = True`; a delivery arriving `> 10 minutes` late must explicitly set `delivery.on_time = False`.
 >    - Fix average speed calculation in `MapService`: it currently uses `elapsed_time.seconds` instead of `elapsed_time.total_seconds()` (truncating multi-day durations and crashing when `elapsed_time <= 0`).
 > 2. **Ensure Idempotent Event Replay & Accurate Next-Stop ETA Notification**:
@@ -118,3 +118,6 @@ In `emilybache/DeliveryController-Refactoring-Kata` (`python/`):
 
 1. **Q**: _"Suppose Delivery #1 is scheduled for `10:00` and arrives late at `10:25`. The webhook for `10:25` is delivered twice. What happens to `delivery.on_time` in the original code on the second webhook delivery, and why?"_  
    **Expected Answer**: On the first call, `time_difference` is `25m`, so `on_time` is `False`, and the code sets `delivery.time_of_delivery = 10:25`. On the second call, `time_difference` is `10:25 - 10:25 = 0m < 10m`, which flips `delivery.on_time` to `True` and sends a "regarding your on time delivery" email!
+
+2. **Q**: _"Why is `update_delivery` idempotency required under at-least-once webhook delivery?"_
+   **Expected Answer**: Duplicate events would otherwise overwrite `time_of_delivery` and flip a late delivery to `on_time = True`.

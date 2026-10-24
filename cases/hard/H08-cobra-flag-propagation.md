@@ -113,3 +113,6 @@ go test ./...
 
 1. **Q**: _"Suppose `Child.RunE` returns `ErrDeployFailed`, and then during unwinding, `Root.PersistentPostRunE` succeeds and returns `nil`. What happens if your cleanup code writes `err = p.PersistentPostRunE(...)`?"_  
    **Expected Answer**: It would overwrite `ErrDeployFailed` with `nil`, causing `cmd.Execute()` to report success (`nil`) when the command actually failed! The cleanup hook error should only be assigned if the primary `err == nil` (or combined via `errors.Join`).
+
+2. **Q**: _"Why must default Cobra hook shadowing be preserved?"_
+   **Expected Answer**: Breaking it runs parent hooks unexpectedly and violates the documented command lifecycle.

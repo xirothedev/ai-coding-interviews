@@ -69,7 +69,7 @@ pytest
 
 - **What Naive AI Writes**:
   ```python
-  if item.name.startswith("Conjured"):
+  if item.name.startswith("Conjured "):
       degrade = 4 if item.sell_in <= 0 else 2
       item.quality = max(0, item.quality - degrade)
   ```
@@ -105,3 +105,6 @@ pytest
 
 1. **Q**: _"Why is modeling `'Conjured'` as a rate multiplier (`2x`) cleaner than modeling `'Conjured'` as a 5th mutually exclusive item subclass?"_  
    **Expected Answer**: Because `'Conjured'` is an orthogonal modifier that can apply to any item category (`Standard`, `Aged Brie`, `Sulfuras`). Treating it as a `2x` delta multiplier avoids duplicating every item category (`ConjuredBrie`, `ConjuredStandard`, etc.).
+
+2. **Q**: _"What happens to `quality` when a `Conjured` item has `quality = 1` and `sell_in = 0`?"_
+   **Expected Answer**: It degrades by 4 and is clamped to 0, never going negative.

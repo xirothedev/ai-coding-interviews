@@ -47,7 +47,7 @@ pytest
 >    - Normal operating pressure is **`17.0 <= psi <= 21.0`** (inclusive).
 >    - **Rule A — Critical Extreme Bounds (`< 15.0` or `> 23.0`)**: Any single reading strictly `< 15.0` or `> 23.0` latches the alarm on **immediately**.
 >    - **Rule B — Debounced Minor Out-of-Range (`[15.0, 17.0)` or `(21.0, 23.0]`)**: A single transient reading in `[15.0, 17.0)` or `(21.0, 23.0]` does **not** trigger the alarm by itself; the alarm triggers only when **2 consecutive readings** fall outside `[17.0, 21.0]`.
->    - **Rule C — 3-Sample Rapid Pressure Drop (Slow Puncture Detector)**: Even if every reading stays inside `[17.0, 21.0]`, if the current reading has dropped by **`>= 3.0 psi`** compared to either the reading 1 step ago or the reading 2 steps ago (i.e., within the last 3 readings `[r_{t-2}, r_{t-1}, r_t]`, `max(r_{t-2}, r_{t-1}) - r_t >= 3.0`, such as `20.8 -> 19.2 -> 17.5`), trigger the alarm immediately.
+>    - **Rule C — 3-Sample Rapid Pressure Drop (Slow Puncture Detector)**: Even if every reading stays inside `[17.0, 21.0]`, if the current reading has dropped by **`>= 3.0 psi`** compared to either of the previous two readings (within the last 3 readings), trigger the alarm immediately.
 >
 > Please explore the codebase, re-enable any commented-out tests, implement sensor injection, safety latching, `reset()`, and Rules A/B/C, and make sure edge cases (such as non-consecutive spikes and post-reset readings) are covered by unit tests.
 
@@ -103,3 +103,6 @@ pytest
 
 1. **Q**: _"What happens on the very first `check()` call after `alarm.reset()` if `reset()` sets `_is_alarm_on = False` but forgets to clear the sliding window of previous readings?"_  
    **Expected Answer**: Stale readings from before `reset()` (such as a high pressure reading `21.0` or an out-of-bounds reading `16.0`) remain in the window, causing the first normal post-reset reading (`17.9`) to falsely trigger either the `>= 3.0 psi` drop rule or the 2-consecutive out-of-bounds rule!
+
+2. **Q**: _"Why must `reset()` clear the sliding window history?"_
+   **Expected Answer**: Otherwise stale readings from before reset could trigger a false alarm on the next normal reading.

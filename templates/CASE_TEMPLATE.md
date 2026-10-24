@@ -4,11 +4,10 @@
 | :--------------------------- | :-------------------------------------------------------------------------------------------------------------- |
 | **Difficulty Level**         | `Easy` / `Medium` / `Hard`                                                                                      |
 | **Task Archetype**           | `Bugfix + Feature Extension` / `Legacy Refactoring & Scale` / `System Component Integration` / `AI-Slop Rescue` |
-| **Primary Languages**        | `Python`, `TypeScript`, `Go`, `Java`, `Rust`, `C#`                                                              |
+| **Supported Languages**      | `Python`, `TypeScript`, `Go`, `Java`, `Rust`, `C#`                                                              |
 | **Source GitHub Repository** | [`owner/repo`](https://github.com/owner/repo)                                                                   |
-| **Target Module / Path**     | `src/...`                                                                                                       |
-| **Recommended Time**         | `45–60 minutes`                                                                                                 |
-| **AI Trap Categories**       | `Deceptive Abstraction`, `Toy vs. Prod Scale`, `Conflicting Invariants`, `Concurrency / State`                  |
+| **Target Files**             | `src/...`                                                                                                       |
+| **Primary AI Traps**         | `Deceptive Abstraction`, `Toy vs. Prod Scale`, `Conflicting Invariants`, `Concurrency / State`                  |
 
 ---
 

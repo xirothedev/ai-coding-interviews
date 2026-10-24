@@ -8,7 +8,7 @@ This document outlines how the **AI Coding Interviews** knowledge base is mainta
 
 1. **Wiki & Curated Hub Architecture (No Bloated Vendor Code)**
    - Like [`codecrafters-io/build-your-own-x`](https://github.com/codecrafters-io/build-your-own-x) and [`adithya-s-k/AI-Engineering.academy`](https://github.com/adithya-s-k/AI-Engineering.academy), this repository is a **structured Markdown knowledge base**.
-   - Instead of inventing toy codebases from scratch or vendoring gigabytes of source code, every case points to a **real, battle-tested open-source GitHub repository** (pinned to a specific tag or commit SHA) and wraps it with a 4-Checkpoint interview specification, AI Trap analysis, and 7-Criteria HR Rubric.
+   - Instead of inventing toy codebases from scratch or vendoring gigabytes of source code, every case points to a **real, battle-tested open-source GitHub repository** (pinned to a specific tag or commit SHA where available; otherwise a documented default-branch checkout) and wraps it with a 4-Checkpoint interview specification, AI Trap analysis, and 7-Criteria HR Rubric.
 
 2. **Evaluating Engineering Judgment, Not Prompt Copy-Pasting**
    - A valid AI-enabled interview case **must not** be solvable by pasting the problem statement into an LLM and blindly accepting the first output.

@@ -124,3 +124,6 @@ The starter code contains **3 realistic domain bugs**:
 
 1. **Q**: _"Walk through your code when `CAPTURE(auth_id='a1', amount=65)` arrives FIRST, and `AUTH_HOLD(auth_id='a1', amount=100)` arrives SECOND, starting from `settled = 500, held = 0`."_  
    **Expected Answer**: On `CAPTURE(65)`: `auth['a1']` transitions from `UNSEEN` to `CAPTURED(65)`, `settled` becomes `435`, `held` stays `0`, `available` is `435`. On `AUTH_HOLD(100)`: since `auth['a1']` is already `CAPTURED(65)` (and `65 <= 100`), the hold is already resolved—`settled` stays `435` and `held` stays `0`, matching the in-order result!
+
+2. **Q**: _"Why must partial capture release the remaining held amount?"_
+   **Expected Answer**: Otherwise the held balance leaks and subsequent captures see a stale reservation.

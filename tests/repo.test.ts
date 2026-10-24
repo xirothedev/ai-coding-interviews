@@ -112,7 +112,7 @@ describe("AI Coding Interviews Repository Integrity", () => {
     }
   });
 
-  test("publish-wiki.sh --dry-run builds all 42 Wiki pages cleanly", () => {
+  test("publish-wiki.sh --dry-run builds all 43 Wiki pages cleanly", () => {
     const proc = Bun.spawnSync(["bash", "./scripts/publish-wiki.sh", "--dry-run"], {
       cwd: ROOT,
       stdout: "pipe",
@@ -120,6 +120,6 @@ describe("AI Coding Interviews Repository Integrity", () => {
     });
     const output = proc.stdout.toString();
     expect(proc.exitCode).toBe(0);
-    expect(output).toContain("Compiled 42 Wiki pages");
+    expect(output).toContain("Compiled 43 Wiki pages");
   });
 });

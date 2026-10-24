@@ -103,3 +103,6 @@ pytest
 
 1. **Q**: _"What happens in your code if a game is in Tie-Break mode, the score reaches `4–2`, and `won_point` is called for the 5th point?"_  
    **Expected Answer**: Since `win_threshold` is `7` in Tie-Break mode, `is_finished()` is `False` at `4–2`, so the 5th point is recorded normally (`"5-2"`).
+
+2. **Q**: _"Why does a Tie-Break game need a different win threshold than a standard game?"_
+   **Expected Answer**: Tie-Break requires 7 points with a 2-point lead, while standard play ends at 4 points with a 2-point lead.

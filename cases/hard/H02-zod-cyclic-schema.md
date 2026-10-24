@@ -52,27 +52,6 @@ npm install && npm test
 >      - A **True Cycle** (an object appearing inside one of its own descendants along the active traversal chain, such as `a.next = a`) **must** be caught and fail validation cleanly with a custom validation issue (`code: ZodIssueCode.custom`, `message: "Circular reference detected"` at the exact offending path) instead of throwing `RangeError`.
 >      - A **Shared Non-Cyclic Reference (DAG)** (the exact same object instance referenced by two sibling branches or fields, such as `const addr = { zip: "10001" }; const order = { billing: addr, shipping: addr }`) is **completely valid** and **must pass** validation in both synchronous (`safeParse`) and asynchronous (`safeParseAsync`) modes!
 >
-> ### Expected Behavior Examples
->
-> ```ts
-> const NodeSchema: z.ZodType<any> = z.lazy(() =>
->   z.object({ name: z.string(), next: NodeSchema.optional() }),
-> );
->
-> // 1. True Cycle -> Fails cleanly with path ["next", "next"]
-> const a: any = { name: "A" };
-> a.next = { name: "B", next: a };
-> NodeSchema.safeParse(a);
-> // -> { success: false, error: ZodError([{ code: "custom", message: "Circular reference detected", path: ["next", "next"] }]) }
->
-> // 2. Shared DAG Sibling -> Succeeds in both sync and async validation!
-> const leaf = { name: "Leaf" };
-> const root = { left: leaf, right: leaf };
-> const TreeSchema = z.object({ left: NodeSchema, right: NodeSchema });
-> TreeSchema.safeParse(root);
-> // -> { success: true, data: { left: { name: "Leaf" }, right: { name: "Leaf" } } }
-> ```
->
 > ### Acceptance Criteria
 >
 > 1. Search the codebase to trace how parse context paths are constructed and propagated across synchronous and asynchronous schema parsers, and uncomment any disabled recursive/union regression tests.
@@ -148,3 +127,6 @@ npm install && npm test
 
 1. **Q**: _"Why does a single shared `Set` with `add` on entry and `delete` on exit fail when `safeParseAsync` validates two sibling branches concurrently via `Promise.all`?"_  
    **Expected Answer**: If `left` and `right` share the same `leaf` object and run concurrently via `Promise.all([parse(left), parse(right)])`, both branches enter `leaf` at the same time. If they share a single mutable `ancestors` Set, `right` sees `leaf` already in `ancestors` (added by `left` 1ms ago) and falsely reports a cycle! Each branch needs its own ancestor set along its parent chain.
+
+2. **Q**: _"Why must a shared DAG sibling pass while a true ancestor cycle fails?"_
+   **Expected Answer**: A DAG has no active ancestor on the stack; only re-entering an ancestor is a cycle.

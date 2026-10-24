@@ -123,3 +123,6 @@ In `markdown_it/rules_block/table.py` (`escapedSplit(string: str) -> list[str]` 
 
 1. **Q**: _"Inside a Markdown inline code span like `` `a \| b` ``, does `\` escape the `|` or is `\` treated as a literal character?"_  
    **Expected Answer**: Inside a CommonMark code span, backslashes are always treated as literal characters (so `` `\` `` is a valid code span containing one backslash!). What protects the `|` inside `` `a \| b` `` is the matched pair of backticks, whereas `|` after `` `\` `` in ``| `\` | b |`` is outside the closed code span and _is_ a real column separator!
+
+2. **Q**: _"Why is a backslash-parity state machine safer than a regex for splitting table cells?"_
+   **Expected Answer**: Regex cannot correctly handle escaped pipes inside inline code spans.

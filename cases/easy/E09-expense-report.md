@@ -48,7 +48,7 @@ pytest
 >      - `CAR_RENTAL`: not a meal expense and never flagged `"X"`.
 > 2. **Support Multi-Currency Conversion (`currency: str = "USD"`, `exchange_rates: dict[str, Decimal | float]`)**:
 >    - Allow each `Expense` to carry an optional `currency: str = "USD"` (defaulting to `"USD"` with rate `1.0`), and accept an optional `exchange_rates` mapping when printing the report.
->    - Convert each expense amount into base USD integer units using **Banker's Rounding (`ROUND_HALF_EVEN`)** _per line item_ (`converted_amount = round_half_even(expense.amount * rate)`).
+>    - Convert each expense amount into base USD integer units using **Banker's Rounding (`ROUND_HALF_EVEN`)** _per line item_.
 >    - **Accounting Invariants**:
 >      - **Invariant 1**: The over-limit marker `"X"` must be evaluated against the **converted base USD `converted_amount`**, never the raw foreign-currency integer (for example, a `DINNER` of `6000 JPY` at rate `0.0067` converts to `40 USD <= 5000`, so it must **not** be flagged `"X"`).
 >      - **Invariant 2**: Both `"Meals:"` and `"Total:"` summary lines must equal the exact sum of the **rounded line-item `converted_amount` values** printed on the report (never sum unrounded floats and round at the end).
@@ -104,3 +104,6 @@ pytest
 
 1. **Q**: _"If three line items convert to `$10.004`, `$10.004`, and `$10.004`, why must the printed Total be `$30.00` instead of `round(30.012, 2) = $30.01`?"_  
    **Expected Answer**: In financial invoices and expense reports, each line item is rounded to minor currency units (`$10.00`) when recorded. If the printed line items are `$10.00`, `$10.00`, and `$10.00`, printing a Total of `$30.01` violates column addition reconciliation (`sum(printed_lines) == printed_total`).
+
+2. **Q**: _"Why convert and round each line item before summing, instead of summing raw floats?"_
+   **Expected Answer**: Summing unrounded floats accumulates representation error; per-item rounding keeps the printed total consistent.
