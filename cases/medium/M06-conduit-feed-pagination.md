@@ -2,26 +2,34 @@
 
 [⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../README.md)
 
-| Attribute                    | Details                                                                                                                                      |
-| :--------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Case ID**                  | `M06`                                                                                                                                        |
-| **Difficulty Level**         | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar)                                                                                              |
-| **Task Archetype**           | Legacy Refactoring & Performance Optimization                                                                                                |
-| **Source GitHub Repository** | [`gothinkster/realworld`](https://github.com/gothinkster/realworld) _(FastAPI / Express / Go-Gin / Spring Boot)_                             |
-| **Target Files**             | Articles controller/router, service, repository/queries, and feed integration tests                                                          |
-| **Supported Languages**      | `Python`, `TypeScript`, `Go`, `Java`                                                                                                         |
-| **Primary AI Traps**         | SQL `LIMIT` applied to `LEFT JOIN`ed tag rows (returning fewer articles than `limit`) · Single-column `created_at` cursor skipping tied rows |
+| Attribute                    | Details                                                                                                                                                                                                                                                                                                                                         |
+| :--------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Case ID**                  | `M06`                                                                                                                                                                                                                                                                                                                                           |
+| **Difficulty Level**         | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar)                                                                                                                                                                                                                                                                                                 |
+| **Task Archetype**           | Legacy Refactoring & Performance Optimization                                                                                                                                                                                                                                                                                                   |
+| **Source GitHub Repository** | [`nsidnev/fastapi-realworld-example-app`](https://github.com/nsidnev/fastapi-realworld-example-app) · [`gothinkster/node-express-realworld-example-app`](https://github.com/gothinkster/node-express-realworld-example-app) · [`gothinkster/golang-gin-realworld-example-app`](https://github.com/gothinkster/golang-gin-realworld-example-app) |
+| **Target Files**             | `app/api/routes/articles/articles_resource.py`, `app/db/repositories/articles.py` _(or `src/app/routes/article/article.service.ts` in Express, `articles/models.go` in Go-Gin)_                                                                                                                                                                 |
+| **Supported Languages**      | `Python`, `TypeScript`, `Go`, `Java`                                                                                                                                                                                                                                                                                                            |
+| **Primary AI Traps**         | Returning `articles_count=len(articles)` instead of pre-limit total count · SQL `LIMIT` applied to `LEFT JOIN`ed tag rows · Single-column `created_at` cursor skipping tied rows                                                                                                                                                                |
 
 ---
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
-### Clean-Room Workspace Provisioning
+### Clean-Room Workspace Provisioning & Native Defects
 
-Clone any backend implementation of the RealWorld ("Conduit") spec (e.g., FastAPI/SQLAlchemy, Express/Prisma/Knex, Go/Gin/SQLx, or Spring Boot) and ensure the `GET /api/articles` endpoint exhibits these two classic defects:
+```bash
+git clone https://github.com/nsidnev/fastapi-realworld-example-app.git conduit-interview
+cd conduit-interview
+rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
+pytest
+```
 
-1. **Bug 1 (Post-Pagination In-Memory Filtering & N+1 Query Loop)**: The repository fetches `LIMIT 20 OFFSET 0` articles first and filters by `tag` or `favorited` in application code (or applies `LIMIT 20` directly to a `SELECT ... FROM articles LEFT JOIN article_tags` query so 1 article with 5 tags consumes 5 of the 20 limit rows!), and executes 3 separate queries per article in a `for` loop (`N+1` queries!).
-2. **Bug 2 (Unstable Timestamp Pagination)**: Sorting only by `ORDER BY created_at DESC` causes articles created in the same millisecond to duplicate or vanish across pages.
+Notice that **`nsidnev/fastapi-realworld-example-app` natively exhibits both classic Conduit backend bugs** out of the box (no artificial bug seeding required!):
+
+1. **Native Bug 1 (`articles_count=len(articles)` in `app/api/routes/articles/articles_resource.py` lines 69 & 98)**: Both `get_articles_feed` and `retrieve_articles` return `ListOfArticlesInResponse(articles=articles, articles_count=len(articles))`—reporting the **page slice length** (`<= limit`) instead of the total number of matching articles before `limit`/`offset`!
+2. **Native Bug 2 (`1 + 5N` Query Comprehension in `app/db/repositories/articles.py` lines 257–264)**: `ArticlesRepository.filter_articles()` fetches the list of article rows and then runs an async list comprehension `[await self._get_article_from_db_record(...) for article_row in article_rows]`, where every single article fires **5 separate SQL queries** (`get_tags_for_article_by_slug`, `get_favorites_count_for_article_by_slug`, `is_article_favorited_by_user`, `get_profile_by_username`, `is_user_following_for_another`)—executing `1 + 5 * 20 = 101` SQL queries for a single 20-article page!
+3. **Bug 3 (Unstable Timestamp Pagination)**: Sorting only by `ORDER BY created_at DESC` causes articles created in the same millisecond to duplicate or vanish across pages.
 
 ---
 

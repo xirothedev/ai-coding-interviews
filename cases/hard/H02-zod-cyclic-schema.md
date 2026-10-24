@@ -2,15 +2,15 @@
 
 [⬅️ Back to Hard Catalog](README.md) · [🏠 Master Hub](../../README.md)
 
-| Attribute                    | Details                                                                                                       |
-| :--------------------------- | :------------------------------------------------------------------------------------------------------------ |
-| **Case ID**                  | `H02`                                                                                                         |
-| **Difficulty Level**         | 🔴 **Hard** (`60–75 mins` — Senior / Staff Bar)                                                               |
-| **Task Archetype**           | Scale Optimization + State Mutation Bugfix                                                                    |
-| **Source GitHub Repository** | [`colinhacks/zod`](https://github.com/colinhacks/zod)                                                         |
-| **Target Files**             | `src/types.ts`, `src/helpers/parseUtil.ts`, `src/__tests__/recursive.test.ts`, `src/__tests__/unions.test.ts` |
-| **Supported Languages**      | `TypeScript`                                                                                                  |
-| **Hard Taxonomy Pillars**    | Pillar 1 (Shared Context Mutation) · Pillar 2 (Toy vs. Prod Scale) · Pillar 3 (DAG vs. Cycle Invariants)      |
+| Attribute                    | Details                                                                                                                                                                                                                                                                                                                            |
+| :--------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Case ID**                  | `H02`                                                                                                                                                                                                                                                                                                                              |
+| **Difficulty Level**         | 🔴 **Hard** (`60–75 mins` — Senior / Staff Bar)                                                                                                                                                                                                                                                                                    |
+| **Task Archetype**           | Scale Optimization + State Mutation Bugfix                                                                                                                                                                                                                                                                                         |
+| **Source GitHub Repository** | [`colinhacks/zod`](https://github.com/colinhacks/zod)                                                                                                                                                                                                                                                                              |
+| **Target Files**             | **v3 Tag (`v3.23.8`)**: `src/types.ts`, `src/helpers/parseUtil.ts`, `src/__tests__/recursive.test.ts`, `src/__tests__/unions.test.ts` · **`main` Monorepo**: `packages/zod/src/v3/types.ts`, `packages/zod/src/v3/helpers/parseUtil.ts`, `packages/zod/src/v3/tests/recursive.test.ts`, `packages/zod/src/v3/tests/unions.test.ts` |
+| **Supported Languages**      | `TypeScript`                                                                                                                                                                                                                                                                                                                       |
+| **Hard Taxonomy Pillars**    | Pillar 1 (Shared Context Mutation) · Pillar 2 (Toy vs. Prod Scale) · Pillar 3 (DAG vs. Cycle Invariants)                                                                                                                                                                                                                           |
 
 ---
 
@@ -21,15 +21,20 @@
 ```bash
 git clone https://github.com/colinhacks/zod.git zod-interview
 cd zod-interview
+# Option A: Pin v3 standalone layout (src/types.ts, src/helpers/parseUtil.ts, src/__tests__/*.test.ts)
+git checkout v3.23.8
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
 npm install && npm test
+
+# Option B: Use main monorepo layout (packages/zod/src/v3/types.ts, packages/zod/src/v3/helpers/parseUtil.ts, packages/zod/src/v3/tests/*.test.ts)
+# pnpm install && pnpm test
 ```
 
 ### Seeded Defects to Inject Before the Session
 
-1. **Bug 1 (Mutable `path` Array in `ParseContext`)**: In `src/helpers/parseUtil.ts` or `ZodUnion._parse`, pass a shared mutable `ctx.path` array into child schemas (`path.push(key)` / `path.pop()`) so that when `parseAsync` runs union branches or object keys via `Promise.all()`, interleaved async resolutions corrupt the reported `issue.path`!
+1. **Bug 1 (Mutable `path` Array in `ParseContext`)**: In `src/helpers/parseUtil.ts` (or `packages/zod/src/v3/helpers/parseUtil.ts` on `main`) or `ZodUnion._parse`, pass a shared mutable `ctx.path` array into child schemas (`path.push(key)` / `path.pop()`) so that when `parseAsync` runs union branches or object keys via `Promise.all()`, interleaved async resolutions corrupt the reported `issue.path`!
 2. **Bug 2 (Unbounded Stack Overflow on Cyclic Objects in `ZodLazy`)**: `z.lazy(() => CategorySchema)` enters infinite recursion (`RangeError: Maximum call stack size exceeded`) when given a runtime object with a circular reference (`node.parent = node`).
-3. **Commented Tests**: Comment out the async union path isolation test and cyclic graph tests in `src/__tests__/recursive.test.ts`.
+3. **Commented Tests**: Comment out the async union path isolation test and cyclic graph tests in `src/__tests__/recursive.test.ts` and `src/__tests__/unions.test.ts` (or `packages/zod/src/v3/tests/recursive.test.ts` and `packages/zod/src/v3/tests/unions.test.ts` on `main`).
 
 ---
 

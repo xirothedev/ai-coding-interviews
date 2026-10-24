@@ -2,23 +2,32 @@
 
 [⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../README.md)
 
-| Attribute                    | Details                                                                                                                                                                                                              |
-| :--------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Case ID**                  | `M10`                                                                                                                                                                                                                |
-| **Difficulty Level**         | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar)                                                                                                                                                                      |
-| **Task Archetype**           | Code Review & AI-Slop Rescue + Domain State Machine                                                                                                                                                                  |
-| **Source GitHub Repository** | [`oskardudycz/EventSourcing.NetCore`](https://github.com/oskardudycz/EventSourcing.NetCore) · [`cer/event-sourcing-examples`](https://github.com/cer/event-sourcing-examples) _(Backend Ledger / Payment Challenge)_ |
-| **Target Files**             | `ledger`, `webhook_processor`, and `test_ledger`                                                                                                                                                                     |
-| **Supported Languages**      | `TypeScript`, `Python`, `Java`, `Go`                                                                                                                                                                                 |
-| **Primary AI Traps**         | Out-of-order `CAPTURE` arriving before `HOLD` · Partial capture (`$80` of `$100` hold) failing to release the `$20` remainder · Duplicate `event_id` replay                                                          |
+| Attribute                    | Details                                                                                                                                                                                                                                                                                                                              |
+| :--------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Case ID**                  | `M10`                                                                                                                                                                                                                                                                                                                                |
+| **Difficulty Level**         | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar)                                                                                                                                                                                                                                                                                      |
+| **Task Archetype**           | Code Review & AI-Slop Rescue + Domain State Machine                                                                                                                                                                                                                                                                                  |
+| **Source GitHub Repository** | [`MARKASCHARAN/ChronoLedger`](https://github.com/MARKASCHARAN/ChronoLedger) · [`Zubimendi/ReplayLedger`](https://github.com/Zubimendi/ReplayLedger) · [`HARRIFIED/Event-sourced-core-banking`](https://github.com/HARRIFIED/Event-sourced-core-banking)                                                                              |
+| **Target Files**             | `backend/src/domain/payment/payment-fsm.ts`, `backend/src/domain/reconciliation/reconciliation-engine.ts`, `backend/tests/unit/payment-fsm.test.ts` _(or `internal/ledger/derive.go`, `internal/ledger/append.go`, `test/integration/idempotency_test.go` in `ReplayLedger`, or `src/modules/accounts/domain/account.aggregate.ts`)_ |
+| **Supported Languages**      | `TypeScript`, `Go`, `Python`, `Java`                                                                                                                                                                                                                                                                                                 |
+| **Primary AI Traps**         | Out-of-order `CAPTURE` arriving before `HOLD` · Partial capture (`$80` of `$100` hold) failing to release the `$20` remainder · Duplicate `event_id` replay                                                                                                                                                                          |
 
 ---
 
 ## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
-### Scenario Context
+### Clean-Room Workspace Provisioning
 
-This case simulates Stripe/Fintech-style interviews where a candidate is given a payment ledger & webhook ingestion service previously drafted with AI assistance.
+```bash
+git clone https://github.com/MARKASCHARAN/ChronoLedger.git ledger-interview
+cd ledger-interview/backend
+npm test
+# (Or clone https://github.com/Zubimendi/ReplayLedger.git for Go: go test ./...)
+```
+
+### Scenario Context & Seeded Defects
+
+This case simulates Stripe/Fintech-style interviews where a candidate works on an event-sourced payment state machine & webhook reconciliation service (`ChronoLedger` in TypeScript or `ReplayLedger` in Go).
 The starter code contains **3 realistic domain bugs**:
 
 1. **Bug 1 (Duplicate Webhook Replay)**: Payment gateways deliver webhooks with at-least-once semantics (`event_id`). Re-delivering an `AUTH_HOLD` or `DEPOSIT` event applies the balance change twice!

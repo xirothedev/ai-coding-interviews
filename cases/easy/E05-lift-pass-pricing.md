@@ -8,8 +8,8 @@
 | **Difficulty Level**         | 🟢 **Easy** (`30–45 mins` — Junior / Mid Bar)                                                                                             |
 | **Task Archetype**           | Legacy Refactoring + Feature Extension                                                                                                    |
 | **Source GitHub Repository** | [`martinsson/Refactoring-Kata-Lift-Pass-Pricing`](https://github.com/martinsson/Refactoring-Kata-Lift-Pass-Pricing)                       |
-| **Target Files**             | `prices.py` & `test_prices.py` _(or `TypeScript/`, `go/`, `java/`, `csharp/`)_                                                            |
-| **Supported Languages**      | `Python`, `TypeScript`, `Go`, `Java`, `C#`                                                                                                |
+| **Target Files**             | `src/prices.py` & `test/test_prices.py` _(or `typescript/`, `java/`, `csharp/`, `scala/`, `php/`)_                                        |
+| **Supported Languages**      | `Python`, `TypeScript`, `Java`, `C#`                                                                                                      |
 | **Primary AI Traps**         | Counting free toddlers (`age < 6`) toward the `4+` paying group discount threshold · Applying `math.ceil` in the wrong intermediate order |
 
 ---
@@ -20,15 +20,15 @@
 
 ```bash
 git clone https://github.com/martinsson/Refactoring-Kata-Lift-Pass-Pricing.git lift-pass-interview
-cd lift-pass-interview/python # (or typescript / go / java / csharp)
+cd lift-pass-interview/python # (or typescript / java / csharp)
 rm -rf ../.git && git init && git add . && git commit -m "Initial interview baseline"
-pytest
+PYTHONPATH=src pytest
 ```
 
 ### Seeded Defects to Inject Before the Session
 
-1. **Bug 1 (Age Bracket Boundary Bug)**: In `prices.py`, seed an off-by-one boundary on `age < 6` (`<= 6`) or `age > 64` (`>= 64`) for `night` vs `1jour` passes.
-2. **Commented Tests**: Comment out `test_exact_age_6_and_64_boundaries` and `test_group_discount_excludes_free_children` in `test_prices.py`.
+1. **Bug 1 (Age Bracket Boundary Bug)**: In `src/prices.py`, seed an off-by-one boundary on `age < 6` (`<= 6`) or `age > 64` (`>= 64`) for `night` vs `1jour` passes.
+2. **Commented Tests**: Comment out `test_exact_age_6_and_64_boundaries` and `test_group_discount_excludes_free_children` in `test/test_prices.py`.
 
 ---
 
@@ -53,8 +53,8 @@ pytest
 >
 > ### Your Tasks
 >
-> 1. **Explore & Trace**: Read `prices.py` and `test_prices.py` to understand the deeply nested legacy pricing rules.
-> 2. **Run & Uncomment Tests**: Run `pytest` and uncomment the boundary and group-pricing tests.
+> 1. **Explore & Trace**: Read `src/prices.py` and `test/test_prices.py` to understand the deeply nested legacy pricing rules.
+> 2. **Run & Uncomment Tests**: Run `PYTHONPATH=src pytest` and uncomment the boundary and group-pricing tests.
 > 3. **Fix Age Boundaries & Implement `calculate_group_price`**: Refactor the pure pricing logic from HTTP/DB concerns and implement `calculate_group_price`.
 > 4. **Verify Edge Cases**: Test a group of `[30, 32, 4, 5]` (2 adults + 2 free 4/5-year-olds = only `2` paying skiers → NO group discount!), `[30, 32, 35, 10]` on a `night` pass (`10`-year-old is free at night → only `3` paying skiers → NO group discount!), and a non-holiday Monday with 4 paying adults.
 
@@ -76,7 +76,7 @@ pytest
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Extract a truth table of `pass_type` (`1jour` vs `night`), `age` brackets (`<6`, `6..14`, `15..64`, `>64`), and Monday/Holiday discounts from `prices.py`."_
+   > _"Do not write code. Extract a truth table of `pass_type` (`1jour` vs `night`), `age` brackets (`<6`, `6..14`, `15..64`, `>64`), and Monday/Holiday discounts from `src/prices.py`."_
 2. **Step 2 (`Plan`)**:
    - Extract a pure `compute_single_ticket_price(pass_type, base_price, age, is_monday, is_holiday)` function; define paying skiers as those with `single_price > 0`; apply the group multiplier when `paying_count >= 4 and not is_holiday`.
 3. **Step 3 (`Prompt`)** & **Step 4 (`Review`)**:

@@ -27,7 +27,7 @@ pytest tests/test_options.py
 
 ### Seeded Defects to Inject Before the Session
 
-1. **Bug 1 (Falsy CLI Value Overridden by Environment Variable / Config)**: In parameter value resolution (`Option.consume_value` / `Parameter.Full_process_value`), use truthiness (`if not value:`) or `cli_val or env_val or default` so that passing `--retries 0`, `--prefix ""`, or `--no-verify` (`False`) on the command line is ignored when `APP_RETRIES=5` or `APP_VERIFY=true` is set in `os.environ`!
+1. **Bug 1 (Falsy CLI Value Overridden by Environment Variable / Config)**: In parameter value resolution (`Parameter.consume_value` / `Option.consume_value` / `Option.value_from_envvar` in `src/click/core.py`, which uses the `UNSET` sentinel), replace an `is UNSET` check with truthiness (`if not value:`) or `cli_val or env_val or default` so that passing `--retries 0`, `--prefix ""`, or `--no-verify` (`False`) on the command line is ignored when `APP_RETRIES=5` or `APP_VERIFY=true` is set in `os.environ`!
 2. **Bug 2 (Boolean String Parsing in Environment Variables)**: Setting `APP_VERIFY="false"` or `APP_VERIFY="0"` in `os.environ` evaluates `bool("false") == True` in Python/JS if not parsed through the boolean type converter!
 
 ---
@@ -57,7 +57,7 @@ pytest tests/test_options.py
 >
 > ### Your Tasks
 >
-> 1. **Explore & Trace**: Inspect `Parameter.consume_value()` and `Option.value_from_envvar()` in `src/click/core.py`.
+> 1. **Explore & Trace**: Inspect `Parameter.consume_value()`, `Option.consume_value()`, `Option.value_from_envvar()`, and the `UNSET` sentinel in `src/click/core.py`.
 > 2. **Run & Uncomment Tests**: Run `pytest tests/test_options.py tests/test_context.py` and uncomment the falsy-override and `ParameterSource` tests.
 > 3. **Fix Precedence, Env-Var Conversion & Source Tracking**: Fix all three issues cleanly.
 > 4. **Verify Edge Cases**: Test `--retries 0` when default is `0` (`source == COMMANDLINE`), `APP_FLAG=false`, `multiple=True` with empty env var, and nested subcommands (`cli --verbose subcmd`).
@@ -75,7 +75,7 @@ pytest tests/test_options.py
       source = ParameterSource.DEFAULT
   ```
 - **Why It Fails**: If `default = 0` and the user explicitly runs `my-cli --retries 0`, `value == self.default` (`0 == 0`) is `True`, so the AI falsely reports `ParameterSource.DEFAULT` instead of `ParameterSource.COMMANDLINE`! (And in Python, `False == 0` and `True == 1` in value comparisons!)
-- **Correct Fix**: Use a unique sentinel object (`_UNSET = object()`) during `consume_value()` and record `(value, ParameterSource)` at the exact step where the value is found (`opts` dict → `COMMANDLINE`, `default_map` → `DEFAULT_MAP`, `envvar` → `ENVIRONMENT`, fallback → `DEFAULT`).
+- **Correct Fix**: Use Click's unique sentinel object (`UNSET` in `src/click/core.py`) during `Parameter.consume_value()` / `Option.consume_value()` and record `(value, ParameterSource)` at the exact step where the value is found (`opts` dict → `COMMANDLINE`, `default_map` → `DEFAULT_MAP`, `envvar` → `ENVIRONMENT`, fallback → `DEFAULT`).
 
 ### Trap 2: Splitting Empty Env String `"".split(",") -> [""]` for `multiple=True`
 

@@ -8,8 +8,8 @@
 | **Difficulty Level**         | 🟢 **Easy** (`30–45 mins` — Junior / Mid Bar)                                                                                                                       |
 | **Task Archetype**           | Bugfix + Feature Extension                                                                                                                                          |
 | **Source GitHub Repository** | [`emilybache/SupermarketReceipt-Refactoring-Kata`](https://github.com/emilybache/SupermarketReceipt-Refactoring-Kata)                                               |
-| **Target Files**             | `shopping_cart.py`, `teller.py`, `receipt.py`, `model_objects.py`, `test_supermarket.py`                                                                            |
-| **Supported Languages**      | `Python`, `TypeScript`, `Go`, `Java`, `Rust`, `C#`                                                                                                                  |
+| **Target Files**             | `shopping_cart.py`, `teller.py`, `receipt.py`, `model_objects.py`, `tests/test_supermarket.py` _(or `typescript/`, `go/`, `java/`, `csharp/`)_                      |
+| **Supported Languages**      | `Python`, `TypeScript`, `Go`, `Java`, `C#`                                                                                                                          |
 | **Primary AI Traps**         | Partial bundle remainder bug (`7` items on `5-for-X`) · Evaluating minimum-spend coupon against gross pre-bundle total instead of net total · Float precision drift |
 
 ---
@@ -20,15 +20,15 @@
 
 ```bash
 git clone https://github.com/emilybache/SupermarketReceipt-Refactoring-Kata.git supermarket-interview
-cd supermarket-interview/python # (or TypeScript / go / java / rust / csharp)
+cd supermarket-interview/python # (or typescript / go / java / csharp)
 rm -rf ../.git && git init && git add . && git commit -m "Initial interview baseline"
 pytest
 ```
 
 ### Seeded Defects to Inject Before the Session
 
-1. **Bug 1 (Multi-Bundle Remainder Calculation in `ShoppingCart.handle_offers`)**: In `TwoForAmount` or `FiveForAmount`, seed an integer division bug (`int(quantity) // 5` without multiplying the bundle price by `number_of_bundles`, so buying `10` toothpastes on a `5-for-$7.49` offer charges `$7.49` for the first 5 and full price for the next 5!).
-2. **Commented Tests**: Comment out `test_ten_items_on_five_for_amount_offer` and `test_coupon_threshold_after_bundle_discounts` in `test_supermarket`.
+1. **Bug 1 (Multi-Bundle Remainder Calculation in `ShoppingCart.handle_offers`)**: Note that in `python/shopping_cart.py` line 39, `SpecialOfferType.TWO_FOR_AMOUNT` **already has a live float-division bug** (`total = offer.argument * (quantity_as_int / x) + quantity_as_int % 2 * unit_price`, using float `/` instead of integer `//`!), and `FIVE_FOR_AMOUNT` vs `TWO_FOR_AMOUNT` have inconsistent bundle math. Seed or highlight the multi-bundle calculation bug (e.g., `int(quantity) // 5` without multiplying the bundle price by `number_of_xs`, or `TWO_FOR_AMOUNT` charging float-divided bundle prices on odd quantities like `3` or `5` items!).
+2. **Commented Tests**: Comment out `test_ten_items_on_five_for_amount_offer` and `test_coupon_threshold_after_bundle_discounts` in `tests/test_supermarket.py`.
 
 ---
 
@@ -52,7 +52,7 @@ pytest
 > ### Your Tasks
 >
 > 1. **Explore & Trace**: Read `teller.py`, `shopping_cart.py`, `receipt.py`, and `model_objects.py`.
-> 2. **Run & Uncomment Tests**: Run `pytest` and uncomment the multi-bundle and loyalty coupon tests in `test_supermarket.py`.
+> 2. **Run & Uncomment Tests**: Run `pytest` and uncomment the multi-bundle and loyalty coupon tests in `tests/test_supermarket.py`.
 > 3. **Fix Multi-Bundle Offers & Implement Net-Threshold Loyalty Coupon**: Fix the bundle math and add loyalty coupon evaluation.
 > 4. **Verify Edge Cases**: Test adding the same product in 3 separate `add_item_quantity` calls (`2 + 2 + 3 = 7` items on `5-for-A`), weighted items (`1.5 kg`), and floating-point boundary (`net_subtotal == 49.99999999999999` vs `50.00`).
 

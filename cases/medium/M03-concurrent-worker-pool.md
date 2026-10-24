@@ -2,15 +2,15 @@
 
 [⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../README.md)
 
-| Attribute                    | Details                                                                                                                |
-| :--------------------------- | :--------------------------------------------------------------------------------------------------------------------- |
-| **Case ID**                  | `M03`                                                                                                                  |
-| **Difficulty Level**         | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar)                                                                        |
-| **Task Archetype**           | System Component Integration & Concurrency                                                                             |
-| **Source GitHub Repository** | [`RezaSi/go-interview-practice`](https://github.com/RezaSi/go-interview-practice)                                      |
-| **Target Files**             | Worker pool / concurrency challenge package & `*_test.go`                                                              |
-| **Supported Languages**      | `Go` _(Primary)_, `TypeScript`, `Python` (`asyncio`), `Rust` (`tokio`)                                                 |
-| **Primary AI Traps**         | Goroutine leak on early fail-fast return · `panic: send on closed channel` · Order-preservation vs. streaming deadlock |
+| Attribute                    | Details                                                                                                                                                                                                                                                                                              |
+| :--------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Case ID**                  | `M03`                                                                                                                                                                                                                                                                                                |
+| **Difficulty Level**         | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar)                                                                                                                                                                                                                                                      |
+| **Task Archetype**           | System Component Integration & Concurrency                                                                                                                                                                                                                                                           |
+| **Source GitHub Repository** | [`sourcegraph/conc`](https://github.com/sourcegraph/conc) (`pool/context_pool.go`, `pool/result_context_pool.go`, `iter/map.go`) · [`RezaSi/go-interview-practice`](https://github.com/RezaSi/go-interview-practice) (`challenge-11/solution-template.go`, `challenge-11/solution-template_test.go`) |
+| **Target Files**             | `pool/context_pool.go`, `pool/result_context_pool.go`, `iter/map.go` _(or `challenge-11/solution-template.go` & `challenge-11/solution-template_test.go`)_                                                                                                                                           |
+| **Supported Languages**      | `Go` _(Primary)_, `TypeScript`, `Python` (`asyncio`), `Rust` (`tokio`)                                                                                                                                                                                                                               |
+| **Primary AI Traps**         | Calling `cancel()` _before_ `addErr(err)` (causing surviving workers to record `context.Canceled` instead of the real root error!) · Goroutine leak on early fail-fast return · Shared slice `append` data race                                                                                      |
 
 ---
 
@@ -19,16 +19,19 @@
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/RezaSi/go-interview-practice.git go-concurrency-interview
-cd go-concurrency-interview
+git clone https://github.com/sourcegraph/conc.git conc-interview
+cd conc-interview
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
 go test -race ./...
+# (Or use RezaSi/go-interview-practice/challenge-11 for a standalone template)
 ```
 
 ### Seeded Defects to Inject Before the Session
 
-1. **Bug 1 (Unbuffered `errCh` Goroutine Leak)**: Workers send errors to `errCh := make(chan error)` (unbuffered), and the coordinator only reads `<-errCh` once and returns—leaving the remaining `N - 1` workers permanently blocked on `errCh <- err`!
-2. **Bug 2 (Data Race on Shared Results Slice)**: Workers append directly to `results = append(results, res)` without a mutex or indexed slot assignment, failing `go test -race`.
+1. **Bug 1 (`cancel()` Before `addErr(err)` Race Condition in `pool/context_pool.go` & Unbuffered `errCh` Goroutine Leak)**:
+   - In `sourcegraph/conc/pool/context_pool.go` (lines 48–52), notice the critical comment: `p.addErr(err)` **must** be called _before_ `p.cancel()`, otherwise cancelling `ctx` wakes up other workers which immediately abort with `context.Canceled` and race to record `context.Canceled` as the first error before the actual root-cause `err` is recorded!
+   - Alternatively, in channel-based pools (`challenge-11`), workers send errors to an unbuffered `errCh := make(chan error)` where the coordinator only reads `<-errCh` once and returns—leaving `N - 1` workers permanently blocked!
+2. **Bug 2 (Data Race on Shared Results Slice in `pool/result_context_pool.go` / `iter/map.go`)**: Workers append directly to `results = append(results, res)` without a mutex or indexed slot assignment, failing `go test -race`.
 
 ---
 
@@ -72,20 +75,20 @@ go test -race ./...
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Returning From `ExecuteAll` Before `wg.Wait()` Finishes (Leaking In-Flight Goroutines)
+### Trap 1: Returning Before `wg.Wait()` Finishes OR Calling `cancel()` Before Recording `firstErr` (`addErr`)
 
 - **What Naive AI Writes**:
   ```go
-  select {
-  case err := <-errCh:
-      cancel()
-      return nil, err // <-- BUG! Workers are still running in the background!
-  case <-doneCh:
-      return results, nil
+  if err != nil {
+      cancel()          // <-- BUG 1: Wakes sibling workers with ctx.Err() == context.Canceled BEFORE err is saved!
+      once.Do(func() { firstErr = err })
+      return nil, err   // <-- BUG 2: Returns while in-flight workers are still running in the background!
   }
   ```
-- **Why It Fails**: Returning immediately after `cancel()` leaves in-flight workers still executing (and holding DB transactions or temporary files) after `ExecuteAll` returns, failing the `runtime.NumGoroutine()` leak assertion and causing race conditions in caller cleanup!
-- **Correct Fix**: Call `cancel()` on first error (using `sync.Once`), let active workers see `ctx.Done()` and exit, and **always wait for `wg.Wait()`** before `ExecuteAll` returns!
+- **Why It Fails**:
+  1. As documented in `sourcegraph/conc/pool/context_pool.go`, if a failing worker calls `cancel()` _before_ recording `err` (via `addErr(err)` / `once.Do`), another worker blocked on `<-ctx.Done()` can wake up immediately, return `ctx.Err()` (`context.Canceled`), and win the race to `once.Do`, causing `ExecuteAll` to return `context.Canceled` instead of the real database/network error!
+  2. Returning immediately after `cancel()` leaves in-flight workers still executing after `ExecuteAll` returns, failing `runtime.NumGoroutine()` leak checks!
+- **Correct Fix**: Record the error (`addErr(err)` / `once.Do`) **before** calling `cancel()`, and **always wait for `wg.Wait()`** before `ExecuteAll` returns!
 
 ### Trap 2: Indexed Slot Assignment Without Mutex (Safe) vs. `append` (Data Race!)
 

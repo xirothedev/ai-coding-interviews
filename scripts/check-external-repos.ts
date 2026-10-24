@@ -1,18 +1,31 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dir, "..");
-const CASES_DIR = join(ROOT, "cases");
+const SCAN_DIRS = [join(ROOT, "cases"), join(ROOT, "docs"), join(ROOT, "wiki")];
+const ROOT_FILES = [join(ROOT, "README.md")];
 
-function getCaseFiles(dir: string): string[] {
+function getMarkdownFilesInDir(dir: string): string[] {
+  if (!existsSync(dir)) return [];
   const results: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const fullPath = join(dir, entry.name);
     if (entry.isDirectory()) {
-      results.push(...getCaseFiles(fullPath));
+      results.push(...getMarkdownFilesInDir(fullPath));
     } else if (entry.isFile() && entry.name.endsWith(".md")) {
       results.push(fullPath);
     }
+  }
+  return results;
+}
+
+function getCaseFiles(): string[] {
+  const results: string[] = [];
+  for (const file of ROOT_FILES) {
+    if (existsSync(file)) results.push(file);
+  }
+  for (const dir of SCAN_DIRS) {
+    results.push(...getMarkdownFilesInDir(dir));
   }
   return results;
 }
@@ -38,10 +51,10 @@ function extractGithubRepos(files: string[]): Map<string, string[]> {
 }
 
 async function main() {
-  const files = getCaseFiles(CASES_DIR);
+  const files = getCaseFiles();
   const repoToFiles = extractGithubRepos(files);
   console.log(
-    `Checking ${repoToFiles.size} unique GitHub repositories across ${files.length} case files...`,
+    `Checking ${repoToFiles.size} unique GitHub repositories across ${files.length} markdown files...`,
   );
 
   const token = process.env.GITHUB_TOKEN;

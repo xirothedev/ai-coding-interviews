@@ -8,7 +8,7 @@
 | **Difficulty Level**         | 🟢 **Easy** (`30–45 mins` — Junior / Mid Bar)                                                                                                               |
 | **Task Archetype**           | Bugfix + Feature Extension (State Machine)                                                                                                                  |
 | **Source GitHub Repository** | [`emilybache/Tennis-Refactoring-Kata`](https://github.com/emilybache/Tennis-Refactoring-Kata)                                                               |
-| **Target Files**             | `tennis.py` / `tennis3.py` & `tennis_test.py` _(or `TypeScript/`, `go/`, `java/`, `rust/`, `csharp/`)_                                                      |
+| **Target Files**             | `tennis1.py`, `tennis3.py` & `tests/tennis_test.py` _(or `typescript/`, `go/`, `java/`, `rust/`, `csharp/`)_                                                |
 | **Supported Languages**      | `Python`, `TypeScript`, `Go`, `Java`, `Rust`, `C#`                                                                                                          |
 | **Primary AI Traps**         | Allowing `won_point()` after game is already won (turning `"Win for player1"` back into `"Deuce"`!) · Emitting `"Advantage"` at `7–6` during Tie-Break mode |
 
@@ -20,15 +20,15 @@
 
 ```bash
 git clone https://github.com/emilybache/Tennis-Refactoring-Kata.git tennis-interview
-cd tennis-interview/python # (or TypeScript / go / java / rust / csharp)
+cd tennis-interview/python # (or typescript / go / java / rust / csharp)
 rm -rf ../.git && git init && git add . && git commit -m "Initial interview baseline"
 pytest
 ```
 
 ### Seeded Defects to Inject Before the Session
 
-1. **Bug 1 (High-Score Overflow in `TennisGame3`)**: In `TennisGame3.score()`, seed an array-index or bit-arithmetic bug when deuce extends to high point counts (e.g., `16–16` or `16–15`), or when custom player names (`"Roger"`, `"Rafa"`) are passed instead of `"player1"` / `"player2"` in `TennisGame1.won_point()`.
-2. **Commented Tests**: Comment out `test_custom_player_names`, `test_cannot_score_after_game_won`, and `test_tie_break_mode` in `tennis_test.py`.
+1. **Bug 1 (Native Hardcoded `"player1"` Bug in `TennisGame1` & `TennisGame3`)**: Notice that `tennis1.py` (`if player_name == "player1":`) and `tennis3.py` (`if n == "player1":`) **already have a native hardcoded `"player1"` bug** in the upstream repository when custom player names (`"Roger"`, `"Rafa"`) are passed to `TennisGame1("Roger", "Rafa")` or `TennisGame3("Roger", "Rafa")`! Optionally also seed a high-deuce boundary bug (`16–16`) in `TennisGame3.score()`.
+2. **Commented Tests**: Comment out `test_custom_player_names`, `test_cannot_score_after_game_won`, and `test_tie_break_mode` in `tests/tennis_test.py`.
 
 ---
 
@@ -36,23 +36,23 @@ pytest
 
 > ### Welcome to Your AI-Enabled SWE Coding Interview
 >
-> You are working on the Tennis Scoring Engine (`Tennis-Refactoring-Kata`). You have full access to the AI Assistant and `pytest`.
+> You are working on the Tennis Scoring Engine (`Tennis-Refactoring-Kata`), focusing on **`TennisGame1` in `tennis1.py`** (and **`TennisGame3` in `tennis3.py`**). You have full access to the AI Assistant and `pytest`.
 >
 > ### Problem Context
 >
-> 1. **Bug in Custom Player Names & High Deuce Counts**:
->    - Look at how `won_point(player_name)` and `score()` handle player names other than `"player1"` / `"player2"` (e.g., `TennisGame("Serena", "Venus")`) and high deuce scores (`15–15`, `16–15`). Fix any hardcoded `"player1"` assumptions!
-> 2. **Terminal State Guard (Post-Win Immutability)**:
+> 1. **Bug in Custom Player Names & High Deuce Counts (`TennisGame1` & `TennisGame3`)**:
+>    - Look at how `won_point(player_name)` and `score()` in `TennisGame1` (`tennis1.py`) and `TennisGame3` (`tennis3.py`) handle player names other than `"player1"` / `"player2"` (e.g., `TennisGame1("Serena", "Venus")`) and high deuce scores (`15–15`, `16–15`). Fix the hardcoded `"player1"` assumptions and any formatting bugs!
+> 2. **Terminal State Guard (Post-Win Immutability in `TennisGame1` & `TennisGame3`)**:
 >    - Once a game has reached a terminal `"Win for <player>"` state, calling `won_point()` again MUST raise a `ValueError("Game is already over")` (or language-equivalent exception) instead of continuing to mutate points (which currently allows the losing player to score twice after losing `4–2` and turn a finished game back into `"Deuce"`!).
-> 3. **New Feature — Set Tie-Break Mode (`is_tie_break: bool = False`)**:
->    - Add an optional `is_tie_break: bool = False` parameter to the constructor:
+> 3. **New Feature — Set Tie-Break Mode (`is_tie_break: bool = False` in `TennisGame1`)**:
+>    - Add an optional `is_tie_break: bool = False` parameter to `TennisGame1.__init__`:
 >      - In Tie-Break mode, scores are formatted using **raw numerical points** (`"0-0"`, `"1-0"`, `"6-6"`, `"7-6"`, `"8-8"`), NEVER `"Love"`, `"Fifteen"`, `"Deuce"`, or `"Advantage"`.
 >      - A player wins a Tie-Break when they reach **at least `7` points AND lead by `>= 2` points** (e.g., `7–0`, `7–5`, `8–6`, `12–10` → `"Win for <player>"`). At `6–6` or `7–6`, the game is still ongoing and `score()` returns `"6-6"` or `"7-6"`!
 >
 > ### Your Tasks
 >
-> 1. **Explore & Run Tests**: Inspect `tennis1.py`, `tennis2.py`, `tennis3.py`, and `tennis_test.py`. Run `pytest`.
-> 2. **Uncomment & Fix Existing Bugs**: Uncomment the custom-player-name and high-deuce tests and fix the bugs.
+> 1. **Explore & Run Tests**: Inspect `tennis1.py`, `tennis3.py`, and `tests/tennis_test.py`. Run `pytest`.
+> 2. **Uncomment & Fix Existing Bugs**: Uncomment the custom-player-name and high-deuce tests in `tests/tennis_test.py` and fix the bugs in `TennisGame1` and `TennisGame3`.
 > 3. **Implement Post-Win Guard & Tie-Break Mode**: Add terminal state protection and `is_tie_break=True` support while keeping all existing parameterized tests passing.
 > 4. **Verify Edge Cases**: Test scoring after `"Win for Serena"` raises `ValueError`, test `7–6` in Tie-Break returns `"7-6"` (NOT `"Win"` and NOT `"Advantage"`), and test `8–6` in Tie-Break returns `"Win for <player>"`.
 
@@ -97,7 +97,7 @@ pytest
 |   #   | Criterion                        | Strong Hire / Hire (`Score 3–4`)                                                                                                          | No Hire / Blind Vibe-Coder (`Score 1–2`)                                                           |
 | :---: | :------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------- |
 | **1** | **Problem Decomposition**        | Unifies terminal state detection (`is_finished` parameterized by `win_threshold = 7 if is_tie_break else 4`) before formatting strings.   | Hacks separate `if` checks into `won_point` and `score` with inconsistent thresholds (`4` vs `7`). |
-| **2** | **Prompt Context Quality**       | Specifies `self.player1_name` comparison, `win_threshold = 7 if is_tie_break else 4`, and numerical `"X-Y"` tie-break formatting.         | Prompts _"Add tie break mode to tennis.py"_.                                                       |
+| **2** | **Prompt Context Quality**       | Specifies `self.player1_name` comparison, `win_threshold = 7 if is_tie_break else 4`, and numerical `"X-Y"` tie-break formatting.         | Prompts _"Add tie break mode to tennis1.py"_.                                                      |
 | **3** | **Not Blindly Trusting AI**      | Catches the `win_threshold = 4` vs `7` bug inside `won_point()`'s terminal guard.                                                         | Accepts AI code that blocks `won_point()` at `4–2` during a 7-point tie-break!                     |
 | **4** | **Code Reading Speed**           | Spots `if playerName == "player1":` bug in `TennisGame1` within 2 minutes.                                                                | Misses the hardcoded `"player1"` string check.                                                     |
 | **5** | **Bug & Edge-Case Discovery**    | Tests `4–2` in tie-break (still ongoing!), `7–6` in tie-break (`"7-6"`), `8–6` in tie-break (`"Win"`), and unknown player name.           | Only tests `7–0` in tie-break and misses `4–2` and `7–6`.                                          |

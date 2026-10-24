@@ -27,7 +27,7 @@ go test ./...
 
 ### Seeded Defects to Inject Before the Session
 
-1. **Bug 1 (Persistent Flag Group Validation Timing in `flag_groups.go` / `command.go`)**: When a parent command defines `PersistentFlags().String("env", "", "")` and a child command calls `MarkFlagsMutuallyExclusive("env", "local")`, `validateFlagGroups()` either runs before `MergePersistentFlags()` or fails to reset merged flag state when `Execute()` is invoked a second time in tests.
+1. **Bug 1 (Persistent Flag Group Validation Timing in `flag_groups.go` / `command.go`)**: When a parent command defines `PersistentFlags().String("env", "", "")` and a child command calls `MarkFlagsMutuallyExclusive("env", "local")`, `ValidateFlagGroups()` either runs before `mergePersistentFlags()` or fails to reset merged flag state when `Execute()` is invoked a second time in tests.
 2. **Bug 2 (`EnableTraverseRunHooks` Asymmetrical `PersistentPostRun` Execution)**: In `Command.execute()` (`command.go`), when `EnableTraverseRunHooks = true` runs `PersistentPreRunE` from `root -> parent -> child`, if `parent.PersistentPreRunE` returns an error, cleanup hooks (`PersistentPostRunE`) either don't run for `root` or erroneously run for `child` (whose `PreRun` never executed!).
 
 ---
@@ -54,7 +54,7 @@ go test ./...
 >
 > ### Your Tasks
 >
-> 1. **Explore & Trace**: Inspect `Command.execute()`, `MergePersistentFlags()`, and `validateFlagGroups()` in `command.go` and `flag_groups.go`.
+> 1. **Explore & Trace**: Inspect `Command.execute()`, `mergePersistentFlags()`, and `ValidateFlagGroups()` in `command.go` and `flag_groups.go`.
 > 2. **Run & Uncomment Tests**: Run `go test ./...` and uncomment the failing tests in `command_test.go` and `flag_groups_test.go`.
 > 3. **Fix Flag Group Merging & Symmetrical Hook Unwinding**: Implement fixes in `command.go` and `flag_groups.go` without breaking any of the 200+ existing unit tests.
 > 4. **Verify Edge Cases**: Test 4-level command trees (`root -> org -> repo -> deploy`) where level 2 fails in `PersistentPreRunE`, and where `PersistentPostRunE` also returns an error (preserving the primary error or joining errors cleanly).
@@ -91,11 +91,11 @@ go test ./...
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Read `command.go` around `execute()` and `flag_groups.go` around `validateFlagGroups()`. Show exact line numbers where `MergePersistentFlags()`, `PersistentPreRunE`, and `PersistentPostRunE` are called, and how `EnableTraverseRunHooks` currently works."_
+   > _"Do not write code. Read `command.go` around `execute()` and `flag_groups.go` around `ValidateFlagGroups()`. Show exact line numbers where `mergePersistentFlags()`, `PersistentPreRunE`, and `PersistentPostRunE` are called, and how `EnableTraverseRunHooks` currently works."_
 2. **Step 2 (`Plan`)**:
-   - Candidate plans the LIFO `executedAncestors` stack for `EnableTraverseRunHooks` and checks `MergePersistentFlags()` placement before `validateFlagGroups()`.
+   - Candidate plans the LIFO `executedAncestors` stack for `EnableTraverseRunHooks` and checks `mergePersistentFlags()` placement before `ValidateFlagGroups()`.
 3. **Step 3 (`Prompt`)**:
-   - Prompt 1: Fix `flag_groups.go` / `MergePersistentFlags()` ordering.
+   - Prompt 1: Fix `flag_groups.go` / `mergePersistentFlags()` ordering.
    - Prompt 2: Implement the LIFO unwind stack for `PersistentPreRun(E)` / `PersistentPostRun(E)` when `EnableTraverseRunHooks == true`.
 4. **Step 4 (`Review`) & Step 5 (`Test`)**:
    - Run `go test ./...` and verify all legacy tests still pass.
@@ -109,7 +109,7 @@ go test ./...
 | **1** | **Problem Decomposition**        | Separates flag group merging (`flag_groups.go`) from hook lifecycle unwinding (`command.go`).                                       | Dumps both problems into one prompt and breaks `command.go`.                                                                                               |
 | **2** | **Prompt Context Quality**       | Explicitly specifies `EnableTraverseRunHooks` gating and the LIFO stack of _succeeded_ `PreRun` ancestors.                          | Prompts _"Make PersistentPreRun run from root to child"_, breaking 25 existing tests.                                                                      |
 | **3** | **Not Blindly Trusting AI**      | Audits how errors from `PreRunE`, `RunE`, and `PostRunE` prioritize (primary error vs cleanup error).                               | Accepts AI code that overwrites a `RunE` error with `nil` from a succeeding `PostRunE`! (`err = p.PersistentPostRunE(...)` overwriting non-nil `runErr`!). |
-| **4** | **Code Reading Speed**           | Finds `EnableTraverseRunHooks` and `MergePersistentFlags()` in `command.go` within 5 minutes.                                       | Doesn't notice `EnableTraverseRunHooks` already exists in the package.                                                                                     |
+| **4** | **Code Reading Speed**           | Finds `EnableTraverseRunHooks` and `mergePersistentFlags()` in `command.go` within 5 minutes.                                       | Doesn't notice `EnableTraverseRunHooks` already exists in the package.                                                                                     |
 | **5** | **Bug & Edge-Case Discovery**    | Tests `RunE` returning an error while `PostRunE` returns `nil` (must still return `RunE`'s error!) and mid-chain `PreRunE` failure. | Overwrites `err` in the cleanup loop so `Execute()` returns `nil` even when `RunE` failed!                                                                 |
 | **6** | **Testing Before Claiming Done** | Runs full `go test ./...` after every edit and adds multi-level tree table tests.                                                   | Only runs a single `-run TestHook` test and misses regressions in `command_test.go`.                                                                       |
 | **7** | **Explaining Correctness**       | Explains the middleware/RAII stack unwind invariant (`push` on `PreRun` success, `pop` on `PostRun`).                               | Cannot explain what happens when both `RunE` and `PostRunE` return errors.                                                                                 |

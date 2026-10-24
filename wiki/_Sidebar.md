@@ -57,7 +57,7 @@
 - [E05: Lift Pass Pricing](E05-lift-pass-pricing)
 - [E06: Build Pipeline Retry](E06-build-pipeline)
 - [E07: Yatzy Wild Joker](E07-yatzy-scorer)
-- [E08: Delivery Slot Capacity](E08-delivery-controller)
+- [E08: Delivery ETA & Replay](E08-delivery-controller)
 - [E09: Expense Multi-Currency](E09-expense-report)
 - [E10: Racing Car Telemetry](E10-racing-car-telemetry)
 

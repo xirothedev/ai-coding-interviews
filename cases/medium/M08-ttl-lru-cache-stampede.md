@@ -2,15 +2,15 @@
 
 [⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../README.md)
 
-| Attribute                    | Details                                                                                                                                                                              |
-| :--------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Case ID**                  | `M08`                                                                                                                                                                                |
-| **Difficulty Level**         | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar)                                                                                                                                      |
-| **Task Archetype**           | System Component Integration & Concurrency                                                                                                                                           |
-| **Source GitHub Repository** | [`patrickmn/go-cache`](https://github.com/patrickmn/go-cache) (Go) · [`isaacs/node-lru-cache`](https://github.com/isaacs/node-lru-cache) (TypeScript)                                |
-| **Target Files**             | Cache core implementation & unit tests                                                                                                                                               |
-| **Supported Languages**      | `Go`, `TypeScript`, `Python`, `Java`                                                                                                                                                 |
-| **Primary AI Traps**         | Evicting a valid LRU item when `Set()` is called while expired items occupy capacity · Holding global cache mutex during slow `loaderFn` I/O · Caching rejected promises permanently |
+| Attribute                    | Details                                                                                                                                                                                 |
+| :--------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Case ID**                  | `M08`                                                                                                                                                                                   |
+| **Difficulty Level**         | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar)                                                                                                                                         |
+| **Task Archetype**           | System Component Integration & Concurrency                                                                                                                                              |
+| **Source GitHub Repository** | [`hashicorp/golang-lru`](https://github.com/hashicorp/golang-lru) (`expirable/expirable_lru.go`) · [`isaacs/node-lru-cache`](https://github.com/isaacs/node-lru-cache) (`src/index.ts`) |
+| **Target Files**             | `expirable/expirable_lru.go`, `expirable/expirable_lru_test.go`, `internal/list.go` _(or `src/index.ts` in `node-lru-cache`)_                                                           |
+| **Supported Languages**      | `Go`, `TypeScript`, `Python`, `Java`                                                                                                                                                    |
+| **Primary AI Traps**         | Evicting a valid LRU item when `Add()`/`Set()` is called while expired items occupy capacity · Holding global cache mutex during slow `loaderFn` I/O · Caching rejected promises        |
 
 ---
 
@@ -19,18 +19,18 @@
 ### Clean-Room Workspace Provisioning
 
 ```bash
-git clone https://github.com/patrickmn/go-cache.git cache-interview
+git clone https://github.com/hashicorp/golang-lru.git cache-interview
 cd cache-interview
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-go test -v ./...
+go test -race ./expirable/...
 ```
 
-_(Or use the TypeScript/Python equivalent workspace.)_
+_(Or use [`isaacs/node-lru-cache`](https://github.com/isaacs/node-lru-cache) `src/index.ts` for TypeScript.)_
 
 ### Seeded Defects to Inject Before the Session
 
-1. **Bug 1 (Expired Items Evicting Live LRU Keys)**: When the cache is at `maxCapacity` (`len == maxCapacity`), calling `Set(newKey, val, ttl)` immediately evicts the least-recently-used **live** entry at the tail of the LRU list without first purging already-expired entries (or `Set` updates an existing key's value without refreshing its LRU recency/TTL properly)!
-2. **Bug 2 (Expired Read Promoting Item in LRU List)**: Calling `Get(key)` on an expired entry returns `(nil, false)` after promoting the node to the head of the LRU doubly-linked list without deleting it from the map!
+1. **Bug 1 (Expired Items Evicting Live LRU Keys in `expirable/expirable_lru.go`)**: Notice that in `hashicorp/golang-lru/expirable/expirable_lru.go`, when `Add(key, value)` is called at full capacity (`c.evictList.Length() > c.size`), it calls `c.removeOldest()` (which evicts the tail of the LRU list `c.evictList.Back()`) **without checking whether other entries in the cache have already expired by TTL (`time.Now().After(ent.expiresAt)`)**! If key `"B"` was recently read (`MoveToFront`) right before its short TTL expired, while key `"A"` has a longer TTL and sits at the LRU tail, inserting `"C"` evicts **live** key `"A"` while **expired** key `"B"` continues occupying a capacity slot!
+2. **Bug 2 (Expired Read Promoting Item in LRU List)**: In `Get(key)`, seed or inspect the check so an expired entry is promoted via `c.evictList.MoveToFront(ent)` or left in `c.items` instead of calling `c.removeElement(ent)` immediately on expired read!
 
 ---
 

@@ -27,10 +27,12 @@ pytest
 
 ### Seeded Defects to Inject Before the Session
 
-In `markdown_it/rules_block/table.py` (`_split_row` or `table` block rule):
+In `markdown_it/rules_block/table.py` (`escapedSplit(string: str) -> list[str]` and `table` block rule):
 
-1. **Bug 1 (Naive Pipe Splitting Inside Code Spans & Escaped Backslashes)**: Replace the row cell splitter with a naive regex or `line.split("|")` that splits on pipes inside inline code spans (``| `a | b` | c |``) OR miscounts even numbers of preceding backslashes (`| a \\| b |`, where `\\` is an escaped literal backslash and `|` IS a real cell boundary!).
-2. **Commented Tests**: Comment out the inline-code pipe tests, even-backslash escape tests, and colspan/long-line benchmark tests.
+1. **Bug 1 (Native Escape-Parity Bug in `escapedSplit` & Naive Pipe Splitting Inside Code Spans)**:
+   - Notice that `escapedSplit(string: str) -> list[str]` in `markdown_it/rules_block/table.py` (line 50) **already has a native even-backslash escape parity bug**: at the end of its character loop, it sets `isEscaped = ch == "\\"` instead of toggling `isEscaped = not isEscaped` when `ch == "\\"`, so an **even** number of backslashes before a pipe (`| a \\| b |`) leaves `isEscaped = True` and fails to split the column!
+   - Furthermore, `escapedSplit` does not track inline code backtick spans (``| `a | b` | c |``), splitting on raw pipes inside inline code!
+2. **Commented Tests**: Comment out the inline-code pipe tests, even-backslash escape tests (`| a \\| b |`), and colspan/long-line benchmark tests in `tests/test_port/test_fixtures.py`.
 
 ---
 
@@ -62,9 +64,9 @@ In `markdown_it/rules_block/table.py` (`_split_row` or `table` block rule):
 >
 > ### Your Tasks
 >
-> 1. **Explore & Trace**: Inspect `markdown_it/rules_block/table.py` and see how table header rows, delimiter rows (`|---|:---:|`), and body rows are tokenized.
+> 1. **Explore & Trace**: Inspect `escapedSplit(string: str) -> list[str]` and `table()` in `markdown_it/rules_block/table.py` and see how table header rows, delimiter rows (`|---|:---:|`), and body rows are tokenized.
 > 2. **Run & Uncomment Tests**: Run `pytest` and uncomment the table edge-case tests.
-> 3. **Fix the Row Scanner & Implement Colspan/Alignment Rules**: Implement a linear-time $O(N)$ row scanner that handles escape parity and matched backtick runs accurately.
+> 3. **Fix `escapedSplit` & Implement Colspan/Alignment Rules**: Implement a linear-time $O(N)$ row scanner in `escapedSplit` that handles escape parity (`isEscaped` toggling) and matched backtick runs accurately.
 > 4. **Verify Edge Cases**: Test `\\|`, `\\\|`, multi-backtick code spans (` ``a | b`` `), unclosed backticks, and a 20,000-character stress input.
 
 ---
@@ -118,7 +120,7 @@ In `markdown_it/rules_block/table.py` (`_split_row` or `table` block rule):
 | **2** | **Prompt Context Quality**       | Explicitly specifies: (1) odd/even backslash parity, (2) exact backtick run-length matching (`k` opening backticks require `k` closing backticks), and (3) unclosed backticks do not mask `\|`. | Prompts _"Fix pipe splitting inside code blocks in `table.py`"_.                                         |
 | **3** | **Not Blindly Trusting AI**      | Immediately rejects `re.split(r'(?<!\\)\|', ...)` and single-pass `in_code = not in_code` toggle bugs.                                                                                          | Accepts `re.split(r'(?<!\\)\|')` or naive `in_code` toggle without testing unclosed backticks or `\\\|`. |
 | **4** | **Code Reading Speed**           | Understands `StateBlock` line offsets (`bMarks`, `eMarks`) and token generation in `table.py` within 8 minutes.                                                                                 | Confuses block-level table parsing with inline-level token parsing.                                      |
-| **5** | **Bug & Edge-Case Discovery**    | Tests `\\\|`, `\\\|`, ```` ``a `                                                                                                                                                                | b` ````, `                                                                                               | `unclosed | b   | `, and escaped pipes inside code spans (` `\|` ``). | Misses `\\\|` (even backslashes) or unclosed backticks. |
+| **5** | **Bug & Edge-Case Discovery**    | Tests `\\\|`, `\\\\\|`, multi-backtick code spans, unclosed backticks, and escaped pipes inside code spans.                                                                                     | Misses `\\\|` (even backslashes) or unclosed backticks.                                                  |
 | **6** | **Testing Before Claiming Done** | Runs full `pytest` suite plus a 20,000-char stress line to verify `< 20ms` linear runtime.                                                                                                      | Only runs 1–2 happy-path table tests.                                                                    |
 | **7** | **Explaining Correctness**       | Explains CommonMark backtick matching rules (exact run-length `k` without backslash escaping inside code spans) and $O(N)$ time complexity.                                                     | Cannot explain why `(?<!\\)\|` fails on `\\\|`.                                                          |
 

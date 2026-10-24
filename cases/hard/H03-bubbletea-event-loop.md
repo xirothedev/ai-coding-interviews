@@ -31,7 +31,7 @@ In `tea.go` and `commands.go`:
 
 1. **Bug 1 (Unconditional Channel Send Deadlock on Shutdown)**: In `handleCommands()` (where `Cmd` goroutines send `p.msgs <- msg`), remove the `case <-p.ctx.Done():` branch from the `select` statement so `p.msgs <- msg` blocks forever if `eventLoop()` has already exited upon receiving `QuitMsg`.
 2. **Bug 2 (`Sequence` Running Concurrently Instead of Sequentially)**: In `commands.go` / `tea.go`, handle `sequenceMsg` by spawning goroutines in parallel (like `BatchMsg`), breaking the deterministic execution order contract of `tea.Sequence(cmd1, cmd2, cmd3)`.
-3. **Commented Tests**: Comment out `TestProgramQuitDeadlockUnderLoad` and `TestSequenceOrderGuarantee` in `tea_test.go` / `commands_test.go`.
+3. **Commented Tests**: Comment out upstream `TestSequence` and `TestBatch` in `commands_test.go`, and stage `TestProgramQuitDeadlockUnderLoad` (in `tea_test.go`) and `TestSequenceOrderGuarantee` (in `commands_test.go`) as commented-out tests during the interviewer setup step.
 
 ---
 

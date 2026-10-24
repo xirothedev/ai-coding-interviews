@@ -28,9 +28,9 @@ rm -rf .git && git init && git add . && git commit -m "Initial interview baselin
 
 In `httpx/_client.py`:
 
-1. **Bug 1 (Origin Port/Scheme Downgrade Leak)**: In `BaseClient._same_origin(url, other_url)` and `_redirect_headers()`, replace the port/scheme check so `url.host == other_url.host` is treated as same-origin without verifying `port` normalization or `https -> http` downgrade, and mutate `request.headers` in-place when removing `Content-Length` on `303 See Other`.
+1. **Bug 1 (Origin Port/Scheme Downgrade Leak)**: In module-level `_same_origin(url, other)` and `_is_https_redirect(request.url, url)` (and `BaseClient._redirect_headers()`) in `httpx/_client.py`, replace the port/scheme check so `url.host == other.host` is treated as same-origin without verifying `port` normalization or `https -> http` downgrade, and mutate `request.headers` in-place when removing `Content-Length` on `303 See Other`.
 2. **Bug 2 (Async Cancellation Connection Leak)**: In `AsyncClient._send_handling_redirects()`, catch `except Exception:` instead of `except BaseException:` around `await response.aread()` before following a redirect (in Python 3.8+, `asyncio.CancelledError` inherits from `BaseException`, so cancelling a request mid-redirect skips `await response.aclose()` and leaks the connection slot!).
-3. **Commented Tests**: Comment out `test_cross_Wait_redirect_strips_auth`, `test_https_to_http_downgrade_strips_auth`, and `test_async_redirect_cancellation_releases_connection` in `tests/client/test_redirects.py`.
+3. **Commented Tests**: Comment out `test_cross_domain_redirect_with_auth_header` and `test_https_to_http_downgrade_strips_auth` in `tests/client/test_redirects.py`, and add `test_async_redirect_cancellation_releases_connection` as a commented-out test during this interviewer seed step in `tests/client/test_redirects.py`.
 
 ---
 
@@ -60,7 +60,7 @@ In `httpx/_client.py`:
 >
 > ### Your Tasks
 >
-> 1. **Explore & Trace**: Map `BaseClient`, `Client`, and `AsyncClient` redirect handling in `httpx/_client.py` and URL port normalization in `httpx/_urls.py`.
+> 1. **Explore & Trace**: Map module-level `_same_origin(url, other)` and `_is_https_redirect(url, location)`, along with `BaseClient`, `Client`, and `AsyncClient` redirect handling in `httpx/_client.py` and URL port normalization in `httpx/_urls.py`.
 > 2. **Run & Uncomment Tests**: Run `pytest tests/client/test_redirects.py`. Uncomment the disabled redirect security and cancellation tests and observe the failures.
 > 3. **Fix Redirect Headers & Async Pool Leak**: Fix origin comparison, preserve `response.history` request header immutability, and ensure `AsyncClient` releases connections on task cancellation.
 > 4. **Implement Cycle Detection & Verify**: Implement state-aware redirect loop detection and write unit tests covering OAuth cookie redirects, `POST -> 303 GET` self-redirects, and task cancellation.

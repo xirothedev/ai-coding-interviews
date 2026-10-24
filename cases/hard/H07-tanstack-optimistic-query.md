@@ -2,15 +2,15 @@
 
 [⬅️ Back to Hard Catalog](README.md) · [🏠 Master Hub](../../README.md)
 
-| Attribute                    | Details                                                                                      |
-| :--------------------------- | :------------------------------------------------------------------------------------------- |
-| **Case ID**                  | `H07`                                                                                        |
-| **Difficulty Level**         | 🔴 **Hard** (`60–75 mins` — Senior / Staff Bar)                                              |
-| **Task Archetype**           | Concurrency + State Machine Integration                                                      |
-| **Source GitHub Repository** | [`TanStack/query`](https://github.com/TanStack/query) (`packages/query-core`)                |
-| **Target Files**             | `packages/query-core/src/query.ts`, `queryObserver.ts`, `retryer.ts`, `tests/query.test.tsx` |
-| **Supported Languages**      | `TypeScript`                                                                                 |
-| **Hard Taxonomy Pillars**    | Pillar 3 (State Machine Invariants) · Pillar 4 (Async Race Conditions & Cancellation)        |
+| Attribute                    | Details                                                                                                                                                                  |
+| :--------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Case ID**                  | `H07`                                                                                                                                                                    |
+| **Difficulty Level**         | 🔴 **Hard** (`60–75 mins` — Senior / Staff Bar)                                                                                                                          |
+| **Task Archetype**           | Concurrency + State Machine Integration                                                                                                                                  |
+| **Source GitHub Repository** | [`TanStack/query`](https://github.com/TanStack/query) (`packages/query-core`)                                                                                            |
+| **Target Files**             | `packages/query-core/src/query.ts`, `packages/query-core/src/queryObserver.ts`, `packages/query-core/src/retryer.ts`, `packages/query-core/src/__tests__/query.test.tsx` |
+| **Supported Languages**      | `TypeScript`                                                                                                                                                             |
+| **Hard Taxonomy Pillars**    | Pillar 3 (State Machine Invariants) · Pillar 4 (Async Race Conditions & Cancellation)                                                                                    |
 
 ---
 
@@ -28,7 +28,7 @@ pnpm install && pnpm --filter @tanstack/query-core test
 ### Seeded Defects to Inject Before the Session
 
 1. **Bug 1 (Premature Shared `AbortController` Cancellation in `query.ts`)**: When Observer A and Observer B both subscribe to the same active `Query` (`['todos']`), and Observer A unmounts and calls `query.cancel()` / removes its observer, the in-flight `fetch` aborts immediately even though Observer B is still mounted and waiting for the data!
-2. **Bug 2 (Overlapping Optimistic Mutation Snapshot Clobbering)**: Provide an optimistic state helper (`OptimisticQueryController` in `query-core`) that uses naive snapshot restoration (`onMutate` saves `previousData`, `onError` calls `setQueryData(previousData)`), which clobbers concurrent succeeding mutations when an earlier mutation fails out of order.
+2. **Bug 2 (Overlapping Optimistic Mutation Snapshot Clobbering)**: Seed the interviewer-provided optimistic state helper (`OptimisticQueryController` in `packages/query-core/src/`, or tested directly via `packages/query-core/src/mutation.ts` and `packages/query-core/src/queryClient.ts`) that uses naive snapshot restoration (`onMutate` saves `previousData`, `onError` calls `setQueryData(previousData)`), which clobbers concurrent succeeding mutations when an earlier mutation fails out of order. Add the corresponding commented-out regression tests in `packages/query-core/src/__tests__/query.test.tsx`.
 
 ---
 

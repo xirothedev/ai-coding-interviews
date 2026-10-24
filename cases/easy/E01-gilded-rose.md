@@ -8,7 +8,7 @@
 | **Difficulty Level**         | 🟢 **Easy** (`30–45 mins` — Junior / Mid Bar)                                                                                        |
 | **Task Archetype**           | Legacy Refactoring + Feature Extension                                                                                               |
 | **Source GitHub Repository** | [`emilybache/GildedRose-Refactoring-Kata`](https://github.com/emilybache/GildedRose-Refactoring-Kata)                                |
-| **Target Files**             | `gilded_rose.py` & `test_gilded_rose.py` _(or `TypeScript/`, `go/`, `Java/`, `rust/`, `csharpcore/`)_                                |
+| **Target Files**             | `gilded_rose.py` & `tests/test_gilded_rose.py` _(or `TypeScript/`, `go/`, `Java/`, `rust/`, `csharp.NUnit/`, `csharp.xUnit/`)_       |
 | **Supported Languages**      | `Python`, `TypeScript`, `Go`, `Java`, `Rust`, `C#`                                                                                   |
 | **Primary AI Traps**         | `"Conjured"` prefix check corrupting `"Conjured Aged Brie"` & `"Conjured Sulfuras"` · Post-expiration `quality = 1` dropping to `-3` |
 
@@ -20,15 +20,15 @@
 
 ```bash
 git clone https://github.com/emilybache/GildedRose-Refactoring-Kata.git gilded-rose-interview
-cd gilded-rose-interview/python # (or TypeScript / go / Java / rust / csharpcore)
+cd gilded-rose-interview/python # (or TypeScript / go / Java / rust / csharp.NUnit / csharp.xUnit)
 rm -rf ../.git && git init && git add . && git commit -m "Initial interview baseline"
 pytest
 ```
 
 ### Seeded Defects to Inject Before the Session
 
-1. **Bug 1 (Backstage Pass Post-Concert Quality Floor / Cap Off-by-One)**: Seed a bug in `gilded_rose` where `Backstage passes` with `sell_in == 5` (or `sell_in == 10`) uses `< 5` instead of `< 6`, or where post-concert quality drops by `1` instead of dropping to `0`.
-2. **Commented Tests**: Add commented-out unit tests in `test_gilded_rose` for `Backstage passes` boundary days (`sell_in = 10, 5, 0`), `"Conjured Mana Cake"`, `"Conjured Aged Brie"`, and `"Conjured Sulfuras, Hand of Ragnaros"`.
+1. **Bug 1 (Backstage Pass Post-Concert Quality Floor / Cap Off-by-One)**: Seed a bug in `gilded_rose.py` where `Backstage passes` with `sell_in == 5` (or `sell_in == 10`) uses `< 5` instead of `< 6`, or where post-concert quality drops by `1` instead of dropping to `0`.
+2. **Commented Tests**: Add commented-out unit tests in `tests/test_gilded_rose.py` for `Backstage passes` boundary days (`sell_in = 10, 5, 0`), `"Conjured Mana Cake"`, `"Conjured Aged Brie"`, and `"Conjured Sulfuras, Hand of Ragnaros"`.
 
 ---
 
@@ -59,8 +59,8 @@ pytest
 >
 > ### Your Tasks
 >
-> 1. **Explore & Run Tests**: Open `gilded_rose` and `test_gilded_rose`. Run the unit test suite.
-> 2. **Uncomment & Fix Existing Bugs**: Uncomment the disabled tests in `test_gilded_rose` and fix the existing boundary bug in `Backstage passes`.
+> 1. **Explore & Run Tests**: Open `gilded_rose.py` and `tests/test_gilded_rose.py`. Run the unit test suite.
+> 2. **Uncomment & Fix Existing Bugs**: Uncomment the disabled tests in `tests/test_gilded_rose.py` and fix the existing boundary bug in `Backstage passes`.
 > 3. **Refactor & Implement `"Conjured"` Support**: Cleanly support `"Conjured "` items (including `"Conjured Aged Brie"` and `"Conjured Sulfuras"`).
 > 4. **Verify Edge Cases**: Test `Conjured` items with `quality = 1` and `sell_in = 0` (must clamp to `0`, never negative!) and `Conjured Aged Brie` with `quality = 49` (must clamp to `50`).
 

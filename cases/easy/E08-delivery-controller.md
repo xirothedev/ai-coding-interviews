@@ -1,16 +1,16 @@
-# E08 — Delivery Controller Slot Capacity & Time-Zone Cutoff
+# E08 — Delivery Controller Event Replay & Next-Stop ETA
 
 [⬅️ Back to Easy Catalog](README.md) · [🏠 Master Hub](../../README.md)
 
-| Attribute                    | Details                                                                                                                                               |
-| :--------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Case ID**                  | `E08`                                                                                                                                                 |
-| **Difficulty Level**         | 🟢 **Easy** (`30–45 mins` — Junior / Mid Bar)                                                                                                         |
-| **Task Archetype**           | Bugfix + Feature Extension                                                                                                                            |
-| **Source GitHub Repository** | [`emilybache/DeliveryController-Refactoring-Kata`](https://github.com/emilybache/DeliveryController-Refactoring-Kata)                                 |
-| **Target Files**             | Delivery controller / slot service & unit tests                                                                                                       |
-| **Supported Languages**      | `Python`, `TypeScript`, `Java`, `C#`                                                                                                                  |
-| **Primary AI Traps**         | Non-idempotent booking retry decrementing slot capacity twice for the same `order_id` · Comparing naive timestamp against warehouse local cutoff hour |
+| Attribute                    | Details                                                                                                                                                                                 |
+| :--------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Case ID**                  | `E08`                                                                                                                                                                                   |
+| **Difficulty Level**         | 🟢 **Easy** (`30–45 mins` — Junior / Mid Bar)                                                                                                                                           |
+| **Task Archetype**           | Bugfix + Dependency Injection + Idempotent Webhook Handling                                                                                                                             |
+| **Source GitHub Repository** | [`emilybache/DeliveryController-Refactoring-Kata`](https://github.com/emilybache/DeliveryController-Refactoring-Kata)                                                                   |
+| **Target Files**             | `delivery_controller.py`, `map_service.py`, `email_gateway.py`, `test_delivery_service.py` _(in `python/`, or `typescript/`, `java/`, `csharp/`)_                                       |
+| **Supported Languages**      | `Python`, `TypeScript`, `Java`, `C#`                                                                                                                                                    |
+| **Primary AI Traps**         | Duplicate `DeliveryEvent` overwriting `delivery.time_of_delivery` (`time_difference == 0` -> flipping late delivery to `on_time = True`!) · Blindly indexing `delivery_schedule[i + 1]` |
 
 ---
 
@@ -20,14 +20,18 @@
 
 ```bash
 git clone https://github.com/emilybache/DeliveryController-Refactoring-Kata.git delivery-interview
-cd delivery-interview
-rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
+cd delivery-interview/python # (or typescript / java / csharp)
+rm -rf ../.git && git init && git add . && git commit -m "Initial interview baseline"
+pytest
 ```
 
-### Seeded Defects to Inject Before the Session
+### How the Existing Codebase Works & Native Defects
 
-1. **Bug 1 (Same-Day Cutoff Boundary Off-by-One)**: Orders placed at exactly `12:00:00` warehouse time (or `12:30` when converted from UTC) are mistakenly offered same-day afternoon delivery slots when the cutoff is strictly `< 12:00:00`.
-2. **Commented Tests**: Comment out the exact `12:00:00` cutoff boundary test and the idempotent slot reservation tests.
+In `emilybache/DeliveryController-Refactoring-Kata` (`python/`):
+
+- `DeliveryController(delivery_schedule)` in `delivery_controller.py` instantiates `self.email_gateway = EmailGateway()` (which connects to a live `smtplib.SMTP('localhost')` server in `email_gateway.py`!) and `self.map_service = MapService()` directly inside `__init__`, making `test_delivery_service.py` fail unless dependencies are injected.
+- `DeliveryController.update_delivery(delivery_event)` iterates through `self.delivery_schedule`, matches `delivery.id == delivery_event.id`, sets `delivery.arrived = True`, computes `time_difference = delivery_event.time_of_delivery - delivery.time_of_delivery`, marks `delivery.on_time = True` if `time_difference < timedelta(minutes=10)`, overwrites `delivery.time_of_delivery = delivery_event.time_of_delivery`, calls `self.map_service.update_average_speed(...)`, and sends feedback + next-stop ETA emails via `self.email_gateway.send(...)`.
+- `MapService.update_average_speed` in `map_service.py` uses `elapsed_time.seconds` instead of `elapsed_time.total_seconds()` (which wraps modulo 24 hours and raises `ZeroDivisionError` when `elapsed_time == 0`).
 
 ---
 
@@ -35,72 +39,84 @@ rm -rf .git && git init && git add . && git commit -m "Initial interview baselin
 
 > ### Welcome to Your AI-Enabled SWE Coding Interview
 >
-> You are working on an e-commerce Delivery Slot Controller (`Delivery-Controller-Refactoring-Kata`). You have full access to the AI Assistant and unit test suite.
+> You are working on the **Delivery Controller** service (`emilybache/DeliveryController-Refactoring-Kata`). You have full access to the AI Assistant and `pytest`.
 >
 > ### Problem Context
 >
-> 1. **Fix Same-Day Cutoff & Timezone Normalization Bug**:
->    - Same-day morning slots require the order to be placed **strictly before `08:00:00`** in the warehouse's local timezone; same-day afternoon slots require the order to be placed **strictly before `12:00:00`** in the warehouse's local timezone.
->    - Orders placed at `08:00:00` or `12:00:00` sharp (or passed as UTC timestamps when the warehouse is `UTC+2`) are currently misclassified!
-> 2. **New Feature — Idempotent Slot Capacity Reservation (`reserve_slot(slot_id, order_id)`)**:
->    - Each delivery slot has a `max_capacity: int` (e.g., `10` vans).
->    - `get_available_slots(...)` must exclude any slot that has reached `max_capacity`.
->    - `reserve_slot(slot_id, order_id)`:
->      - **Idempotency Invariant**: If `order_id` has **already** reserved `slot_id`, calling `reserve_slot(slot_id, order_id)` again MUST succeed and return the existing reservation **without decrementing remaining capacity a second time**!
->      - **Slot Switch Invariant**: If `order_id` previously reserved `slot_A` and now calls `reserve_slot(slot_B, order_id)`, it must atomically release `order_id`'s spot in `slot_A` only if `slot_B` has available capacity (if `slot_B` is full, raise `SlotFullError` and keep `order_id`'s reservation in `slot_A` intact!).
+> `DeliveryController.update_delivery(delivery_event)` receives GPS arrival events (`DeliveryEvent(id, time_of_delivery, location)`), updates the delivery schedule, recalculates average driving speed via `MapService`, and sends customer notifications via `EmailGateway`.
 >
 > ### Your Tasks
 >
-> 1. **Explore & Trace**: Inspect the delivery slot filtering and controller code. Run the unit tests.
-> 2. **Uncomment & Fix Cutoff Bug**: Uncomment the disabled tests and fix the warehouse timezone and `< 08:00` / `< 12:00` cutoff logic.
-> 3. **Implement Idempotent `reserve_slot` & `cancel_reservation`**: Implement capacity tracking with idempotency and atomic slot switching.
-> 4. **Verify Edge Cases**: Test retrying `reserve_slot("slot_1", "order_99")` 5 times on a `max_capacity = 1` slot (must succeed all 5 times!), and switching from `"slot_1"` to a full `"slot_2"` (must raise `SlotFullError` while keeping `"order_99"` in `"slot_1"`!).
+> 1. **Task 1 — Dependency Injection & Core Boundary Fixes**:
+>    - Make `email_gateway` and `map_service` injectable in `DeliveryController.__init__(self, delivery_schedule, email_gateway=None, map_service=None)` (defaulting to `EmailGateway()` and `MapService()` for backward compatibility) so unit tests in `test_delivery_service.py` run cleanly without a local SMTP server.
+>    - Fix the 10-minute grace window boundary: a delivery arriving within `<= 10 minutes` (`time_difference <= timedelta(minutes=10)`) is `on_time = True`; a delivery arriving `> 10 minutes` late must explicitly have `delivery.on_time = False`.
+>    - Fix `MapService.update_average_speed` in `map_service.py` to use `elapsed_time.total_seconds()` instead of `elapsed_time.seconds` (which truncates days), and guard against `elapsed_time.total_seconds() <= 0`.
+> 2. **Task 2 — Idempotent Event Replay & Out-of-Order Next-Stop ETA**:
+>    - **Idempotent Webhook Replay**: GPS trackers deliver `DeliveryEvent` webhooks with at-least-once semantics. In the current code, `update_delivery` overwrites `delivery.time_of_delivery = delivery_event.time_of_delivery` on arrival. If the same `DeliveryEvent` is replayed a second time for an already-arrived `delivery.id`, the legacy code computes `time_difference = 0`, **flipping a late delivery (`on_time = False`) to `on_time = True` and sending duplicate emails**! Make `update_delivery(delivery_event)` idempotent: if `delivery.arrived` is already `True`, ignore the duplicate replay (do not recompute `on_time`, do not update `map_service`, and do not send duplicate emails).
+>    - **Next Unarrived Stop ETA**: When a delivery completes and the controller emails the next customer on the schedule with an updated ETA, do **not** blindly index `self.delivery_schedule[i + 1]` if `delivery_schedule[i + 1]` has already arrived out-of-order! Instead, select the next **unarrived** (`not d.arrived`) delivery after index `i` (if any exists).
 
 ---
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
-### Trap 1: Using an Integer Counter `booked_count += 1` Instead of `set[OrderId]`
+### Trap 1: Checking `if delivery.arrived:` Only Around `email_gateway.send` While Still Mutating `on_time` and `time_of_delivery`
 
 - **What Naive AI Writes**:
   ```python
-  if slot.booked_count >= slot.max_capacity:
-      raise SlotFullError()
-  slot.booked_count += 1
+  time_difference = delivery_event.time_of_delivery - delivery.time_of_delivery
+  delivery.on_time = time_difference <= timedelta(minutes=10)
+  delivery.time_of_delivery = delivery_event.time_of_delivery
+  if not delivery.arrived:
+      delivery.arrived = True
+      self.email_gateway.send(...)
   ```
-- **Why It Fails**:
-  1. When `reserve_slot("slot_1", "order_99")` is retried on a `max_capacity = 1` slot, the second call sees `booked_count == 1 == max_capacity` and raises `SlotFullError` instead of returning idempotently!
-  2. Even if AI checks `if slot.booked_count >= slot.max_capacity` _before_ checking `if order_id in slot.orders`, a retry on a `max_capacity = 1` slot STILL throws `SlotFullError` on retry #2!
+- **Why It Fails**: Because `delivery.time_of_delivery` was overwritten on the first delivery event (e.g., `10:25` when scheduled for `10:00`, so `on_time = False`), when the duplicate webhook (`10:25`) arrives a second time, `time_difference` is `10:25 - 10:25 = 0 <= 10m`, which overwrites `delivery.on_time = True`!
+- **Correct Fix**: Guard at the very top of the matched delivery block:
+  ```python
+  if delivery.arrived:
+      return
+  ```
+
+### Trap 2: Blindly Indexing `delivery_schedule[i + 1]` When Stops Complete Out of Order
+
+- **What Naive AI Writes**:
+  ```python
+  if len(self.delivery_schedule) > i + 1:
+      next_delivery = self.delivery_schedule[i + 1]
+      self.email_gateway.send(next_delivery.contact_email, "Your delivery will arrive soon", ...)
+  ```
+- **Why It Fails**: If Stop #2 (`i = 1`) already arrived early before Stop #1 (`i = 0`), when Stop #1 arrives, `delivery_schedule[0 + 1]` is Stop #2 (which was already delivered!), emailing an ETA to a customer who already received their package while Stop #3 (`i = 2`) gets no ETA email!
 - **Correct Fix**:
-  1. Check `if order_id in slot.reserved_order_ids: return existing_reservation` **FIRST** (before checking `len(slot.reserved_order_ids) >= slot.max_capacity`!).
-  2. When switching from `old_slot` to `new_slot`, check `len(new_slot.reserved_order_ids) >= new_slot.max_capacity` **before** removing `order_id` from `old_slot.reserved_order_ids`!
+  ```python
+  next_delivery = next((d for d in self.delivery_schedule[i + 1:] if not d.arrived), None)
+  ```
 
 ---
 
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Trace how delivery slots and cutoff times are currently evaluated in the controller."_
+   > _"Do not write code. Trace `DeliveryController.update_delivery` in `delivery_controller.py` and `MapService.update_average_speed` in `map_service.py`. Explain why `test_delivery_service.py` fails to run and what happens if the same `DeliveryEvent` is passed to `update_delivery` twice."_
 2. **Step 2 (`Plan`)**:
-   - Normalize `order_timestamp` to warehouse timezone first; store reservations per slot as `reserved_orders: set[str]`; check idempotency (`order_id in target_slot.reserved_orders`) _before_ capacity check; check `target_slot` capacity _before_ releasing `previous_slot`.
+   - Inject `email_gateway` and `map_service` into `DeliveryController.__init__` with defaults; add early return `if delivery.arrived: return`; fix `<= timedelta(minutes=10)` and `else: delivery.on_time = False`; find `next_delivery` via `next((d for d in self.delivery_schedule[i + 1:] if not d.arrived), None)`; fix `total_seconds()` in `map_service.py`.
 3. **Step 3 (`Prompt`)** & **Step 4 (`Review`)**:
-   - Audit the order of `if order_id in target_slot` vs `if is_full(target_slot)`.
+   - Prompt the changes and write unit tests in `test_delivery_service.py` using a spy/mock `EmailGateway` and `MapService`.
 
 ---
 
 ## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 
-|   #   | Criterion                        | Strong Hire / Hire (`Score 3–4`)                                                                                                                                                 | No Hire / Blind Vibe-Coder (`Score 1–2`)                                                                                       |
-| :---: | :------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------- |
-| **1** | **Problem Decomposition**        | Separates timezone cutoff calculation from the stateful slot reservation tracker.                                                                                                | Mixes timestamp parsing and reservation dictionaries in one giant method.                                                      |
-| **2** | **Prompt Context Quality**       | Specifies checking `order_id in target_slot` _before_ checking `is_full` so `max_capacity=1` retries succeed, and validating `target_slot` capacity before releasing `old_slot`. | Prompts _"Add slot capacity and reservation"_.                                                                                 |
-| **3** | **Not Blindly Trusting AI**      | Spots the ordering bug (`if is_full` before `if already_reserved`) and the non-atomic slot-switch bug (`old_slot.remove` before `new_slot` check).                               | Accepts AI code that checks `if is_full` first, failing idempotent retry when the last spot was taken by that same `order_id`! |
-| **4** | **Code Reading Speed**           | Quickly identifies the cutoff comparisons (`<=` vs `<`) in the existing code.                                                                                                    | Misses the exact `12:00:00` boundary check.                                                                                    |
-| **5** | **Bug & Edge-Case Discovery**    | Tests idempotent retry when `slot` has `max_capacity=1` (100% full after first call!), and failed slot switch rollback.                                                          | Only tests idempotent retry when `max_capacity=10` (`9` spots still free), which hides the `if is_full` ordering bug!          |
-| **6** | **Testing Before Claiming Done** | Runs all unit tests and adds the `max_capacity=1` retry test and failed slot-switch test.                                                                                        | Claims done without testing `max_capacity=1` retry.                                                                            |
-| **7** | **Explaining Correctness**       | Explains why idempotency check must precede capacity check and why slot switching requires check-then-mutate atomicity.                                                          | Cannot explain why `max_capacity=1` failed on retry #2.                                                                        |
+|   #   | Criterion                        | Strong Hire / Hire (`Score 3–4`)                                                                                                                                               | No Hire / Blind Vibe-Coder (`Score 1–2`)                                                                                        |
+| :---: | :------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------ |
+| **1** | **Problem Decomposition**        | Separates constructor DI from idempotent `update_delivery` state transitions and `MapService` math fixes.                                                                      | Leaves `EmailGateway()` hardcoded or mocks `smtplib.SMTP` globally instead of injecting `email_gateway`.                        |
+| **2** | **Prompt Context Quality**       | Specifies early return on `delivery.arrived`, `<= timedelta(minutes=10)`, `next((d for d in schedule[i+1:] if not d.arrived), None)`, and `total_seconds()`.                   | Prompts _"Fix the bugs in `delivery_controller.py`"_.                                                                           |
+| **3** | **Not Blindly Trusting AI**      | Spots that `delivery.time_of_delivery = delivery_event.time_of_delivery` corrupts `on_time` on duplicate replay unless `if delivery.arrived: return` runs first.               | Accepts AI code that checks `if not delivery.arrived` only around `email_gateway.send()`, allowing `on_time` to flip to `True`. |
+| **4** | **Code Reading Speed**           | Quickly diagnoses why `test_delivery_service.py` fails (`ConnectionRefusedError` from `smtplib.SMTP('localhost')`) and spots `.seconds` vs `.total_seconds()`.                 | Wastes time trying to start a local mail server instead of injecting a fake `EmailGateway`.                                     |
+| **5** | **Bug & Edge-Case Discovery**    | Tests duplicate replay of a late delivery (verifying `on_time` stays `False` and only 1 email is sent), exact 10-minute boundary, and out-of-order stop completion.            | Only tests happy-path on-time single events.                                                                                    |
+| **6** | **Testing Before Claiming Done** | Runs `pytest` and asserts exact `email_gateway.send` arguments and call counts.                                                                                                | Claims done without testing duplicate event replay on a late delivery.                                                          |
+| **7** | **Explaining Correctness**       | Explains why mutating `delivery.time_of_delivery` in-place makes `update_delivery` non-idempotent unless guarded by `delivery.arrived`, and why `.seconds` truncates `>= 24h`. | Cannot explain the difference between `timedelta.seconds` and `timedelta.total_seconds()` in Python.                            |
 
 ### Interviewer Probing Questions (Final 10 Minutes)
 
-1. **Q**: _"Suppose `slot_1` has `max_capacity = 1`. `order_A` reserves `slot_1` (now `1/1` full), and then `order_A` retries `reserve_slot('slot_1', 'order_A')`. What happens if your code checks `if len(slot.orders) >= slot.max_capacity:` on line 1 and `if order_id in slot.orders:` on line 3?"_  
-   **Expected Answer**: Line 1 sees `1 >= 1` and raises `SlotFullError` before reaching line 3! The idempotency check (`if order_id in slot.orders: return`) must always run _before_ the capacity check.
+1. **Q**: _"Suppose Delivery #1 is scheduled for `10:00` and arrives late at `10:25`. The webhook for `10:25` is delivered twice. What happens to `delivery.on_time` in the original code on the second webhook delivery, and why?"_  
+   **Expected Answer**: On the first call, `time_difference` is `25m`, so `on_time` is `False`, and the code sets `delivery.time_of_delivery = 10:25`. On the second call, `time_difference` is `10:25 - 10:25 = 0m < 10m`, which flips `delivery.on_time` to `True` and sends a "regarding your on time delivery" email!

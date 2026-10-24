@@ -8,7 +8,7 @@
 | **Difficulty Level**         | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar)                                                                                                                |
 | **Task Archetype**           | Bugfix + Feature Extension                                                                                                                                     |
 | **Source GitHub Repository** | [`sindresorhus/ky`](https://github.com/sindresorhus/ky) (TypeScript) · [`encode/httpx`](https://github.com/encode/httpx) (Python)                              |
-| **Target Files**             | `source/core/Ky.ts`, `source/utils/retry.ts`, `test/retry.ts`                                                                                                  |
+| **Target Files**             | `source/core/Ky.ts`, `source/core/retry-timing.ts`, `source/types/retry.ts`, `test/retry.ts`, `test/retry-timing.ts`, `test/retry-decisions.ts`                |
 | **Supported Languages**      | `TypeScript`, `Python`, `Go`                                                                                                                                   |
 | **Primary AI Traps**         | `parseInt` on HTTP-date `Retry-After` header (`"Wed, 21 Oct..."`) · Retrying `POST` without `Idempotency-Key` · Re-sending a consumed stream body as `0` bytes |
 
@@ -59,8 +59,8 @@ npm test
 >
 > ### Your Tasks
 >
-> 1. **Explore & Trace**: Inspect the retry delay calculation and request loop in `source/`.
-> 2. **Run & Uncomment Tests**: Run `npm test` and uncomment the failing `Retry-After`, idempotency, and stream-body retry tests.
+> 1. **Explore & Trace**: Inspect the retry delay calculation and request loop in `source/core/Ky.ts`, `source/core/retry-timing.ts`, and `source/types/retry.ts`.
+> 2. **Run & Uncomment Tests**: Run `npm test` and uncomment the failing `Retry-After`, idempotency, and stream-body retry tests in `test/retry.ts`, `test/retry-timing.ts`, and `test/retry-decisions.ts`.
 > 3. **Fix `Retry-After`, Idempotency Guard & Full-Jitter Backoff**: Implement all three requirements cleanly.
 > 4. **Verify Edge Cases**: Test past HTTP-dates, `Retry-After > maxRetryAfter` (asserting `sleep` is NOT called before throwing!), case-insensitive `idempotency-key` header, and `attempt` off-by-one indexing.
 
@@ -92,7 +92,7 @@ npm test
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Trace how retry eligibility and delay calculation currently work in `source/core/Ky.ts` and `test/retry.ts`."_
+   > _"Do not write code. Trace how retry eligibility and delay calculation currently work in `source/core/Ky.ts`, `source/core/retry-timing.ts`, `test/retry.ts`, `test/retry-timing.ts`, and `test/retry-decisions.ts`."_
 2. **Step 2 (`Plan`)**:
    - Extract a pure, unit-testable `calculateRetryDelay({ attempt, retryAfterHeader, options, now, randomFn })` function and a pure `canRetryRequest(request, response, options)` predicate.
 3. **Step 3 (`Prompt`)**:

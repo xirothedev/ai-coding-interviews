@@ -2,15 +2,15 @@
 
 [⬅️ Back to Medium Catalog](README.md) · [🏠 Master Hub](../../README.md)
 
-| Attribute                    | Details                                                                                                                    |
-| :--------------------------- | :------------------------------------------------------------------------------------------------------------------------- |
-| **Case ID**                  | `M05`                                                                                                                      |
-| **Difficulty Level**         | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar)                                                                            |
-| **Task Archetype**           | Bugfix + Scale Optimization                                                                                                |
-| **Source GitHub Repository** | [`honojs/hono`](https://github.com/honojs/hono) (`src/router/trie-router`) · [`go-chi/chi`](https://github.com/go-chi/chi) |
-| **Target Files**             | `src/router/trie-router/node.ts`, `src/router/trie-router/router.ts`, `src/router/trie-router/router.test.ts`              |
-| **Supported Languages**      | `TypeScript`, `Go`, `Python`, `Rust`                                                                                       |
-| **Primary AI Traps**         | Greedy static match failing to backtrack to `:param` · Shared mutable `params` map polluted by failed branch               |
+| Attribute                    | Details                                                                                                                                 |
+| :--------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------- |
+| **Case ID**                  | `M05`                                                                                                                                   |
+| **Difficulty Level**         | 🟡 **Medium** (`45–60 mins` — Standard SWE Bar)                                                                                         |
+| **Task Archetype**           | Bugfix + Scale Optimization                                                                                                             |
+| **Source GitHub Repository** | [`honojs/hono`](https://github.com/honojs/hono) (`src/router/trie-router`) · [`go-chi/chi`](https://github.com/go-chi/chi) (`tree.go`)  |
+| **Target Files**             | `src/router/trie-router/node.ts`, `src/router/trie-router/router.ts`, `src/router/trie-router/router.test.ts` _(or `tree.go` in `chi`)_ |
+| **Supported Languages**      | `TypeScript`, `Go`, `Python`, `Rust`                                                                                                    |
+| **Primary AI Traps**         | Greedy static match failing to backtrack to `:param` · Shared mutable `params` map polluted by failed branch                            |
 
 ---
 
@@ -22,14 +22,14 @@
 git clone https://github.com/honojs/hono.git hono-router-interview
 cd hono-router-interview
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
-npm test src/router/trie-router
+npx vitest run src/router/trie-router
 ```
 
 ### Seeded Defects to Inject Before the Session
 
-1. **Bug 1 (No Backtracking from Failed Static Prefix)**: In `Node.search()`, use `if (staticChild) { return search(staticChild, ...); }` without falling back to `paramChild` or `wildcardChild` when `staticChild`'s subtree fails to match the remaining URL segments!
+1. **Bug 1 (No Backtracking from Failed Static Prefix in `node.ts` / `tree.go`)**: In `Node.search()` (`src/router/trie-router/node.ts`, which traverses `#children`, `#patterns`, and `#params`), seed a greedy return `if (staticChild) { return search(staticChild, ...); }` without falling back to `#patterns` (`:param` / `*` wildcard) when `staticChild`'s subtree fails to match the remaining URL segments!
    - Example: Routes registered are `GET /users/profile/settings` and `GET /users/:id/posts`. Requesting `GET /users/profile/posts` enters static child `"profile"`, fails to find `"posts"`, and returns `404` instead of backtracking to `:id = "profile"`!
-2. **Bug 2 (Polluted `params` Dictionary Across Backtracked Branches)**: Pass the same mutable `params: Record<string, string>` object down recursive search branches so that a parameter captured in a higher-priority branch that ultimately fails at leaf level remains inside `params` when a fallback branch succeeds!
+2. **Bug 2 (Polluted `#params` / `params` Dictionary Across Backtracked Branches)**: Mutate a shared `params: Record<string, string>` object across candidate branches in `node.ts` so that a parameter captured in a higher-priority branch that fails at a deeper segment remains inside `params` when a fallback branch succeeds!
 
 ---
 
@@ -62,8 +62,8 @@ npm test src/router/trie-router
 >
 > ### Your Tasks
 >
-> 1. **Explore & Trace**: Read `node.ts` and `router.ts` in `src/router/trie-router/`.
-> 2. **Run & Uncomment Tests**: Run `npm test src/router/trie-router` and uncomment the backtracking, parameter isolation, and registration-order tests in `router.test.ts`.
+> 1. **Explore & Trace**: Read `node.ts` (`#children`, `#patterns`, `#params`) and `router.ts` in `src/router/trie-router/` (or `tree.go` in `go-chi/chi`).
+> 2. **Run & Uncomment Tests**: Run `npx vitest run src/router/trie-router` and uncomment the backtracking, parameter isolation, and registration-order tests in `router.test.ts`.
 > 3. **Fix Backtracking, Parameter Isolation & Specificity Precedence**: Implement clean fixes in `node.ts` / `router.ts`.
 > 4. **Verify Edge Cases**: Test URL-encoded path segments (`/users/alice%20smith/posts`), trailing slashes, multi-segment wildcards (`/static/*filepath` capturing `"css/main.css"`), and registration-order permutation tests.
 
@@ -84,7 +84,7 @@ npm test src/router/trie-router
   }
   ```
 - **Why It Fails**: If `params` is mutated in-place and not restored (or if `delete params[name]` deletes a parent param of the same name), failed branches corrupt the returned `params` map!
-- **Correct Fix**: Either pass an immutable/copied `nextParams = { ...params, [name]: value }` down parameter edges (since URL depth is small, typically 2–6 segments) OR record `prevValue = params[name]; hadKey = name in params` and restore on backtrack!
+- **Correct Fix**: Either pass an immutable/copied `nextParams = { ...curParams, [name]: value }` down parameter edges (as `hono`'s `node.ts` does per candidate `curNode` in `nextCurNodes`) OR record `prevValue = params[name]; hadKey = name in params` and restore on backtrack!
 
 ### Trap 2: Wildcard `*` Consuming Only One Segment Instead of the Remainder of the Path
 
@@ -97,14 +97,14 @@ npm test src/router/trie-router
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Trace `insert()` and `search()` in `src/router/trie-router/node.ts`. Explain how static children, parameter children (`:name`), and wildcard children (`*`) are stored and traversed."_
+   > _"Do not write code. Trace `insert()` and `search()` in `src/router/trie-router/node.ts`. Explain how `#children`, `#patterns`, and `#params` are stored and traversed."_
 2. **Step 2 (`Plan`)**:
-   - Candidate plans ordered DFS exploration (`Static -> Regex Param -> Plain Param -> Wildcard`) with isolated parameter maps per candidate match.
+   - Candidate plans ordered candidate exploration (`Static > Regex Param > Plain Param > Wildcard`) with isolated `params` maps per candidate node.
 3. **Step 3 (`Prompt`)**:
    - Prompt 1: Update `node.ts` traversal to backtrack across `Static -> Param -> Wildcard` in deterministic priority order while isolating captured `params`.
    - Prompt 2: Verify multi-segment wildcard capture and registration-order independence.
 4. **Step 4 (`Review`) & Step 5 (`Test`)**:
-   - Run `npm test src/router/trie-router` and add a permutation test registering 5 overlapping routes in all `5! = 120` orders.
+   - Run `npx vitest run src/router/trie-router` and add a permutation test registering 5 overlapping routes in all `5! = 120` orders.
 
 ---
 
@@ -112,10 +112,10 @@ npm test src/router/trie-router
 
 |   #   | Criterion                        | Strong Hire / Hire (`Score 3–4`)                                                                                                                                                       | No Hire / Blind Vibe-Coder (`Score 1–2`)                                                                 |
 | :---: | :------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------- |
-| **1** | **Problem Decomposition**        | Separates trie insertion structure from DFS backtracking search and parameter map isolation.                                                                                           | Rewrites the entire router using an $O(N)$ linear array of RegExps, defeating the Trie!                  |
-| **2** | **Prompt Context Quality**       | Explicitly specifies DFS priority (`Static > Regex Param > Param > Wildcard`) and immutable/scoped `params` per branch.                                                                | Prompts _"Fix the failing router test"_ without mentioning `params` state rollback.                      |
-| **3** | **Not Blindly Trusting AI**      | Audits how `params` is passed across recursive calls and rejects linear-scan regex hacks.                                                                                              | Accepts AI code that mutates a single shared `params` object across failed branches.                     |
-| **4** | **Code Reading Speed**           | Understands how `hono`'s `Node` stores `children`, `pattern`, and `methods` within 8 minutes.                                                                                          | Confuses route registration (`insert`) with route lookup (`search`).                                     |
+| **1** | **Problem Decomposition**        | Separates trie insertion structure from backtracking search and parameter map isolation.                                                                                               | Rewrites the entire router using an $O(N)$ linear array of RegExps, defeating the Trie!                  |
+| **2** | **Prompt Context Quality**       | Explicitly specifies priority (`Static > Regex Param > Param > Wildcard`) and immutable/scoped `params` per branch.                                                                    | Prompts _"Fix the failing router test"_ without mentioning `params` state rollback.                      |
+| **3** | **Not Blindly Trusting AI**      | Audits how `params` is passed across candidate branches and rejects linear-scan regex hacks.                                                                                           | Accepts AI code that mutates a single shared `params` object across failed branches.                     |
+| **4** | **Code Reading Speed**           | Understands how `hono`'s `Node` stores `#children`, `#patterns`, `#params`, and `methods` within 8 minutes.                                                                            | Confuses route registration (`insert`) with route lookup (`search`).                                     |
 | **5** | **Bug & Edge-Case Discovery**    | Tests deep backtracking (`/a/b/c/d` failing at `d` and falling back to `/:x/:y/:z/w`), mid-path `*`, and registration order permutations.                                              | Only tests 2-segment routes and misses multi-level backtracking.                                         |
 | **6** | **Testing Before Claiming Done** | Runs the full `trie-router` test suite and adds a registration-order permutation test.                                                                                                 | Only tests `[Static, Param]` registration order and misses `[Param, Static]`.                            |
 | **7** | **Explaining Correctness**       | Explains Trie time complexity ($O(L)$ where $L$ is path depth, worst-case bounded by overlapping parametric branches) and why DFS priority guarantees registration-order independence. | Cannot explain why a greedy trie fails on `/users/admin/followers` when `/users/admin/audit-log` exists. |

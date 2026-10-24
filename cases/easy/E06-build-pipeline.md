@@ -2,15 +2,15 @@
 
 [⬅️ Back to Easy Catalog](README.md) · [🏠 Master Hub](../../README.md)
 
-| Attribute                    | Details                                                                                                            |
-| :--------------------------- | :----------------------------------------------------------------------------------------------------------------- |
-| **Case ID**                  | `E06`                                                                                                              |
-| **Difficulty Level**         | 🟢 **Easy** (`30–45 mins` — Junior / Mid Bar)                                                                      |
-| **Task Archetype**           | Code Review & AI-Slop Rescue + Refactoring                                                                         |
-| **Source GitHub Repository** | [`emilybache/BuildPipeline-Refactoring-Kata`](https://github.com/emilybache/BuildPipeline-Refactoring-Kata)        |
-| **Target Files**             | `pipeline.py` & `test_pipeline.py` _(or `TypeScript/`, `go/`, `java/`, `rust/`, `csharp/`)_                        |
-| **Supported Languages**      | `Python`, `TypeScript`, `Go`, `Java`, `Rust`, `C#`                                                                 |
-| **Primary AI Traps**         | Sending duplicate failure emails inside the deployment retry loop · Calling `deploy()` even when unit tests failed |
+| Attribute                    | Details                                                                                                               |
+| :--------------------------- | :-------------------------------------------------------------------------------------------------------------------- |
+| **Case ID**                  | `E06`                                                                                                                 |
+| **Difficulty Level**         | 🟢 **Easy** (`30–45 mins` — Junior / Mid Bar)                                                                         |
+| **Task Archetype**           | Code Review & AI-Slop Rescue + Refactoring                                                                            |
+| **Source GitHub Repository** | [`emilybache/BuildPipeline-Refactoring-Kata`](https://github.com/emilybache/BuildPipeline-Refactoring-Kata)           |
+| **Target Files**             | `build_pipeline/pipeline.py`, `build_pipeline/project.py` & `tests/test_pipeline.py` _(or `go/`, `java/`, `csharp/`)_ |
+| **Supported Languages**      | `Python`, `Go`, `Java`, `C#`                                                                                          |
+| **Primary AI Traps**         | Sending duplicate failure emails inside the deployment retry loop · Calling `deploy()` even when unit tests failed    |
 
 ---
 
@@ -20,15 +20,15 @@
 
 ```bash
 git clone https://github.com/emilybache/BuildPipeline-Refactoring-Kata.git pipeline-interview
-cd pipeline-interview/python # (or TypeScript / go / java / rust / csharp)
+cd pipeline-interview/python # (or go / java / csharp)
 rm -rf ../.git && git init && git add . && git commit -m "Initial interview baseline"
 pytest
 ```
 
 ### Seeded Defects to Inject Before the Session
 
-1. **Bug 1 (String Equality / Truthiness Bug in `run_tests()`)**: In `pipeline.py`, seed a bug where `project.run_tests()` returning `"failure"` is checked improperly (or `tests_passed` defaults to `True` on an unexpected status string), allowing `deploy()` to run when tests failed!
-2. **Commented Tests**: Comment out `test_unexpected_test_status_aborts_deploy` and `test_deploy_retry_sends_single_summary_email` in `test_pipeline.py`.
+1. **Bug 1 (String Equality / Truthiness Bug in `run_tests()`)**: In `build_pipeline/pipeline.py`, seed a bug where `project.run_tests()` returning `"failure"` is checked improperly (or `tests_passed` defaults to `True` on an unexpected status string), allowing `deploy()` to run when tests failed!
+2. **Commented Tests**: Comment out `test_unexpected_test_status_aborts_deploy` and `test_deploy_retry_sends_single_summary_email` in `tests/test_pipeline.py`.
 
 ---
 
@@ -51,8 +51,8 @@ pytest
 >
 > ### Your Tasks
 >
-> 1. **Explore & Trace**: Inspect `pipeline.py` and `test_pipeline.py`. Run `pytest`.
-> 2. **Uncomment & Fix Test Stage Bug**: Uncomment the tests in `test_pipeline.py` and fix the test-stage status check.
+> 1. **Explore & Trace**: Inspect `build_pipeline/pipeline.py`, `build_pipeline/project.py`, and `tests/test_pipeline.py`. Run `pytest`.
+> 2. **Uncomment & Fix Test Stage Bug**: Uncomment the tests in `tests/test_pipeline.py` and fix the test-stage status check.
 > 3. **Refactor & Implement Deployment Retries**: Separate stage execution from logging/email notifications and implement `max_deploy_retries`.
 > 4. **Verify Edge Cases**: Test `max_deploy_retries = 3` where attempt #1 and #2 fail and attempt #3 succeeds (assert `deploy()` called `3` times and `emailer.send("Deployment completed successfully")` called **exactly `1` time**!).
 
@@ -83,7 +83,7 @@ pytest
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Trace all branches of `Pipeline.run()` in `pipeline.py` and list every log message and email string emitted."_
+   > _"Do not write code. Trace all branches of `Pipeline.run()` in `build_pipeline/pipeline.py` and list every log message and email string emitted."_
 2. **Step 2 (`Plan`)**:
    - Decouple stage execution (`tests_passed = self._run_tests(project)`, `deploy_passed = self._run_deploy(project, max_deploy_retries)`) from `_notify(tests_passed, deploy_passed)`.
 3. **Step 3 (`Prompt`)** & **Step 4 (`Review`)**:

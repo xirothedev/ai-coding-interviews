@@ -2,15 +2,15 @@
 
 [⬅️ Back to Easy Catalog](README.md) · [🏠 Master Hub](../../README.md)
 
-| Attribute                    | Details                                                                                                                                                                   |
-| :--------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Case ID**                  | `E09`                                                                                                                                                                     |
-| **Difficulty Level**         | 🟢 **Easy** (`30–45 mins` — Junior / Mid Bar)                                                                                                                             |
-| **Task Archetype**           | Legacy Refactoring + Feature Extension                                                                                                                                    |
-| **Source GitHub Repository** | [`emilybache/ExpenseReport-Refactoring-Kata`](https://github.com/emilybache/ExpenseReport-Refactoring-Kata)                                                               |
-| **Target Files**             | `expense_report.py` & `test_expense_report.py` _(or `TypeScript/`, `go/`, `java/`, `rust/`, `csharp/`)_                                                                   |
-| **Supported Languages**      | `Python`, `TypeScript`, `Go`, `Java`, `Rust`, `C#`                                                                                                                        |
-| **Primary AI Traps**         | Checking meal over-limit threshold (`> 5000`) _before_ currency conversion (flagging `3000 JPY` as over `$50`!) · Unrounded float sum disagreeing with printed line items |
+| Attribute                    | Details                                                                                                                                                                                                        |
+| :--------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Case ID**                  | `E09`                                                                                                                                                                                                          |
+| **Difficulty Level**         | 🟢 **Easy** (`30–45 mins` — Junior / Mid Bar)                                                                                                                                                                  |
+| **Task Archetype**           | Legacy Refactoring + Feature Extension                                                                                                                                                                         |
+| **Source GitHub Repository** | [`emilybache/ExpenseReport-Refactoring-Kata`](https://github.com/emilybache/ExpenseReport-Refactoring-Kata)                                                                                                    |
+| **Target Files**             | `expense_report.py` & `test/test_expense_report.py` _(in `expensereport-python/`, or `expensereport-typescript/`, `expensereport-go/`, `expensereport-java/`, `expensereport-rust/`, `expensereport-csharp/`)_ |
+| **Supported Languages**      | `Python`, `TypeScript`, `Go`, `Java`, `Rust`, `C#`                                                                                                                                                             |
+| **Primary AI Traps**         | Checking meal over-limit threshold (`> 5000`) _before_ currency conversion (flagging `3000 JPY` as over `$50`!) · Unrounded float sum disagreeing with printed line items                                      |
 
 ---
 
@@ -20,15 +20,15 @@
 
 ```bash
 git clone https://github.com/emilybache/ExpenseReport-Refactoring-Kata.git expense-interview
-cd expense-interview/python # (or typescript / go / java / rust / csharp)
+cd expense-interview/expensereport-python # (or expensereport-typescript / expensereport-go / expensereport-java / expensereport-rust / expensereport-csharp)
 rm -rf ../.git && git init && git add . && git commit -m "Initial interview baseline"
 pytest
 ```
 
 ### Seeded Defects to Inject Before the Session
 
-1. **Bug 1 (Meal Cap Boundary Off-by-One)**: In `expense_report`, seed `expense.amount >= 5000` instead of `> 5000` for `DINNER` (or `>= 1000` instead of `> 1000` for `BREAKFAST`), so an exact `5000` dinner is falsely flagged with `"X"`.
-2. **Commented Tests**: Comment out `test_exact_cap_boundary`, `test_lunch_cap_and_subtotal`, and `test_multi_currency_conversion_and_rounding` in `test_expense_report`.
+1. **Bug 1 (Meal Cap Boundary Off-by-One)**: In `expense_report.py`, seed `expense.amount >= 5000` instead of `> 5000` for `DINNER` (or `>= 1000` instead of `> 1000` for `BREAKFAST`), so an exact `5000` dinner is falsely flagged with `"X"`.
+2. **Commented Tests**: Comment out `test_exact_cap_boundary`, `test_lunch_cap_and_subtotal`, and `test_multi_currency_conversion_and_rounding` in `test/test_expense_report.py`.
 
 ---
 
@@ -51,13 +51,13 @@ pytest
 >    - Convert each expense amount into base USD integer units using **Banker's Rounding (`ROUND_HALF_EVEN`)** _per line item_ (`converted_amount = round_half_even(expense.amount * rate)`).
 >    - **Critical Accounting Invariants**:
 >      - **Invariant 1**: The over-expense marker `"X"` MUST be evaluated against the **converted base USD `converted_amount`**, NOT the raw foreign currency amount! (e.g., a `DINNER` of `6000 JPY` with rate `0.0067` converts to `40 USD`, which is `<= 5000` and MUST NOT be flagged `"X"`!).
->      - **Invariant 2**: Both `Meal expenses` subtotal and `Total expenses` MUST equal the exact sum of the **rounded line-item `converted_amount`s** printed on the report (never sum unrounded floats and round at the end!).
+>      - **Invariant 2**: Both `"Meals:"` subtotal (`Meals: <amount>`) and `"Total:"` (`Total: <amount>`) MUST equal the exact sum of the **rounded line-item `converted_amount`s** printed on the report (never sum unrounded floats and round at the end!).
 >      - Unknown currency codes must raise `ValueError("Unsupported currency: ...")`.
 >
 > ### Your Tasks
 >
-> 1. **Explore & Trace**: Inspect `expense_report` and `test_expense_report`. Run `pytest`.
-> 2. **Uncomment & Fix Boundary Bugs**: Uncomment the tests and fix the `> 5000` / `> 1000` boundary check.
+> 1. **Explore & Trace**: Inspect `expense_report.py` and `test/test_expense_report.py`. Run `pytest`.
+> 2. **Uncomment & Fix Boundary Bugs**: Uncomment the tests in `test/test_expense_report.py` and fix the `> 5000` / `> 1000` boundary check.
 > 3. **Refactor & Implement `LUNCH` + Multi-Currency Support**: Replace hardcoded `if/else` chains with clean expense metadata and implement per-line-item currency conversion.
 > 4. **Verify Edge Cases**: Test `6000 JPY` dinner (`rate = 0.0067` -> `40 USD`, not flagged `"X"`), `60 EUR` breakfast (`rate = 20.0` -> `1200 USD > 1000`, flagged `"X"`!), and 3 expenses whose fractional `0.4` remainders would drift if summed before rounding.
 

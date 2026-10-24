@@ -12,7 +12,7 @@
 
 ---
 
-## 1. Scenario & Problem Overview
+## 1. Interviewer Setup & Seeded Bug Manifest (Confidential)
 
 Describe the real-world engineering context of the repository and why the team is touching this module today.
 
@@ -25,9 +25,14 @@ cd interview-workspace
 rm -rf .git && git init && git add . && git commit -m "Initial interview baseline"
 ```
 
+### Existing / Seeded Bug Manifest
+
+- **Bug 1 (`path/to/file:line`)**: What is broken and why.
+- **Bug 2 (`path/to/file:line`)**: How it interacts with Bug 1 or the new feature.
+
 ---
 
-## 2. Candidate Instructions (The 4-Checkpoint Flow)
+## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
 > **Copy and share this section with the candidate (or use it for self-practice before reading sections 3–5).**
 
@@ -49,12 +54,7 @@ Summarize the domain rules and what the module is supposed to do.
 
 ---
 
-## 3. Seeded Bugs & The "AI Trap" (Confidential — HR & Interviewer View)
-
-### Existing / Seeded Bug Manifest
-
-- **Bug 1 (`path/to/file:line`)**: What is broken and why.
-- **Bug 2 (`path/to/file:line`)**: How it interacts with Bug 1 or the new feature.
+## 3. The AI Traps & Expected Solution (Confidential)
 
 ### Why Naive Copy-Paste Prompting Fails (The AI Trap)
 
@@ -65,7 +65,7 @@ Explain what happens when a candidate dumps the entire prompt into an LLM (GPT/C
 
 ---
 
-## 4. Reference Divide-and-Conquer Prompt Walkthrough
+## 4. Reference Divide-and-Conquer Prompt Flow
 
 How a high-performing engineer orchestrates AI on this case using **`Understand → Plan → Prompt → Review → Test`**:
 
@@ -82,7 +82,7 @@ How a high-performing engineer orchestrates AI on this case using **`Understand 
 
 ---
 
-## 5. HR & Interviewer Evaluation Key (The 7 Criteria)
+## 5. HR & Interviewer Grading Rubric (All 7 Criteria)
 
 | Criterion                                 | Green Flags (Score 3–4: Hire / Strong Hire)                                       | Red Flags (Score 1–2: No Hire / Blind Vibe-Coder)                       |
 | :---------------------------------------- | :-------------------------------------------------------------------------------- | :---------------------------------------------------------------------- |

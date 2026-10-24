@@ -8,7 +8,7 @@
 | **Difficulty Level**         | 🟢 **Easy** (`30–45 mins` — Junior / Mid Bar)                                                                                                                                       |
 | **Task Archetype**           | System Component Integration & Refactoring                                                                                                                                          |
 | **Source GitHub Repository** | [`emilybache/Theatrical-Players-Refactoring-Kata`](https://github.com/emilybache/Theatrical-Players-Refactoring-Kata)                                                               |
-| **Target Files**             | `statement.py` & `test_statement.py` _(or `TypeScript/`, `go/`, `Java/`, `rust/`, `csharp/`)_                                                                                       |
+| **Target Files**             | `statement.py` & `tests/test_statement.py` _(or `typescript/`, `go/`, `java/`, `rust/`, `csharp/`)_                                                                                 |
 | **Supported Languages**      | `Python`, `TypeScript`, `Go`, `Java`, `Rust`, `C#`                                                                                                                                  |
 | **Primary AI Traps**         | Duplicating pricing math between `statement()` and `html_statement()` · Single-pass loop failing to detect cross-play repertoire bonus when `"tragedy"` appears _after_ `"history"` |
 
@@ -20,7 +20,7 @@
 
 ```bash
 git clone https://github.com/emilybache/Theatrical-Players-Refactoring-Kata.git theatrical-interview
-cd theatrical-interview/python # (or TypeScript / go / java / rust / csharp)
+cd theatrical-interview/python # (or typescript / go / java / rust / csharp)
 rm -rf ../.git && git init && git add . && git commit -m "Initial interview baseline"
 pytest
 ```
@@ -28,7 +28,7 @@ pytest
 ### Seeded Defects to Inject Before the Session
 
 1. **Bug 1 (Comedy Audience Boundary Off-by-One)**: In `statement.py`, change `if perf['audience'] > 20:` to `if perf['audience'] >= 20:` (or change `math.floor(perf['audience'] / 5)` to integer division that rounds wrong), causing the boundary test for `audience == 20` to fail.
-2. **Commented Tests**: Comment out `test_comedy_exact_boundary_20`, `test_html_statement`, and `test_history_play_repertoire_bonus` in `test_statement.py`.
+2. **Commented Tests & Existing Fixtures**: Notice that `tests/new_plays.json` and `tests/invoice_new_plays.json` already exist in the repository with `"history"` and `"pastoral"` plays (`"Henry V"`, `"As You Like It"`), alongside the commented-out `test_statement_with_new_play_types` in `tests/test_statement.py`. Add/comment out `test_comedy_exact_boundary_20`, `test_html_statement`, and `test_history_play_repertoire_bonus` in `tests/test_statement.py`.
 
 ---
 
@@ -52,8 +52,8 @@ pytest
 >
 > ### Your Tasks
 >
-> 1. **Explore & Run Tests**: Read `statement.py` and `test_statement.py`, and run `pytest`.
-> 2. **Uncomment & Fix Boundary Bug**: Uncomment the tests in `test_statement.py` and fix the `comedy` `audience == 20` bug.
+> 1. **Explore & Run Tests**: Read `statement.py` and `tests/test_statement.py` (along with `tests/new_plays.json` and `tests/invoice_new_plays.json`), and run `pytest`.
+> 2. **Uncomment & Fix Boundary Bug**: Uncomment the tests in `tests/test_statement.py` and fix the `comedy` `audience == 20` bug.
 > 3. **Refactor (Split Phase) & Add `"history"` + `html_statement`**: Extract a shared intermediate calculation model so `statement()` and `html_statement()` share 100% of pricing/credit logic, and implement `"history"`.
 > 4. **Verify Edge Cases**: Test an invoice where `"history"` is the **first** performance in the list and `"tragedy"` is the **last** performance (verifying the `2x` history credit bonus still triggers!).
 
@@ -92,7 +92,7 @@ pytest
 ## 4. Reference Divide-and-Conquer Prompt Flow
 
 1. **Step 1 (`Understand`)**:
-   > _"Do not write code. Inspect `statement.py` and `test_statement.py` and identify why `audience == 20` fails for comedy."_
+   > _"Do not write code. Inspect `statement.py` and `tests/test_statement.py` and identify why `audience == 20` fails for comedy."_
 2. **Step 2 (`Plan`)**:
    - Fix `audience > 20`; extract `compute_statement_data(invoice, plays)` returning `{ customer, lines, total_amount, volume_credits }`; pre-compute `play_types` set for the `"history" + "tragedy"` bonus; add `render_plain_text` and `render_html`.
 3. **Step 3 (`Prompt`)** & **Step 4 (`Review`)**:
