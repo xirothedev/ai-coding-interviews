@@ -2,11 +2,9 @@
 set -euo pipefail
 
 # Compiles all Markdown docs, templates, and 30 case pages into GitHub Wiki format
-# for every locale under wiki/<locale>/, docs/<locale>/, ... and pushes them to
-# https://github.com/xirothedev/ai-coding-interviews.wiki.git
-#
-# English pages land at the wiki root (default locale); other locales land under
-# <locale>/ (e.g. vi/Home).
+# for every locale. English pages land at the wiki root (default locale); other
+# locales land at the wiki root with a "<locale>-" prefix (e.g. vi-Home), because
+# GitHub Wiki does not support slash-based sub-pages.
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WIKI_REMOTE="${WIKI_REMOTE:-https://github.com/xirothedev/ai-coding-interviews.wiki.git}"
@@ -23,46 +21,49 @@ for d in "${REPO_ROOT}"/wiki/*/; do
   LOCALES+=("$loc")
 done
 
-# English (default locale) -> wiki root
 copy_locale() {
   local locale="$1"
-  local target_root="$2"   # "" for en (BUILD_DIR root), else "vi"
+  local prefix="$2"   # "" for en, else "vi-"
   local src_wiki="${REPO_ROOT}/wiki/${locale}"
   local src_docs="${REPO_ROOT}/docs/${locale}"
   local src_templates="${REPO_ROOT}/templates/${locale}"
   local src_cases="${REPO_ROOT}/cases/${locale}"
   local dest="${BUILD_DIR}"
-  [[ -n "$target_root" ]] && dest="${BUILD_DIR}/${target_root}"
-  mkdir -p "$dest"
 
-  [[ -f "${src_wiki}/Home.md" ]] && cp "${src_wiki}/Home.md" "${dest}/Home.md"
-  [[ -f "${src_wiki}/_Sidebar.md" ]] && cp "${src_wiki}/_Sidebar.md" "${dest}/_Sidebar.md"
-  [[ -f "${src_wiki}/_Footer.md" ]] && cp "${src_wiki}/_Footer.md" "${dest}/_Footer.md"
+  if [[ -f "${src_wiki}/Home.md" ]]; then
+    cp "${src_wiki}/Home.md" "${dest}/${prefix}Home.md"
+  fi
+  if [[ -f "${src_wiki}/_Sidebar.md" ]]; then
+    cp "${src_wiki}/_Sidebar.md" "${dest}/${prefix}_Sidebar.md"
+  fi
+  if [[ -f "${src_wiki}/_Footer.md" ]]; then
+    cp "${src_wiki}/_Footer.md" "${dest}/${prefix}_Footer.md"
+  fi
 
   for file in "${src_docs}"/*.md; do
     [[ -f "$file" ]] || continue
-    cp "$file" "${dest}/$(basename "$file")"
+    cp "$file" "${dest}/${prefix}$(basename "$file")"
   done
   for file in "${src_templates}"/*.md; do
     [[ -f "$file" ]] || continue
-    cp "$file" "${dest}/$(basename "$file")"
+    cp "$file" "${dest}/${prefix}$(basename "$file")"
   done
 
   if [[ -f "${src_cases}/easy/README.md" ]]; then
-    cp "${src_cases}/easy/README.md" "${dest}/Easy-Tier-Catalog.md"
+    cp "${src_cases}/easy/README.md" "${dest}/${prefix}Easy-Tier-Catalog.md"
   fi
   if [[ -f "${src_cases}/medium/README.md" ]]; then
-    cp "${src_cases}/medium/README.md" "${dest}/Medium-Tier-Catalog.md"
+    cp "${src_cases}/medium/README.md" "${dest}/${prefix}Medium-Tier-Catalog.md"
   fi
   if [[ -f "${src_cases}/hard/README.md" ]]; then
-    cp "${src_cases}/hard/README.md" "${dest}/Hard-Tier-Catalog.md"
+    cp "${src_cases}/hard/README.md" "${dest}/${prefix}Hard-Tier-Catalog.md"
   fi
   for tier in easy medium hard; do
     for file in "${src_cases}/${tier}"/*.md; do
       [[ -f "$file" ]] || continue
       base="$(basename "$file")"
       [[ "$base" == "README.md" ]] && continue
-      cp "$file" "${dest}/${base}"
+      cp "$file" "${dest}/${prefix}${base}"
     done
   done
 }
@@ -70,10 +71,10 @@ copy_locale() {
 # Default locale (en) at root
 copy_locale en ""
 
-# Other locales under their own folder
+# Other locales with prefix
 for loc in "${LOCALES[@]}"; do
   [[ "$loc" == "en" ]] && continue
-  copy_locale "$loc" "$loc"
+  copy_locale "$loc" "${loc}-"
 done
 
 # Normalize relative markdown links for flat GitHub Wiki structure
@@ -82,34 +83,30 @@ import os, re, sys
 
 build_dir = sys.argv[1]
 
-def locale_of(relpath):
-    first = relpath.split(os.sep)[0]
-    return first if first in ("vi",) else "en"
-
-# locale list derived from top-level dirs
-locales = [d for d in os.listdir(build_dir) if os.path.isdir(os.path.join(build_dir, d))]
+def locale_of(filename):
+    # detect locale by filename prefix like "vi-"
+    if filename.startswith("vi-"):
+        return "vi"
+    return "en"
 
 for root, _, files in os.walk(build_dir):
     for fname in files:
         if not fname.endswith(".md"):
             continue
         fpath = os.path.join(root, fname)
-        rel = os.path.relpath(fpath, build_dir)
-        locale = locale_of(rel)
+        locale = locale_of(fname)
+        is_vi = (locale == "vi")
         with open(fpath, "r", encoding="utf-8") as f:
             content = f.read()
 
-        is_vi = (locale == "vi")
-
-        # Tier README link maps
         if is_vi:
-            content = content.replace("(../easy/README.md)", "(vi/Easy-Tier-Catalog)")
-            content = content.replace("(../medium/README.md)", "(vi/Medium-Tier-Catalog)")
-            content = content.replace("(../hard/README.md)", "(vi/Hard-Tier-Catalog)")
-            content = content.replace("(cases/easy/README.md)", "(vi/Easy-Tier-Catalog)")
-            content = content.replace("(cases/medium/README.md)", "(vi/Medium-Tier-Catalog)")
-            content = content.replace("(cases/hard/README.md)", "(vi/Hard-Tier-Catalog)")
-            content = content.replace("(../../README.md)", "(vi/Home)")
+            content = content.replace("(../easy/README.md)", "(vi-Easy-Tier-Catalog)")
+            content = content.replace("(../medium/README.md)", "(vi-Medium-Tier-Catalog)")
+            content = content.replace("(../hard/README.md)", "(vi-Hard-Tier-Catalog)")
+            content = content.replace("(cases/easy/README.md)", "(vi-Easy-Tier-Catalog)")
+            content = content.replace("(cases/medium/README.md)", "(vi-Medium-Tier-Catalog)")
+            content = content.replace("(cases/hard/README.md)", "(vi-Hard-Tier-Catalog)")
+            content = content.replace("(../../README.md)", "(vi-Home)")
         else:
             content = content.replace("(../easy/README.md)", "(Easy-Tier-Catalog)")
             content = content.replace("(../medium/README.md)", "(Medium-Tier-Catalog)")
@@ -119,12 +116,18 @@ for root, _, files in os.walk(build_dir):
             content = content.replace("(cases/hard/README.md)", "(Hard-Tier-Catalog)")
             content = content.replace("(../../README.md)", "(Home)")
 
-        if fname.startswith("E"):
-            content = content.replace("(README.md)", "(Easy-Tier-Catalog)" if not is_vi else "(vi/Easy-Tier-Catalog)")
-        elif fname.startswith("M"):
-            content = content.replace("(README.md)", "(Medium-Tier-Catalog)" if not is_vi else "(vi/Medium-Tier-Catalog)")
-        elif fname.startswith("H") and fname != "Home.md" and not fname.startswith("Hard-Tier"):
-            content = content.replace("(README.md)", "(Hard-Tier-Catalog)" if not is_vi else "(vi/Hard-Tier-Catalog)")
+        if fname.startswith("E") and not fname.startswith("vi-"):
+            content = content.replace("(README.md)", "(Easy-Tier-Catalog)")
+        elif fname.startswith("vi-E"):
+            content = content.replace("(README.md)", "(vi-Easy-Tier-Catalog)")
+        elif fname.startswith("M") and not fname.startswith("vi-"):
+            content = content.replace("(README.md)", "(Medium-Tier-Catalog)")
+        elif fname.startswith("vi-M"):
+            content = content.replace("(README.md)", "(vi-Medium-Tier-Catalog)")
+        elif fname.startswith("H") and fname != "Home.md" and not fname.startswith("Hard-Tier") and not fname.startswith("vi-"):
+            content = content.replace("(README.md)", "(Hard-Tier-Catalog)")
+        elif fname.startswith("vi-H") and fname != "vi-Home.md" and not fname.startswith("vi-Hard-Tier"):
+            content = content.replace("(README.md)", "(vi-Hard-Tier-Catalog)")
 
         def rewrite_link(match):
             label, target = match.group(1), match.group(2)
@@ -139,8 +142,8 @@ for root, _, files in os.walk(build_dir):
                 base = base[:-3]
             if base == "README":
                 base = "Home"
-            if is_vi and base and not base.startswith("vi/"):
-                base = "vi/" + base
+            if is_vi and base and not base.startswith("vi-"):
+                base = "vi-" + base
             return f"[{label}]({base}{anchor})"
 
         content = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", rewrite_link, content)
@@ -148,7 +151,7 @@ for root, _, files in os.walk(build_dir):
             f.write(content)
 PYEOF
 
-PAGE_COUNT=$(find "${BUILD_DIR}" -name '*.md' | wc -l | tr -d ' ')
+PAGE_COUNT=$(find "${BUILD_DIR}" -maxdepth 1 -name '*.md' | wc -l | tr -d ' ')
 echo "==> Compiled ${PAGE_COUNT} Wiki pages in ${BUILD_DIR}."
 
 if [[ "${1:-}" == "--dry-run" ]]; then
@@ -163,5 +166,3 @@ git commit -m "docs(wiki): sync ${PAGE_COUNT} wiki pages (Home, Sidebar, Playboo
 git remote add origin "${WIKI_REMOTE}"
 git push --force origin master:master
 echo "==> Successfully published Wiki to https://github.com/xirothedev/ai-coding-interviews/wiki"
-PYEOF
-chmod +x /Users/xirothedev/workspace/ai-coding-interviews/scripts/publish-wiki.sh
