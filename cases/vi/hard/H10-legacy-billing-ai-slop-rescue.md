@@ -50,33 +50,22 @@ make test
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Welcome to Your AI-Enabled SWE Coding Interview
+> ### Bug Report: Legacy Billing AI-Slop Rescue
 >
-> You are reviewing and rescuing a critical billing & cost-allocation module that a previous engineer generated with heavy AI assistance. The test suite currently passes, **but Finance reported severe accounting discrepancies in production**.
+> A legacy billing module contains interlocking defects introduced by an AI-generated patch. It must be refactored to a correct, maintainable implementation.
 >
-> ### Domain Specification & Accounting Invariants
+> ### Requirements
 >
-> 1. **Stateless Execution Across Calls**: Processing a VIP, promotional, or tax-exempt customer invoice MUST NEVER mutate shared configuration or affect subsequent invoices in the same process.
-> 2. **Canonical Discount Precedence & Zero Floor**:
->    - Regardless of the order discounts are passed in the input list, discounts MUST be applied in strict canonical order:
->      1. **Line-Item Volume/Bundle Discounts** first
->      2. **Percentage (`%`) Cart Discounts** second
->      3. **Flat-Amount (`$`) Vouchers** third
->    - Net taxable subtotal is floored at **`0` cents** (a `$100` voucher on a `$60` order results in `$0.00` taxable subtotal and `$0.00` tax—never negative tax!).
-> 3. **Strict Tax Jurisdiction Validation**: Unknown or expired tax jurisdiction codes must raise an explicit `InvalidTaxJurisdictionError` (never silently default to `0%` inside a broad `try/catch`).
-> 4. **Penny-Exact Installment & Cost-Center Allocation (Largest Remainder / Hamilton's Method)**:
->    - All money math must operate in integer minor units (cents) using Banker's Rounding (`ROUND_HALF_EVEN`).
->    - When splitting an invoice of `T` cents across `N` equal installments (where split the total into N installments with a remainder distributed across the first installments, remainder is non-negative and less than N), the first `r` installments receive the larger installment amount cents and the remaining the number of larger installments installments receive `q` cents (e.g., `$100.00` split `6` ways → `[$16.67, $16.67, $16.67, $16.67, $16.66, $16.66]`, and installments sum exactly to the total ALWAYS holds).
->    - For weighted splits (`weights = [w_1, ..., w_N]`), allocate `floor(T * w_i / sum(W))` first, then distribute the remaining `r` single cents one by one to the entries with the **largest fractional remainders** (breaking ties by earlier index).
+> - Correct installment splitting so installments sum exactly to the total with proper remainder distribution.
+> - Fix tax and rounding calculations.
+> - Remove dead code and speculative abstractions; keep behavior covered by tests.
+> - Ensure idempotency and transactional consistency.
 >
-> ### Your Tasks
+> ### Acceptance Criteria
 >
-> 1. **Audit Code & Tests**: Inspect both the implementation and the existing unit tests. Identify why the tests are currently green despite the production bugs.
-> 2. **Write Real Failing Regression Tests First**: Replace the tautological/over-mocked tests with concrete assertions that reproduce all 4 production defects.
-> 3. **Refactor & Fix the Billing Engine**: Fix all 4 defects cleanly while preserving public API compatibility.
-> 4. **Prove the Accounting Invariant**: Add a property/randomized test running 200+ carts and split configurations verifying `sum(installments) == total_cents` and zero cross-call state leakage.
-
----
+> 1. Trace the billing module and its tests.
+> 2. Identify and fix the interlocking defects.
+> 3. Refactor for clarity without changing covered behavior.
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 

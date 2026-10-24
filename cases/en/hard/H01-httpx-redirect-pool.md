@@ -50,37 +50,21 @@ pytest
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Production Incident & Feature Ticket: HTTP Redirect Security, Pool Leaks & Loop Detection
+> ### Bug Report: HTTP Client Redirect & Connection Pool Handling
 >
-> Security audit and production logs flagged three issues in our synchronous and asynchronous HTTP client around redirect handling (`301`, `302`, `303`, `307`, `308`):
+> Our HTTP client mishandles redirects and connection pooling under certain conditions.
 >
-> 1. **Cross-Origin & Scheme-Downgrade Credential Leak**:
->    - When following redirects, sensitive `Authorization` headers are being leaked across `https://` → `http://` scheme downgrades and non-standard port switches (`:443` → `:8443`). Conversely, valid `http://example.com:80` → `https://example.com:443` upgrades on the same host with default ports are mistakenly stripping `Authorization`.
->    - In addition, when a `POST` request receives a `303 See Other` redirect and switches to `GET`, removing body-related headers (`Content-Length`, `Transfer-Encoding`) mutates the original request's headers in-place inside `response.history[0].request.headers`, corrupting audit logs.
-> 2. **Async Connection Pool Exhaustion on Task Cancellation**:
->    - In services running with a bounded connection pool (e.g., `max_connections=5`), cancelling an async request task while it is reading an intermediate redirect response body permanently leaks a connection slot, eventually hanging all subsequent requests.
-> 3. **State-Aware Redirect Cycle Detection**:
->    - Right now, redirect loops always spin for the full `max_redirects=20` hops before failing with `TooManyRedirects`.
->    - We need deterministic cycle detection that aborts immediately with `TooManyRedirects` when a stateless redirect loop occurs, **without** breaking valid OAuth/SSO login flows where `GET /dashboard` → `302 /login` (which sets a session cookie via `Set-Cookie`) → `302 /dashboard` succeeds, or `POST /submit` → `303 /submit` (which transitions to `GET /submit`).
+> ### Requirements
 >
-> ### Expected Behavioral Contracts
->
-> - **Origin Equality & Safe HTTPS Upgrades**:
->   - `https://api.example.com/v1` and `https://api.example.com:443/v2` share the same origin (implicit default port `443` for `https`, `80` for `http`) and must retain `Authorization`.
->   - `https://api.example.com/v1` → `http://api.example.com/v2` is a scheme downgrade and **must strip** `Authorization`.
->   - `http://api.example.com/v1` → `https://api.example.com/v2` (or `:80` → `:443`) on the same host with default ports is a safe HTTPS upgrade and **must retain** `Authorization`, whereas switching to a non-default port (e.g., `http://api.example.com:8080` → `https://api.example.com:8443`) must strip `Authorization`.
->   - Request objects recorded in `response.history` must never have their headers mutated by subsequent redirect hops.
-> - **Stateful vs. Stateless Redirect Loops**:
->   - `GET /a` → `302 /b` → `302 /a` (with no `Set-Cookie` state change and identical HTTP method) must raise `TooManyRedirects` immediately upon encountering the repeat of `('GET', 'https://.../a')`.
->   - `POST /submit` → `303 /submit` (`GET /submit`) and `GET /app` → `302 /auth` (`Set-Cookie: sid=123`) → `302 /app` are valid state transitions and must **not** raise `TooManyRedirects`.
+> - Preserve appropriate headers (such as Authorization) across HTTPS redirects.
+> - Manage connection pool lifecycle correctly without leaks.
+> - Handle redirect limits and method changes per spec.
 >
 > ### Acceptance Criteria
 >
-> 1. Locate the redirect, URL origin, and client request-handling logic in the codebase, and uncomment any disabled redirect security and cancellation tests in the test suite.
-> 2. Fix origin comparison, preserve header immutability across `response.history`, and guarantee that cancelling an async request mid-redirect always closes and releases the underlying response connection back to the pool.
-> 3. Implement state-aware redirect cycle detection for both sync and async clients, and add regression tests covering OAuth cookie redirects, `POST -> 303 GET` self-redirects, and async task cancellation under tight connection limits.
-
----
+> 1. Trace the client and transport code.
+> 2. Fix redirect header handling and pool management.
+> 3. Verify with redirect and connection reuse scenarios.
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 

@@ -50,27 +50,21 @@ mvn test
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Production Incident Report: 64-Bit ID Precision Loss in Polymorphic JSON & Concurrent Adapter Lookup
+> ### Bug Report: Polymorphic Adapter Runtime Type Resolution
 >
-> A payment processing service using our JSON library for polymorphic subtype deserialization (`RuntimeTypeAdapterFactory`) alongside dynamic `Map<String, Object>` metadata fields (configured with `LONG_OR_DOUBLE` number handling) is hitting three production defects:
+> Serialization uses declared rather than runtime types for wildcard/generic elements, producing incorrect output.
 >
-> 1. **Silent 64-Bit Integer Precision Corruption (`> 2^53`)**:
->    - When `{"txId": 9007199254740993}` is deserialized directly into a `Map<String, Object>` from a raw JSON stream, `txId` is accurately parsed as `Long.valueOf(9007199254740993L)`.
->    - However, when that exact same `Map<String, Object>` sits inside a polymorphic parent object deserialized via `RuntimeTypeAdapterFactory` (which buffers the JSON into an in-memory element tree before delegating to the subtype adapter), `txId` is silently corrupted into `9007199254740992L` or a `Double` (`9.007199254740992E15`) because the buffered tree-reading path routes numbers through 64-bit IEEE-754 floating-point!
-> 2. **Discriminator Field Collision When `maintainType = true`**:
->    - When `RuntimeTypeAdapterFactory` is configured with `maintainType = true` and a concrete subtype class also declares a Java field matching the discriminator key name (e.g., `final String type = "card"` matching the registered subtype label `"card"`), serialization throws `JsonParseException` ("already defines a field named type").
->    - Requirement: Serialization must succeed when the subtype field's value matches the registered label (or when `maintainType` is enabled with a consistent label), while **still** throwing `JsonParseException` if the POJO's field value contradicts the registered subtype label!
-> 3. **Thread-Safe Adapter Resolution for Mutually Recursive Types**:
->    - When multiple threads concurrently request a `TypeAdapter` for mutually recursive classes (`NodeA <-> NodeB`) for the first time, an in-progress placeholder adapter can be published to the shared adapter cache before initialization completes, exposing an unresolved delegate to other threads.
+> ### Requirements
+>
+> - Use runtime types for wildcard element serialization.
+> - Handle large integer values without precision loss.
+> - Reject malformed surrogate pairs in strict mode.
 >
 > ### Acceptance Criteria
 >
-> 1. Search the codebase to trace how polymorphic deserialization buffers JSON into a tree, how tree-based readers and number policies parse numbers into `Object` maps, and how recursive `TypeAdapter` instances are cached. Uncomment any disabled regression tests in the test suite.
-> 2. Fix the buffered tree number-reading path so 64-bit `Long` values (`9007199254740993L`, `Long.MAX_VALUE`, `Long.MIN_VALUE`) preserve full 64-bit integer precision under `LONG_OR_DOUBLE` while still falling back to `Double` for decimal or out-of-range floating-point numbers.
-> 3. Fix `RuntimeTypeAdapterFactory` discriminator serialization so consistent subtype fields serialize cleanly without weakening validation against contradictory discriminator values.
-> 4. Ensure concurrent `getAdapter` calls on cyclic type graphs are 100% thread-safe and never expose uninitialized proxy adapters to other threads, and verify all JUnit tests pass.
-
----
+> 1. Trace the type adapter wrapper.
+> 2. Fix runtime type resolution and edge cases.
+> 3. Verify with polymorphic and numeric edge cases.
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 

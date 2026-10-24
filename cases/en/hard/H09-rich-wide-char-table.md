@@ -50,32 +50,21 @@ pytest
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Welcome to Your AI-Enabled SWE Coding Interview
+> ### Bug Report: Wide-Character Table Rendering
 >
-> You are working inside `Textualize/rich`, Python's terminal rendering engine. You may use the AI Assistant freely. We are evaluating how you handle Unicode terminal cell-width invariants and optimize an algorithmic bottleneck from $O(L \times S)$ to $O(S \log L)$.
+> Our table renderer miscalculates display width for wide characters (CJK, emoji), causing misaligned columns and broken layout.
 >
-> ### What We Need You to Do
+> ### Requirements
 >
-> In terminal UIs, character width is measured in **cells** (`cell_len`), not Python string length:
+> - Measure cell display width using proper character width tables, handling wide and combining characters.
+> - Truncate or pad cells to a target display width without splitting characters.
+> - Ensure consistent alignment for mixed-width content.
 >
-> - Standard ASCII characters (`"a"`, `"1"`) = **1 cell**
-> - Combining marks / zero-width characters (`"\u0301"`) = **0 cells**
-> - Wide CJK ideographs (`"你"`, `"好"`) & Emojis (`"🚀"`) = **2 cells**
+> ### Acceptance Criteria
 >
-> Users have reported two critical bugs:
->
-> 1. **Wide-Character Cropping & Wrapping Alignment**:
->    - In a multi-byte string with a target display width (where each character is 2 cells wide): only `"你好"` (4 cells) fits inside 5 cells because `"世"` requires 2 cells (the accumulated width exceeds the target). However, `set_cell_size(..., 5)` must return a string of **exact cell length `5`** by padding the remaining 1-cell gap with a space: `"你好 "` (the resulting display width matches the target).
->    - In `chop_cells(text, max_size=1)` on `"你好"`, because a 2-cell character can never fit inside `max_size=1`, the function must **not** enter an infinite loop emitting empty strings `""` forever.
->    - Zero-width combining characters (e.g., `"e\u0301"`) must never be split onto a new line separated from their preceding base character.
-> 2. **Quadratic Performance Cliff in `Text.divide(offsets)`**:
->    - `Text.divide(offsets)` splits a `Text` object (with `self._spans: list[Span]`) into `L` line `Text` objects at character indices `offsets`.
->    - Currently, splitting a `Text` with `10,000` spans (including both short token spans and full-document background spans `Span(0, 50000, "on blue")`) across `4,000` lines takes `> 4 seconds` ($O(L \times S)$).
->    - Optimize `Text.divide()` so the 10,000-span / 4,000-line benchmark completes in **`< 0.10 seconds`** while preserving 100% of overlapping and multi-line spans.
->
-> Please explore the cell-measurement and text-wrapping modules in the codebase, re-enable any commented-out wide-character and benchmark tests, fix the cell-boundary bugs, and refactor `Text.divide` to sub-quadratic complexity.
-
----
+> 1. Trace the cell width and table rendering code.
+> 2. Fix width measurement and truncation logic.
+> 3. Verify with multi-byte strings and emoji.
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 

@@ -50,29 +50,21 @@ pnpm test
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Welcome to Your AI-Enabled SWE Coding Interview
+> ### Bug Report: Optimistic Query Fetch Options
 >
-> You are working inside `@tanstack/query-core`. You have full access to the AI Assistant and the Vitest test runner (`pnpm --filter @tanstack/query-core test`).
+> Optimistic updates use default options instead of the supplied query options, causing incorrect fetch behavior.
 >
-> ### What We Need You to Do
+> ### Requirements
 >
-> 1. **Shared `AbortSignal` Deduplication Bug**:
->    - Suppose Component A mounts and triggers an async fetch for `['projects']` that consumes `signal` (`fetch('/api/projects', { signal })`).
->    - 10ms later, Component B mounts and deduplicates onto the exact same in-flight fetch.
->    - 20ms later, Component A unmounts.
->    - **Bug**: Unmounting Component A aborts the `AbortController`, causing Component B's request to fail with `AbortError` (or get stuck in `pending` state).
->    - **Requirement**: An in-flight `Query` fetch must **only** abort its `AbortSignal` on observer removal if **all** observers requiring that fetch have unmounted (or if explicit `queryClient.cancelQueries()` was called)—and only if `signal` was actually accessed by the `queryFn`.
-> 2. **Overlapping Optimistic Mutations Rollback Race**:
->    - Suppose base server state for `['counter']` is `10`.
->    - **Mutation 1 (`+1`)** starts at `t=0ms` → optimistic state becomes `11`.
->    - **Mutation 2 (`+5`)** starts at `t=10ms` → optimistic state becomes `16`.
->    - **Mutation 1 FAILS** at `t=30ms`, while **Mutation 2 SUCCEEDS** at `t=50ms`.
->    - **Bug**: If Mutation 1 rolls back by restoring its `t=0ms` snapshot (`10`), or if Mutation 2 rolls back by restoring its `t=10ms` snapshot (`11`, which included failed Mutation 1), the cache ends up with **corrupted state**.
->    - **Requirement**: Implement deterministic optimistic mutation layering where rolling back any failed mutation `M_i` recomputes the optimistic state from the **last known server state + remaining active/succeeded optimistic updaters** in causal order, and protects against stale background `fetch` responses started _before_ the mutations began.
+> - Use supplied options for optimistic fetches.
+> - Ensure rollback on failed mutations.
+> - Maintain consistency between optimistic and actual state.
 >
-> Please explore `@tanstack/query-core`, re-enable any commented-out multi-observer abort and overlapping optimistic mutation tests, fix both issues, and verify out-of-order settlement races.
-
----
+> ### Acceptance Criteria
+>
+> 1. Trace the query observer.
+> 2. Fix option propagation for optimistic fetches.
+> 3. Verify with mutation scenarios.
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 

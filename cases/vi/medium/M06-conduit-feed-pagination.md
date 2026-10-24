@@ -50,32 +50,21 @@ npm test
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Welcome to Your AI-Enabled SWE Coding Interview
+> ### Bug Report: Feed Pagination
 >
-> You are working on the backend API of "Conduit" (the RealWorld blogging platform). You have full access to the AI Assistant and test suite.
+> Article feed pagination and filtering are incorrect.
 >
-> ### Problem Context
+> ### Requirements
 >
-> The `GET /api/articles` endpoint is the highest-traffic route in our application, supporting filters (`?tag=`, `?author=`, `?favorited=`) and pagination (`?limit=20&offset=0`).
-> Currently, three critical issues exist:
+> - Support filtering by tag, author, and favorited.
+> - Paginate with limit/offset correctly.
+> - Return accurate counts.
 >
-> 1. **Incorrect Filtered Page Size & Total Count**:
->    - Filtering by `?tag=dragons` when an article has multiple tags (e.g., `["dragons", "training", "magic"]`) must still return **all** tags of that article in `tagList: ["dragons", "magic", "training"]` (sorted alphabetically)—NOT just `["dragons"]`!
->    - Applying `?limit=10` must return exactly `10` distinct articles (when `>= 10` matching articles exist), and `articlesCount` must reflect the **total matching articles before `limit`/`offset`**, not `len(articles)`.
-> 2. **N+1 Query Bottleneck**:
->    - Fetching `50` articles currently executes `1 + 5 * 50 = 251` database queries (fetching tags, author following status, and favorite count inside a loop).
->    - Optimize the data access layer so fetching `50` articles executes a **constant $O(1)$ number of queries (`<= 4` queries total)** regardless of `limit`.
-> 3. **Keyset Cursor Pagination (`?cursor=`)**:
->    - Add optional cursor pagination (`?limit=20&cursor=<opaque_token>`) ordered by `created_at DESC, id DESC` so that even if 50 articles share the exact same `created_at` timestamp, paging through the feed never skips or duplicates a single article!
+> ### Acceptance Criteria
 >
-> ### Your Tasks
->
-> 1. **Explore & Trace**: Trace `GET /api/articles` from route handler to database query and serializer.
-> 2. **Run & Uncomment Tests**: Run the test suite and uncomment the query-count assertion, multi-tag filtering, and tied-timestamp cursor pagination tests.
-> 3. **Fix Filtering, Eliminate N+1 Queries & Add Composite Cursor**: Implement all three improvements cleanly.
-> 4. **Verify Edge Cases**: Test an article with `0` tags (`tagList: []`), filtering by `?tag=dragons` returning full `tagList`, and 30 articles with identical `created_at` paged with `limit=7`.
-
----
+> 1. Trace the articles route and tests.
+> 2. Fix filtering and pagination.
+> 3. Verify with combined filters.
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 

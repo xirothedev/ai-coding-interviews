@@ -50,27 +50,21 @@ cargo test
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Production Bug Report: Streaming JSON Framing & Split Multi-Byte UTF-8 Over Chunked Readers
+> ### Bug Report: Streaming JSON Deserialization
 >
-> Engineers streaming concatenated and newline-delimited JSON payloads over TCP sockets (`StreamDeserializer` backed by an `io::Read` stream) have reported two critical bugs in our Rust JSON library:
+> Streaming JSON deserialization has correctness issues on failure and offset tracking.
 >
-> 1. **Self-Delimiting Composite vs. Adjacent Scalar Framing in `StreamDeserializer`**:
->    - Valid self-delimiting JSON values (`{"a":1}{"b":2}`, `[1,2][3,4]`, `"hello""world"`) must parse cleanly back-to-back without requiring intervening whitespace.
->    - Conversely, non-delimited adjacent scalars (`123true`, `truefalse`, `null123`, `123"abc"`) are invalid JSON framing and **must be rejected** with a syntax error (`TrailingCharacters` / `ExpectedSomeValue`), whereas `123 true` (whitespace-separated) or `123[1]` (where `[` is a valid self-delimiting token after a number) must succeed.
->    - Calling `byte_offset()` on the stream must always report the exact byte index at the end of each deserialized value and upon reaching EOF.
-> 2. **Multi-Byte UTF-8 Codepoints Split Across `io::Read` Chunk Boundaries**:
->    - When streaming from a network socket or chunked `io::Read` source where a single `read()` call yields only `1` or `2` bytes of a 3- or 4-byte UTF-8 sequence (e.g., `€` or `🦀` = `[0xF0, 0x9F, 0xA6, 0x80]`), the streaming reader falsely fails with `InvalidUnicodeCodePoint`.
->    - The reader must seamlessly accumulate bytes across arbitrary chunk boundaries and validate UTF-8 properly while preserving zero-copy borrowed string lifetimes (`'de`) when reading from in-memory slices.
->    - **Strict Safety Rule**: Introducing unsound `unsafe` blocks (such as transmuting scratch-buffer lifetimes `'s` to `'de`) is strictly forbidden.
+> ### Requirements
+>
+> - Return a terminal state (no further values) after a parse failure.
+> - Track byte offsets accurately for partial reads.
+> - Handle top-level primitives and multiple values in a stream.
 >
 > ### Acceptance Criteria
 >
-> 1. Locate the streaming deserializer and `io::Read` / slice reader implementations in the codebase, and uncomment any disabled streaming framing and chunk-boundary tests.
-> 2. Fix `StreamDeserializer` post-value delimiter handling so self-delimiting composites succeed back-to-back, non-delimited scalars are rejected, and `byte_offset()` remains exact.
-> 3. Fix streaming string parsing over `io::Read` so multi-byte UTF-8 characters split across arbitrary `read()` calls succeed without unsound lifetime transmutation.
-> 4. Add a stress test using a custom `io::Read` wrapper that yields at most `N` bytes (`N = 1, 2, 3`) per `read()` call, verifying that streaming a mix of multi-byte emojis (`"🦀🚀"`), escaped UTF-16 surrogate pairs (`"\uD83E\uDD80"`), scalars, and objects produces identical results and `byte_offset()` positions as in-memory slice deserialization.
-
----
+> 1. Trace the deserializer and stream reader.
+> 2. Fix failure handling and offset tracking.
+> 3. Verify with multi-value streams and error cases.
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 

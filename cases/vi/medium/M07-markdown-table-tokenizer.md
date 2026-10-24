@@ -50,33 +50,21 @@ npm test
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Welcome to Your AI-Enabled SWE Coding Interview
+> ### Bug Report: Markdown Table Tokenizer Correctness & Performance
 >
-> You are working on our GFM (GitHub Flavored Markdown) Table block parser. You have full access to the AI Assistant and the test runner.
+> Our markdown table tokenizer mishandles backtick code spans and exhibits catastrophic backtracking on malformed input.
 >
-> ### What We Need You to Do
+> ### Requirements
 >
-> Users rendering technical documentation tables have reported two bugs and requested one feature extension:
+> - Correctly handle backtick code spans so pipes inside code spans are not treated as column separators, while unclosed backticks are treated as literal text.
+> - Parse malformed lines with many backticks or pipes in linear time without regex backtracking.
+> - Normalize rows: pad short rows with empty cells and truncate excess cells to match header count; support consecutive pipes and colspan where configured.
 >
-> 1. **Bug A — Pipes Inside Inline Code Spans & Backslash Escape Parity**:
->    - In Markdown tables, `|` separates columns **unless**:
->      - It is preceded by an **odd** number of backslashes (e.g., `\|` or `\\\|` is an escaped literal pipe `|`, whereas `\\|` is an escaped backslash `\` followed by a **real** column separator `|`!).
->      - It appears inside a matched inline code span (e.g., ``| `x | y` |`` or `|`x | `| y`` | ``). Note: if a backtick run is **unclosed** on that line (e.g., `` |`unclosed | next_col | ``), the backtick is literal text and the `|` **does** act as a column separator.
-> 2. **Bug B — Linear $O(N)$ Performance Requirement (No ReDoS)**:
->    - Malformed lines with 10,000 backticks or pipes must parse in `< 20ms` without catastrophic regex backtracking.
-> 3. **Feature Extension — Empty-Cell Colspan & Column Normalization**:
->    - Support consecutive unescaped pipes (or explicit colspan attribute generation on `td`/`th` tokens when configured) and ensure rows with fewer cells than the header row are padded with empty cells while rows with excess cells are truncated to match the header column count.
+> ### Acceptance Criteria
 >
-> ### Examples
->
-> - ``| `a | b` | c |`` → **2 cells**: ``"`a | b`"`` and `"c"`
-> - `| a \| b | c |` → **2 cells**: `"a | b"` and `"c"`
-> - `| a \\| b |` → **2 cells**: `"a \\"` and `"b"` _(even number of backslashes before `|` means `|` is NOT escaped!)_
-> - ``| `unclosed | b |`` → **2 cells**: ``"`unclosed"`` and `"b"` _(backtick was never closed on the row!)_
->
-> Please explore the table parser in the codebase, re-enable any commented-out table tests, implement a linear-time $O(N)$ row scanner that handles escape parity and matched backtick runs accurately, and verify edge cases with unit tests.
-
----
+> 1. Trace the lexer/tokenizer and existing tests.
+> 2. Fix code-span handling and replace catastrophic regex with a linear scan.
+> 3. Implement row normalization and verify performance on large malformed inputs.
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 

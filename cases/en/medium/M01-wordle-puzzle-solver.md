@@ -50,37 +50,20 @@ cargo test
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Welcome to Your AI-Enabled SWE Coding Interview
+> ### Bug Report: Wordle Puzzle Solver Correctness
 >
-> Use this session to solve a realistic multi-file engineering problem with the AI Assistant.
+> The puzzle solver produces incorrect results for edge cases with few remaining candidates.
 >
-> ### The Puzzle
+> ### Requirements
 >
-> I've written a new word game, and it works like this:
+> - Handle small candidate sets without cutoff bugs.
+> - Preserve correctness of guess scoring and elimination.
 >
-> - `Puzzle` has a secret word chosen from a bundled dictionary containing words of **1 to 6 letters**.
-> - The player needs to guess the secret word, ideally in as few guesses as possible.
-> - When you guess a word via `Puzzle.guess(word)`, you get a list of `Match` statuses for each letter in your guess:
->   - `Match.YES` if the secret word has that exact letter in that exact spot.
->   - `Match.MOVE` if that letter could be moved to another spot to be correct (respecting letter frequency counts—excess duplicate letters in a guess beyond how many exist in the secret word must be marked `Match.NO`!).
->   - `Match.NO` if the letter can't be used.
-> - If you can't guess it, you can give up via `Puzzle.admit_defeat()` (or `Puzzle.admitDefeat()`) to reveal the secret word.
+> ### Acceptance Criteria
 >
-> ### Examples of `Puzzle.guess`
->
-> - Secret = `"able"`, Guess = `"ably"` → `[Match.YES, Match.YES, Match.YES, Match.NO]`
-> - Secret = `"aloe"`, Guess = `"ally"` → `[Match.YES, Match.YES, Match.NO, Match.NO]` _(Second `'l'` is `NO` because `'aloe'` has only one `'l'`, already matched at index 1)_
-> - Secret = `"area"`, Guess = `"aaaa"` → `[Match.YES, Match.NO, Match.NO, Match.YES]`
->
-> ### What We Need You to Do
->
-> 1. **Explore & Run the Game**: Explore the repository to see how the dictionary loader, puzzle engine, solver, and entrypoint runner fit together, and run the entrypoint script to see its current behavior.
-> 2. **Run & Re-enable Unit Tests**: Run the existing unit test suites for the puzzle and solver, find any commented-out test cases, and re-enable them.
-> 3. **Fix Existing Dictionary & Hint Bugs**: Fix the existing bugs in dictionary loading and duplicate-letter hint evaluation so all puzzle unit tests pass.
-> 4. **Implement the Automated `Solver`**: Implement `Solver` so it plays the game and reliably solves puzzles across both the small test dictionary and the full 40,000-word production dictionary, averaging `<= 5.0` guesses per word and completing 100 production games in `< 2.0 seconds`.
-> 5. **Use the AI Assistant** as much or as little as you would like, and be ready to explain why your solution is correct.
-
----
+> 1. Trace the solver logic.
+> 2. Fix the cutoff edge case.
+> 3. Verify with small candidate sets.
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 

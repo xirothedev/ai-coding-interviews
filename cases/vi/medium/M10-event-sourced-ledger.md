@@ -50,41 +50,22 @@ npm test
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Welcome to Your AI-Enabled SWE Coding Interview
+> ### Bug Report: Event-Sourced Ledger Correctness
 >
-> You are working on an Event-Sourced Payment Ledger that processes asynchronous card & bank webhooks. You have full access to the AI Assistant and unit test suite.
+> Our event-sourced ledger produces incorrect available balances and mishandles idempotency and transactional consistency.
 >
-> ### Domain Rules & Ledger Invariants
+> ### Requirements
 >
-> Every account tracks two balances in **integer cents**:
+> - Maintain available balance as deposits minus withdrawals minus held amounts, with correct held/available semantics.
+> - Enforce idempotency on commands so duplicate event IDs do not double-apply.
+> - Ensure transactions are atomic and consistent across aggregates and read models.
+> - Handle currency and rounding correctly.
 >
-> - `settled_balance`: Confirmed funds in the account (modified by `DEPOSIT`, `WITHDRAWAL`, and `CAPTURE`).
-> - `held_balance`: Funds currently locked in active `AUTH_HOLD`s.
-> - `available_balance`: Always defined as **`settled_balance - held_balance`**.
+> ### Acceptance Criteria
 >
-> #### Webhook Event Types
->
-> 1. `DEPOSIT(event_id, account_id, amount_cents)` → Increases `settled_balance` by `amount_cents`.
-> 2. `WITHDRAWAL(event_id, account_id, amount_cents)` → Requires `available_balance >= amount_cents`; decreases `settled_balance` by `amount_cents` (otherwise raises `InsufficientFundsError`).
-> 3. `AUTH_HOLD(event_id, account_id, auth_id, amount_cents)` → Requires `available_balance >= amount_cents` (unless already captured out-of-order); increases `held_balance` by `amount_cents`.
-> 4. `CAPTURE(event_id, account_id, auth_id, amount_cents)` → Settles a hold:
->    - `amount_cents` may be **less than or equal to** the original `AUTH_HOLD` amount (_Partial Capture_, e.g., `$100` hold at a gas pump, `$65` final capture).
->    - Decreases `settled_balance` by `capture_amount_cents` AND releases the **entire** remaining hold for `auth_id` from `held_balance`!
-> 5. `VOID(event_id, account_id, auth_id)` → Cancels an unsettled `AUTH_HOLD`, releasing its held amount back to `available_balance` without changing `settled_balance`.
->
-> #### Critical Reliability Requirements
->
-> - **Idempotency**: Duplicate deliveries of the same `event_id` must be a safe no-op returning the existing result.
-> - **Out-of-Order Tolerance**: If `CAPTURE(auth_id="x")` or `VOID(auth_id="x")` arrives **before** `AUTH_HOLD(auth_id="x")`, record the pending resolution or settle immediately so that when `AUTH_HOLD(auth_id="x")` arrives later, the final `(settled_balance, held_balance, available_balance)` is **100% identical** to in-order delivery!
->
-> ### Your Tasks
->
-> 1. **Explore & Audit**: Read the ledger and webhook processor code and run the existing tests.
-> 2. **Uncomment Failing Tests**: Uncomment the idempotency, partial-capture, and out-of-order webhook permutation tests.
-> 3. **Fix All 3 Ledger Defects**: Implement idempotent event tracking, proper partial-capture hold release, and out-of-order `HOLD` / `CAPTURE` / `VOID` reconciliation.
-> 4. **Verify Permutation Invariant**: Write a test proving that for any sequence of events on `auth_id`, all delivery permutations of `[AUTH_HOLD, CAPTURE]` and `[AUTH_HOLD, VOID]` converge to the exact same account balances.
-
----
+> 1. Trace the account aggregate, transaction registry, and idempotency service.
+> 2. Fix balance calculations and idempotency enforcement.
+> 3. Verify edge cases: duplicate events, concurrent updates, and insufficient funds.
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 

@@ -50,34 +50,21 @@ npm test
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Welcome to Your AI-Enabled SWE Coding Interview
+> ### Bug Report: Trie Router Matching
 >
-> You are working on our Radix/Trie URL Router. You have full access to the AI Assistant and the test runner.
+> The radix trie router has matching bugs for duplicate params, wildcards, and patterns.
 >
-> ### What We Need You to Do
+> ### Requirements
 >
-> Our HTTP framework routes incoming paths (`GET /orgs/acme/repos/core/issues`) against registered patterns containing **static segments**, **named parameters (`:name`, `:id{[0-9]+}`)**, **optional parameters (`:version?`)**, and **wildcards (`*` or `*filepath`)**.
+> - Keep the first value for duplicate path params.
+> - Match suffix wildcards and patterns correctly.
+> - Handle empty wildcard remainders and regexp params.
 >
-> Users have reported three routing defects:
+> ### Acceptance Criteria
 >
-> 1. **Dead-End Prefix Backtracking Bug**:
->    - Suppose these routes are registered:
->      - `GET /users/admin/audit-log`
->      - `GET /users/:username/followers`
->      - `GET /users/*`
->    - When a request arrives for `GET /users/admin/followers`, the router enters the static `"admin"` branch, sees no `"followers"` child, and returns `404 Not Found`—failing to backtrack and match `:username = "admin"`.
-> 2. **Parameter State Pollution During Backtracking**:
->    - Suppose these routes are registered:
->      - `GET /v1/:orgId/billing/invoices`
->      - `GET /v1/:tenantId/*`
->    - When `GET /v1/acme/billing/summary` is requested, Branch 1 captures `orgId = "acme"` and then fails on `"summary"`. Branch 2 matches `tenantId = "acme"`, but the returned `params` object contains `{ orgId: "acme", tenantId: "acme" }` (leaking `orgId` from the failed branch).
-> 3. **Strict Specificity Precedence Regardless of Registration Order**:
->    - Whether routes are registered in order `[Wildcard, Param, Static]` or `[Static, Param, Wildcard]`, matching must follow deterministic specificity:
->      `Static segment > Regex-constrained :param{[0-9]+} > Standard :param > Wildcard *`
->
-> Please explore the trie router codebase, re-enable any commented-out tests in the router test suite, fix the backtracking, parameter isolation, and specificity precedence bugs, and verify edge cases (including URL-encoded segments, trailing slashes, and multi-segment wildcards).
-
----
+> 1. Trace the trie router node logic.
+> 2. Fix matching edge cases.
+> 3. Verify with the router test suite.
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 

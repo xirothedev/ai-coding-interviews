@@ -50,27 +50,21 @@ go test ./...
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Welcome to Your AI-Enabled SWE Coding Interview
+> ### Bug Report: CLI Flag Propagation & Shadowing
 >
-> You are working inside `spf13/cobra`, the CLI library powering Kubernetes (`kubectl`), Docker, and GitHub CLI (`gh`). You have full access to the AI Assistant and `go test ./...`.
+> Child commands do not correctly handle flags that shadow parent persistent flags, and flag groups/completion have issues.
 >
-> ### What We Need You to Do
+> ### Requirements
 >
-> Because thousands of CLIs depend on Cobra, **strict backwards compatibility** with existing behavior is mandatory while fixing two hierarchical command bugs:
+> - Show flags that shadow parent persistent flags in child help.
+> - Propagate flags correctly through command hierarchy.
+> - Support flag groups and completion consistently.
 >
-> 1. **Cross-Level Flag Group Validation**:
->    - Commands can declare flag groups via `MarkFlagsRequiredTogether(names...)`, `MarkFlagsMutuallyExclusive(names...)`, and `MarkFlagsOneRequired(names...)`.
->    - **Bug**: When a child subcommand declares a flag group referencing a flag defined on its parent's `PersistentFlags()` alongside a flag on the child's local `Flags()`, validation either fails to see the parent persistent flag or leaks `Changed` flag state across repeated `cmd.Execute()` calls in test suites.
-> 2. **Hierarchical Lifecycle Hook Traversal & Symmetrical Rollback**:
->    - **Default Mode (`EnableTraverseRunHooks == false`)**: Must preserve legacy Cobra behavior—walk up the parent chain from the target command and execute **only the first (nearest)** `PersistentPreRun(E)` found, and similarly only the nearest `PersistentPostRun(E)`.
->    - **Traversal Mode (`EnableTraverseRunHooks == true`)**:
->      - Execute `PersistentPreRun(E)` in top-down ancestor order: **`Root → Parent → Child`**.
->      - Execute `PersistentPostRun(E)` in reverse bottom-up order: **`Child → Parent → Root`** (simulating middleware `defer` unwinding).
->      - **Partial Failure Rollback Rule**: If `Root.PersistentPreRunE` succeeds, and `Parent.PersistentPreRunE` returns an `err`, `Child.PersistentPreRunE` and `Child.RunE` must **not** run, and `Root.PersistentPostRun(E)` **must** still run to clean up resources initialized by `Root` (while `Parent` and `Child` `PostRun` hooks do not run).
+> ### Acceptance Criteria
 >
-> Please explore how command execution, persistent flag merging, and flag-group validation work in the codebase, re-enable any commented-out tests, implement both fixes without breaking the existing 200+ unit tests, and verify multi-level error unwinding.
-
----
+> 1. Trace the command and flag handling.
+> 2. Fix shadowing and propagation.
+> 3. Verify with nested commands and flag groups.
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 

@@ -50,31 +50,21 @@ go test ./...
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Welcome to Your AI-Enabled SWE Coding Interview
+> ### Bug Report: TTL LRU Cache Stampede & Lifecycle
 >
-> You are working on an in-memory bounded **TTL + LRU Cache** module. You have full access to the AI Assistant and test runner.
+> Cached entries with TTL can stampede on expiry and evict callbacks run under lock.
 >
-> ### Problem Context
+> ### Requirements
 >
-> Our high-throughput service relies on this cache to store database/API lookups with both a **per-entry TTL (`ttl`)** and a **maximum entry capacity (`maxCapacity`)**:
+> - Prevent cache stampede on expiry (single-flight loading).
+> - Invoke eviction callbacks outside the lock.
+> - Handle expired entries correctly.
 >
-> 1. **Bug A — Expired Entries Causing False LRU Evictions**:
->    - If `maxCapacity = 3` and the cache contains `["A" (expired), "B" (live, LRU), "C" (live, MRU)]`, inserting `"D"` currently evicts live key `"B"` instead of reclaiming the slot from expired key `"A"`!
->    - Additionally, calling `Get("A")` on an expired key must lazily remove `"A"` from both the hash map and the doubly-linked list so `Size()` reflects only live items.
-> 2. **Feature — `GetOrLoad(key, ttl, loaderFn)` with Cache Stampede (Singleflight) Protection**:
->    - When a popular key expires, 100 concurrent requests hit `GetOrLoad("homepage", ttl, loaderFn)` at the same millisecond.
->    - **Requirement 1 (Singleflight Coalescing)**: `loaderFn("homepage")` must execute **exactly once**, and all 100 concurrent callers must receive the loaded value (or error).
->    - **Requirement 2 (Non-Blocking Across Different Keys)**: While `loaderFn("slow-key")` is taking `200ms` to fetch from the database, concurrent calls to `Get("fast-key")`, `Set("other-key")`, or `GetOrLoad("other-key")` MUST NOT be blocked waiting for `"slow-key"`!
->    - **Requirement 3 (Failure Recovery)**: If `loaderFn("homepage")` returns an error (or throws/panics), do NOT cache the error; remove the in-flight entry immediately so a subsequent request can retry.
+> ### Acceptance Criteria
 >
-> ### Your Tasks
->
-> 1. **Explore & Trace**: Inspect the hash map, doubly-linked LRU list, and TTL expiration checks.
-> 2. **Run & Uncomment Tests**: Run the test suite and uncomment the TTL-vs-LRU eviction and `GetOrLoad` stampede tests.
-> 3. **Fix TTL/LRU Eviction & Implement `GetOrLoad`**: Ensure $O(1)$ amortized operations and fine-grained concurrency.
-> 4. **Verify Edge Cases**: Test `loaderFn` throwing/panicking, 50 concurrent callers on the same key vs. 50 distinct keys, and updating an existing key via `Set()`.
-
----
+> 1. Trace the expirable LRU implementation.
+> 2. Fix stampede and callback locking.
+> 3. Verify with TTL and concurrency scenarios.
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 

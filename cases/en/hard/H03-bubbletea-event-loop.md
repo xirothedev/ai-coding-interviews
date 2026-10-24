@@ -50,30 +50,21 @@ go test ./...
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Production Incident & Feature Request: TUI Shutdown Deadlocks, Command Sequencing & Bounded Concurrency
+> ### Bug Report: Event Loop & Command Batching
 >
-> Developers building interactive terminal applications on our Elm-Architecture TUI runtime (`Init -> Update -> View`) have reported two concurrency bugs in production along with a feature request for bounded command concurrency:
+> The TUI event loop mishandles nested sequence messages and batches commands incorrectly, causing deadlocks or dropped commands.
 >
-> 1. **Shutdown Hang & Goroutine Leak Under Command Load**:
->    - When a model's `Update` method dispatches a large batch of 50+ slow background commands (`Batch(...)`) and the user quits the program (`Quit`) before those commands finish, `Program.Run()` hangs indefinitely instead of exiting cleanly.
->    - Shutdown must never panic (for example, due to concurrent producers sending on a closed channel) and must not leave leaked goroutines blocked forever trying to deliver messages after the main event loop has exited.
-> 2. **Out-of-Order Execution in `Sequence`**:
->    - `Sequence(cmd1, cmd2, cmd3)` is required to execute `cmd1`, deliver its resulting message (or recursively finish any nested batch/sequence returned by `cmd1`), and only start `cmd2` after `cmd1` has completed. Currently, sequenced commands execute out of order, and fixing this must not block or deadlock the main command/event loop when `Update` emits new commands in response.
-> 3. **New API — `BatchLimit(limit int, cmds ...Cmd)`**:
->    - Applications firing hundreds of network or disk commands in a single `Batch` are exhausting file descriptors.
->    - Implement and export `BatchLimit(limit int, cmds ...Cmd) Cmd`:
->      - Filters out `nil` commands (returning `nil` if no non-nil commands remain, or the single command directly if only one remains).
->      - Executes at most `limit` commands concurrently at any given time (if `limit <= 0`, clamp to `1` so execution never deadlocks).
->      - If the program shuts down (`Quit` or context cancellation) while commands are queued waiting for a concurrency slot, any unstarted commands in `BatchLimit` must abort immediately without executing.
+> ### Requirements
+>
+> - Handle nested sequence messages in the event loop.
+> - Send batched commands through the command channel instead of executing inline.
+> - Avoid deadlocks on shutdown.
 >
 > ### Acceptance Criteria
 >
-> 1. Explore the codebase to map how the program lifecycle, event loop, message channels, and command runners interact, and uncomment any disabled concurrency and ordering tests.
-> 2. Fix the shutdown deadlock and restore strict sequential execution for `Sequence` without introducing channel panics or AB-BA deadlocks between command producers and the event loop.
-> 3. Implement `BatchLimit(limit int, cmds ...Cmd)` respecting the concurrency cap, `limit <= 0` clamping, `nil` command filtering, and immediate cancellation on shutdown.
-> 4. Verify your solution under the Go race detector (`go test -race -count=10 ./...`), ensuring the full suite completes in `< 5 seconds` with zero data races or goroutine leaks.
-
----
+> 1. Trace the program loop and command dispatch.
+> 2. Fix sequence handling and command batching.
+> 3. Verify with nested sequences and shutdown scenarios.
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 

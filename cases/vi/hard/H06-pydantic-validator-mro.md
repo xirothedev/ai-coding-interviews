@@ -50,25 +50,21 @@ pytest
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Welcome to Your AI-Enabled SWE Coding Interview
+> ### Bug Report: Pydantic Validator Ordering & Inheritance
 >
-> You are working inside `pydantic`. You have full access to the AI Assistant and `pytest`. We are evaluating your ability to reason about Python's Method Resolution Order (MRO), metaclass schema construction, and performance-sensitive object copying.
+> Validators defined on base and derived models do not execute in the expected order, and MRO handling is incorrect.
 >
-> ### What We Need You to Do
+> ### Requirements
 >
-> 1. **Validator Inheritance & Method Override Contract**:
->    - When `Child(Parent)` defines a `@model_validator` or `@field_validator` with the **exact same method name** as `Parent`, `Child`'s validator must **override (replace)** `Parent`'s validator of that name—not run both.
->    - Furthermore, if a subclass overrides a decorated parent validator method with a plain undecorated method of the same name, the parent's stale validator must not execute.
->    - When `Parent` and `Child` define validators with _different_ method names, execution order must respect mode semantics:
->      - `mode='after'` validators run **Base → Derived (`Parent` first, then `Child`)** so `Child` can rely on invariants established by `Parent`.
->      - `mode='before'` (and `mode='wrap'`) validators run **Derived → Base (`Child` first/outermost, then `Parent`)** so `Child` can pre-process raw inputs before `Parent`'s schema parses them.
-> 2. **Safe Container Isolation in `model_copy(update=...)`**:
->    - Calling `b = a.model_copy(update={'name': 'new'})` and then mutating `b.tags` (where `tags: list[str] = []` or `Field(default_factory=list)`) or `b.__pydantic_extra__` currently mutates `a.tags` / `a.__pydantic_extra__` when `deep=False`.
->    - However, blindly running `copy.deepcopy(self)` when `deep=False` is **unacceptable**: models with `model_config = ConfigDict(arbitrary_types_allowed=True)` holding non-pickleable objects (e.g., `threading.Lock()`, sockets, or DB connections) must not crash on `model_copy()`, and copying 50,000 models must complete in `< 0.15s`.
+> - Execute validators in the correct method-resolution order across inheritance hierarchies.
+> - Support before/after/wrap validator modes with proper data flow.
+> - Handle model_copy and rebuild correctly without losing validators.
 >
-> Please explore how decorator collection, metaclass schema construction, and `model_copy` work in the codebase, re-enable any commented-out validator/copy tests, fix both issues, and verify diamond inheritance and `threading.Lock` edge cases.
-
----
+> ### Acceptance Criteria
+>
+> 1. Trace the decorator and schema generation internals.
+> 2. Fix validator ordering and MRO handling.
+> 3. Verify with inherited models and all validator modes.
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 

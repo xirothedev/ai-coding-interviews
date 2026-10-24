@@ -50,30 +50,21 @@ pytest
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Welcome to Your AI-Enabled SWE Coding Interview
+> ### Bug Report: CLI Option Precedence
 >
-> You are working on the parameter and option resolution engine of our CLI framework. You have full access to the AI Assistant and the test runner.
+> Option default resolution and precedence between context, option, and environment is incorrect.
 >
-> ### What We Need You to Do
+> ### Requirements
 >
-> CLI options can receive values from **4 distinct sources**, ordered from highest to lowest priority:
-> `1. COMMANDLINE (Explicit CLI flag) > 2. ENVIRONMENT (Env var) > 3. DEFAULT_MAP (Config file dictionary) > 4. DEFAULT (Option definition default)`
+> - Resolve precedence: explicit CLI flag > environment > config/default map > option default.
+> - Handle boolean and empty-string options correctly.
+> - Ensure option show_default respects context settings.
 >
-> Users have reported three critical bugs:
+> ### Acceptance Criteria
 >
-> 1. **Falsy Explicit CLI Values Ignored**:
->    - When `APP_RETRIES=3` is set in the environment and the user runs `cli --retries 0`, the resolved value is `3` instead of `0`.
->    - Similarly, when `APP_SSL=true` is in the environment and the user runs `cli --no-ssl` (which passes `False`), `ssl` resolves to `True`.
->    - Passing `--tag ""` (empty string) on the CLI falls back to `DEFAULT` instead of keeping `""`.
-> 2. **Environment Variable Boolean & Multiple-Value Parsing**:
->    - Setting `APP_SSL=false`, `APP_SSL=0`, or `APP_SSL=no` in the environment must resolve to `False` (never `bool("false") == True`), while `APP_SSL=""` (empty env var) should be treated as unset unless the option type is `STRING` with explicit empty support.
->    - For options with `multiple=True` and `envvar="APP_TAGS"`, `APP_TAGS="alpha,beta,gamma"` (or `os.pathsep` / custom `envvar_sep`) must split cleanly into `("alpha", "beta", "gamma")` without turning `APP_TAGS=""` into `("",)`.
-> 3. **Accurate Source Attribution (`ctx.get_parameter_source(name)`)**:
->    - Ensure `ctx.get_parameter_source(param_name)` accurately returns `ParameterSource.COMMANDLINE`, `ParameterSource.ENVIRONMENT`, `ParameterSource.DEFAULT_MAP`, or `ParameterSource.DEFAULT` for every resolved parameter—even when the explicit CLI value happens to equal the default value (e.g., default is `0` and the user explicitly passed `--retries 0` on the CLI → source must be `COMMANDLINE`, not `DEFAULT`).
->
-> Please explore how parameters and options are consumed in the codebase, re-enable any commented-out option/context tests, fix all three issues, and verify edge cases with unit tests.
-
----
+> 1. Trace the core option resolution.
+> 2. Fix precedence handling.
+> 3. Verify with env vars, defaults, and flags.
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 

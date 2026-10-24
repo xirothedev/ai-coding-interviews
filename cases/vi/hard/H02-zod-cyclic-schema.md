@@ -50,26 +50,26 @@ pnpm test
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Bug Report & Feature Request: Async Validation Path Corruption & Cyclic Graph Handling
+> ### Bug Report: Async Validation Path Corruption & Cyclic Graph Handling
 >
 > Users validating complex nested data structures and recursive schemas have reported two critical issues in our schema validation library:
 >
-> 1. **Corrupted Error Paths During Async Validation**:
->    - When validating nested objects or unions asynchronously (`await schema.safeParseAsync(data)`), validation errors intermittently report mutated or wrong `issue.path` arrays (for example, `["users", 0, "age", "name"]` instead of `["users", 0, "name"]`) when multiple async branches or properties resolve concurrently.
-> 2. **Stack Overflow on Cyclic Object Graphs vs. Valid Shared DAG References**:
->    - When validating recursive schemas defined with `z.lazy(...)` against runtime objects that contain circular references (such as doubly-linked AST/DOM nodes or ORM entities where `user.posts[0].author === user`), validation crashes the process with `RangeError: Maximum call stack size exceeded`.
->    - **Crucial Requirement — Cycles vs. Shared DAG Siblings**:
->      - A **True Cycle** (an object appearing inside one of its own descendants along the active traversal chain, such as `a.next = a`) **must** be caught and fail validation cleanly with a custom validation issue (`code: ZodIssueCode.custom`, `message: "Circular reference detected"` at the exact offending path) instead of throwing `RangeError`.
->      - A **Shared Non-Cyclic Reference (DAG)** (the exact same object instance referenced by two sibling branches or fields, such as `const addr = { zip: "10001" }; const order = { billing: addr, shipping: addr }`) is **completely valid** and **must pass** validation in both synchronous (`safeParse`) and asynchronous (`safeParseAsync`) modes!
+> 1. **Corrupted Error Paths During Async Validation**: When validating nested objects or unions asynchronously, validation errors intermittently report mutated or wrong issue paths when multiple async branches or properties resolve concurrently.
+> 2. **Stack Overflow on Cyclic Object Graphs**: When validating recursive schemas against runtime objects that contain circular references, validation crashes the process instead of failing cleanly.
+>
+> ### Requirements
+>
+> - Async validation must report correct, isolated error paths even under concurrent resolution.
+> - Recursive schemas must detect true cycles (an object appearing within its own descendant chain) and fail validation cleanly with a custom issue at the offending path, rather than throwing a stack overflow.
+> - Shared non-cyclic references (the same instance referenced by sibling branches) must remain valid in both synchronous and asynchronous modes.
+> - Deep or wide valid object graphs must complete without excessive time or memory growth.
 >
 > ### Acceptance Criteria
 >
-> 1. Search the codebase to trace how parse context paths are constructed and propagated across synchronous and asynchronous schema parsers, and uncomment any disabled recursive/union regression tests.
-> 2. Fix the async path mutation bug so concurrent async object/union validations always report exact, isolated `issue.path` arrays.
-> 3. Implement cycle detection for recursive schemas that rejects ancestor cycles with `"Circular reference detected"` at the offending path while allowing shared DAG references in both sync and async execution.
-> 4. Ensure that validating a 5,000-node deep or wide valid object graph completes in `< 50ms` with no memory leaks or lingering state after promises settle.
-
----
+> 1. Trace how parse context paths are constructed and propagated across sync and async parsers; re-enable any disabled recursive/union regression tests.
+> 2. Fix the async path mutation so concurrent validations report exact paths.
+> 3. Implement cycle detection for recursive schemas that rejects ancestor cycles while allowing shared references in both sync and async execution.
+> 4. Verify deep/wide valid graphs complete within reasonable time without leaks.
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 

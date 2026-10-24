@@ -50,41 +50,22 @@ go test ./...
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Welcome to Your AI-Enabled SWE Coding Interview
+> ### Bug Report: Concurrent Worker Pool Correctness
 >
-> You are working on a concurrent job execution engine in Go. You have full access to the AI Assistant and `go test -race`.
+> Our concurrent execution helper has race conditions and goroutine leaks under load. It must bound concurrency, preserve input order, and cancel cleanly on failure.
 >
-> ### Problem Context
+> ### Requirements
 >
-> Our backend service dispatches batches of I/O-bound jobs across a bounded pool of worker goroutines:
+> - Bound the number of concurrent workers, handling zero/negative and oversized limits sensibly.
+> - Preserve input order in results on success.
+> - On any worker failure or panic, cancel in-flight work, stop dispatching new jobs, wait for goroutines to exit, and return the first error.
+> - Handle empty input and already-cancelled contexts without leaking goroutines.
 >
-> ```go
-> func ExecuteAll[T any, R any](
->     ctx context.Context,
->     maxWorkers int,
->     items []T,
->     workerFn func(ctx context.Context, item T) (R, error),
-> ) ([]R, error)
-> ```
+> ### Acceptance Criteria
 >
-> Currently, the implementation has race conditions, leaks goroutines when a job fails, and returns results in random completion order instead of matching the input slice order `items[i] -> results[i]`.
->
-> ### Requirements & Invariants
->
-> 1. **Bounded Concurrency**: At most `maxWorkers` invocations of `workerFn` may run simultaneously (if `maxWorkers <= 0`, default to `1`; if `maxWorkers > len(items)`, spawn at most `len(items)` workers).
-> 2. **Input-Order Preservation**: On success, `results[i]` MUST correspond to `workerFn(ctx, items[i])` for every `0 <= i < len(items)`.
-> 3. **Fail-Fast Cancellation with Zero Goroutine Leaks**:
->    - If any `workerFn` returns a non-nil error (or panics!), cancel the derived `ctx` immediately so in-flight workers can abort, stop dispatching unstarted jobs, wait for all spawned worker goroutines to exit cleanly, and return the **first** error encountered.
->    - If a worker panics with value `p`, recover the panic and convert it into an error `fmt.Errorf("worker panic: %v", p)` rather than crashing the process!
->
-> ### Your Tasks
->
-> 1. **Explore & Run Race Detector**: Inspect the worker pool files and run `go test -race ./...`.
-> 2. **Uncomment Tests**: Uncomment the goroutine leak (`runtime.NumGoroutine()`), panic recovery, and order-preservation tests.
-> 3. **Fix Race Conditions & Goroutine Leaks**: Implement `ExecuteAll` satisfying all 3 requirements.
-> 4. **Verify Edge Cases**: Test `items = []` (empty slice), `maxWorkers = 1000` on `3` items, simultaneous errors across all workers, and parent `ctx` already cancelled before call.
-
----
+> 1. Trace the pool implementation and its tests.
+> 2. Implement bounded concurrency with input-order preservation and fail-fast cancellation.
+> 3. Verify edge cases: empty input, oversized worker counts, simultaneous errors, and parent cancellation.
 
 ## 3. The AI Traps & Expected Solution (Confidential)
 
