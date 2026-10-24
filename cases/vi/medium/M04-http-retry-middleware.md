@@ -70,7 +70,7 @@ npm test
 >    - Safe/idempotent methods (`GET`, `HEAD`, `OPTIONS`, `PUT`, `DELETE`) may retry on configured retryable status codes (`408`, `429`, `500`, `502`, `503`, `504`).
 >    - `POST` and `PATCH` requests must **only** be retried if the request headers contain a non-empty `Idempotency-Key` (case-insensitive header lookup).
 > 3. **Full-Jitter Exponential Backoff & Unreplayable Stream Body Guard**:
->    - When `Retry-After` is absent, compute backoff delay using **Full Jitter**: `random(0, min(capMs, baseMs * 2 ** (attempt - 1)))` using an injectable `randomFn` (defaulting to `Math.random`) for deterministic testing.
+>    - When `Retry-After` is absent, compute backoff delay using **Full Jitter** with an injectable random function (defaulting to the platform RNG) so tests can be deterministic.
 >    - If a request has a non-replayable body (a consumed `ReadableStream` where `body.locked` or `bodyUsed` is true and cannot be cloned), do **not** retry.
 >
 > Please explore the codebase, re-enable any commented-out retry tests in the test suite, implement all three requirements, and verify edge cases (including past HTTP-dates, `Retry-After > maxRetryAfter` fast-fail without sleeping, case-insensitive `idempotency-key`, and stream bodies).

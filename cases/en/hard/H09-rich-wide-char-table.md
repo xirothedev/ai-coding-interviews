@@ -65,7 +65,7 @@ pytest
 > Users have reported two critical bugs:
 >
 > 1. **Wide-Character Cropping & Wrapping Alignment**:
->    - In `set_cell_size("你好世界", 5)` (where each character is 2 cells wide): only `"你好"` (4 cells) fits inside 5 cells because `"世"` requires 2 cells (`4 + 2 = 6 > 5`). However, `set_cell_size(..., 5)` must return a string of **exact cell length `5`** by padding the remaining 1-cell gap with a space: `"你好 "` (`cell_len == 5`).
+>    - In a multi-byte string with a target display width (where each character is 2 cells wide): only `"你好"` (4 cells) fits inside 5 cells because `"世"` requires 2 cells (the accumulated width exceeds the target). However, `set_cell_size(..., 5)` must return a string of **exact cell length `5`** by padding the remaining 1-cell gap with a space: `"你好 "` (the resulting display width matches the target).
 >    - In `chop_cells(text, max_size=1)` on `"你好"`, because a 2-cell character can never fit inside `max_size=1`, the function must **not** enter an infinite loop emitting empty strings `""` forever.
 >    - Zero-width combining characters (e.g., `"e\u0301"`) must never be split onto a new line separated from their preceding base character.
 > 2. **Quadratic Performance Cliff in `Text.divide(offsets)`**:

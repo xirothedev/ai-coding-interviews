@@ -66,7 +66,7 @@ make test
 > 3. **Strict Tax Jurisdiction Validation**: Unknown or expired tax jurisdiction codes must raise an explicit `InvalidTaxJurisdictionError` (never silently default to `0%` inside a broad `try/catch`).
 > 4. **Penny-Exact Installment & Cost-Center Allocation (Largest Remainder / Hamilton's Method)**:
 >    - All money math must operate in integer minor units (cents) using Banker's Rounding (`ROUND_HALF_EVEN`).
->    - When splitting an invoice of `T` cents across `N` equal installments (where `T = q * N + r`, `0 <= r < N`), the first `r` installments receive `q + 1` cents and the remaining `N - r` installments receive `q` cents (e.g., `$100.00` split `6` ways → `[$16.67, $16.67, $16.67, $16.67, $16.66, $16.66]`, and `sum(installments) == T` ALWAYS holds).
+>    - When splitting an invoice of `T` cents across `N` equal installments (where split the total into N installments with a remainder distributed across the first installments, remainder is non-negative and less than N), the first `r` installments receive the larger installment amount cents and the remaining the number of larger installments installments receive `q` cents (e.g., `$100.00` split `6` ways → `[$16.67, $16.67, $16.67, $16.67, $16.66, $16.66]`, and installments sum exactly to the total ALWAYS holds).
 >    - For weighted splits (`weights = [w_1, ..., w_N]`), allocate `floor(T * w_i / sum(W))` first, then distribute the remaining `r` single cents one by one to the entries with the **largest fractional remainders** (breaking ties by earlier index).
 >
 > ### Your Tasks
