@@ -31,10 +31,10 @@ This document outlines how the **AI Coding Interviews** knowledge base is mainta
 
 ## Curation & Review Process
 
-1. **Proposal**: Contributors open a Pull Request or Issue using [templates/CASE_TEMPLATE.md](templates/CASE_TEMPLATE.md).
+1. **Proposal**: Contributors open a Pull Request or Issue using [templates/en/CASE_TEMPLATE.md](templates/en/CASE_TEMPLATE.md).
 2. **Verification by Maintainers**:
    - Is the target GitHub repository public, actively accessible, and quick to run locally (`< 2 minutes` from clone to running unit tests)?
    - Are the **4 Checkpoints** (_Explore & Trace → Fix Bug → Implement Feature/Scale → Edge Cases & Defense_) realistic within a 45–75 minute window?
    - Is the **AI Trap** reproducible with frontier models (GPT, Claude, Gemini) when given a naive copy-paste prompt?
    - Does the **HR Rubric** clearly distinguish a _Blind Vibe-Coder (Score 1–2)_ from a _Strategic AI Orchestrator (Score 3–4)_?
-3. **Merge & Indexing**: Once approved, the case is added to the appropriate tier (`cases/easy/`, `cases/medium/`, or `cases/hard/`) and indexed in the root [README.md](README.md).
+3. **Merge & Indexing**: Once approved, the case is added to the appropriate tier (`cases/en/easy/`, `cases/en/medium/`, or `cases/en/hard/`) and indexed in the root [README.md](README.md).

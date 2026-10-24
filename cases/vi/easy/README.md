@@ -1,0 +1,32 @@
+# 🟢 Cấp Easy — Danh mục & Chỉ mục Định tuyến (`10 Bài`, `30–45 Phút`)
+
+[🏠 Quay lại Hub Chính](../../../README.md) · [🟡 Cấp Medium](../medium/README.md) · [🔴 Cấp Hard](../hard/README.md)
+
+> 🌐 Ngôn ngữ: <a href="README">English</a> · **Tiếng Việt**
+
+> **Hiệu chỉnh Warm-Up Junior / Mid-Level (`L3–L4`):**  
+> Xây trên các repo kata mã nguồn mở polyglot hỗ trợ **Python, TypeScript, Go, Java, Rust và C#**.  
+> Mỗi bài dưới đây có **trang độc lập** chứa:
+>
+> 1. **Thiết lập Người phỏng vấn & Manifest Bug Gieo sẵn**
+> 2. **Prompt Ứng viên Copy-Paste** (sẵn cho CoderPad / Cursor / Codespaces)
+> 3. **Bẫy AI & Giải pháp Kỳ vọng**
+> 4. **Quy trình Prompt Divide-and-Conquer Tham khảo (`Understand → Plan → Prompt → Review → Test`)**
+> 5. **Rubric Chấm điểm HR 7 Tiêu chí theo Bài & Câu hỏi Thăm dò Người phỏng vấn**
+
+---
+
+## Bảng Định tuyến Chính — Bài Easy (`E01` – `E10`)
+
+|  Case ID  | Trang Bài Độc lập                                                                              | GitHub Repo Nguồn                                                                                                     | Ngôn ngữ                                   | Archetype                     | Bẫy AI Chính được Test                                                                                                       |
+| :-------: | :--------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------- | :----------------------------------------- | :---------------------------- | :--------------------------------------------------------------------------------------------------------------------------- |
+| **`E01`** | **[Gilded Rose Inventory Bugfix & Conjured Decay Cap](E01-gilded-rose.md)**                    | [`emilybache/GildedRose-Refactoring-Kata`](https://github.com/emilybache/GildedRose-Refactoring-Kata)                 | `Python`, `TS`, `Go`, `Java`, `Rust`, `C#` | Legacy Refactor + Feature     | `"Conjured"` prefix degrading `"Conjured Aged Brie"` & `"Conjured Sulfuras"` · Post-expiration negative quality underflow    |
+| **`E02`** | **[Supermarket Receipt Discount Stacking & Bundle Rounding](E02-supermarket-receipt.md)**      | [`emilybache/SupermarketReceipt-Refactoring-Kata`](https://github.com/emilybache/SupermarketReceipt-Refactoring-Kata) | `Python`, `TS`, `Go`, `Java`, `C#`         | Bugfix + Feature Extension    | Multi-bundle integer division bug · Checking coupon threshold against gross pre-offer total · Float drift                    |
+| **`E03`** | **[Theatrical Players Statement Formatter & HTML Loyalty Credits](E03-theatrical-players.md)** | [`emilybache/Theatrical-Players-Refactoring-Kata`](https://github.com/emilybache/Theatrical-Players-Refactoring-Kata) | `Python`, `TS`, `Go`, `Java`, `Rust`, `C#` | System Integration + Refactor | Duplicating formulas between Text & HTML · Single-pass loop missing `"history" + "tragedy"` bonus when `"history"` is first  |
+| **`E04`** | **[Tennis Match Tie-Break & Advantage State Machine](E04-tennis-score.md)**                    | [`emilybache/Tennis-Refactoring-Kata`](https://github.com/emilybache/Tennis-Refactoring-Kata)                         | `Python`, `TS`, `Go`, `Java`, `Rust`, `C#` | Bugfix + State Machine        | Allowing `won_point()` after game is over · Using `>= 4` instead of `>= 7` win check during Tie-Break mode                   |
+| **`E05`** | **[Lift Pass Dynamic Pricing & Holiday Blackout Calendar](E05-lift-pass-pricing.md)**          | [`martinsson/Refactoring-Kata-Lift-Pass-Pricing`](https://github.com/martinsson/Refactoring-Kata-Lift-Pass-Pricing)   | `Python`, `TS`, `Java`, `C#`               | Legacy Refactor + Feature     | Counting free `< 6` children (or `< 15` on `night` passes) toward the `4+` paying group discount threshold                   |
+| **`E06`** | **[Build Pipeline Notification Router & Flaky Step Retry](E06-build-pipeline.md)**             | [`emilybache/BuildPipeline-Refactoring-Kata`](https://github.com/emilybache/BuildPipeline-Refactoring-Kata)           | `Python`, `Go`, `Java`, `C#`               | AI-Slop Rescue + Refactor     | Sending duplicate failure emails inside the deployment retry loop · Calling `deploy()` when tests failed                     |
+| **`E07`** | **[Yatzy Category Scorer & Wild Joker Die Rule](E07-yatzy-scorer.md)**                         | [`emilybache/Yatzy-Refactoring-Kata`](https://github.com/emilybache/Yatzy-Refactoring-Kata)                           | `Python`, `TS`, `Go`, `Java`, `Rust`, `C#` | Bugfix + Feature Extension    | Greedy joker heuristics failing on `[0,0,4,4,4]` `fullHouse` vs exact $6^k$ combinatorial delegation                         |
+| **`E08`** | **[Delivery Controller Event Replay & Next-Stop ETA](E08-delivery-controller.md)**             | [`emilybache/DeliveryController-Refactoring-Kata`](https://github.com/emilybache/DeliveryController-Refactoring-Kata) | `Python`, `TS`, `Java`, `C#`               | Bugfix + Webhook Replay       | Duplicate `DeliveryEvent` overwriting `time_of_delivery` (flipping late delivery to `on_time=True`!) · Blind `schedule[i+1]` |
+| **`E09`** | **[Expense Report Meal Cap Auditor & Multi-Currency Conversion](E09-expense-report.md)**       | [`emilybache/ExpenseReport-Refactoring-Kata`](https://github.com/emilybache/ExpenseReport-Refactoring-Kata)           | `Python`, `TS`, `Go`, `Java`, `Rust`, `C#` | Legacy Refactor + Feature     | Evaluating meal cap (`> 5000`) on raw `JPY` before USD conversion · Summing unrounded floats vs rounded line items           |
+| **`E10`** | **[Racing Car Telemetry Alarm & Sliding Window Drift Detector](E10-racing-car-telemetry.md)**  | [`emilybache/Racing-Car-Katas`](https://github.com/emilybache/Racing-Car-Katas)                                       | `Python`, `TS`, `Go`, `Java`, `Rust`, `C#` | System Integration + Stream   | Un-latching `is_alarm_on` on next normal reading · Not clearing sliding-window history inside `reset()`                      |
