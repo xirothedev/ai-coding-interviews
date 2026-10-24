@@ -38,9 +38,9 @@ pytest tests/test_cells.py tests/test_text.py
 >
 > You are working inside `Textualize/rich`, Python's terminal rendering engine. You may use the AI Assistant freely. We are evaluating how you handle Unicode terminal cell-width invariants and optimize an algorithmic bottleneck from $O(L \times S)$ to $O(S \log L)$.
 >
-> ### Problem Context
+> ### What We Need You to Do
 >
-> In terminal UIs, character width is measured in **cells** (`cell_len`), NOT Python `len(str)`:
+> In terminal UIs, character width is measured in **cells** (`cell_len`), not Python string length:
 >
 > - Standard ASCII characters (`"a"`, `"1"`) = **1 cell**
 > - Combining marks / zero-width characters (`"\u0301"`) = **0 cells**
@@ -48,21 +48,16 @@ pytest tests/test_cells.py tests/test_text.py
 >
 > Users have reported two critical bugs:
 >
-> 1. **Wide-Character Cropping & Wrapping Alignment (`rich/cells.py` & `rich/text.py`)**:
->    - `set_cell_size("你好世界", 5)` (where each character is 2 cells wide): Only `"你好"` (4 cells) fits inside 5 cells because `"世"` requires 2 cells (`4 + 2 = 6 > 5`). However, `set_cell_size(..., 5)` MUST return a string of **exact cell length `5`** by padding the remaining 1-cell gap with a space: `"你好 "` (`cell_len == 5`).
->    - In `chop_cells(text, max_size=1)` on `"你好"`, because a 2-cell character can never fit inside `max_size=1`, the function must **not** enter an infinite loop emitting empty strings `""` forever!
+> 1. **Wide-Character Cropping & Wrapping Alignment**:
+>    - In `set_cell_size("你好世界", 5)` (where each character is 2 cells wide): only `"你好"` (4 cells) fits inside 5 cells because `"世"` requires 2 cells (`4 + 2 = 6 > 5`). However, `set_cell_size(..., 5)` must return a string of **exact cell length `5`** by padding the remaining 1-cell gap with a space: `"你好 "` (`cell_len == 5`).
+>    - In `chop_cells(text, max_size=1)` on `"你好"`, because a 2-cell character can never fit inside `max_size=1`, the function must **not** enter an infinite loop emitting empty strings `""` forever.
 >    - Zero-width combining characters (e.g., `"e\u0301"`) must never be split onto a new line separated from their preceding base character.
-> 2. **Quadratic Performance Cliff in `Text.divide(offsets)` (`rich/text.py`)**:
+> 2. **Quadratic Performance Cliff in `Text.divide(offsets)`**:
 >    - `Text.divide(offsets)` splits a `Text` object (with `self._spans: list[Span]`) into `L` line `Text` objects at character indices `offsets`.
 >    - Currently, splitting a `Text` with `10,000` spans (including both short token spans and full-document background spans `Span(0, 50000, "on blue")`) across `4,000` lines takes `> 4 seconds` ($O(L \times S)$).
->    - Optimize `Text.divide()` so the 10,000-span / 4,000-line benchmark completes in **`< 0.10 seconds`** while preserving 100% of overlapping and multi-line spans!
+>    - Optimize `Text.divide()` so the 10,000-span / 4,000-line benchmark completes in **`< 0.10 seconds`** while preserving 100% of overlapping and multi-line spans.
 >
-> ### Your Tasks
->
-> 1. **Explore & Trace**: Inspect `cell_len()`, `set_cell_size()`, `chop_cells()` in `rich/cells.py` and `Text.divide()` in `rich/text.py`.
-> 2. **Uncomment & Run Tests**: Run `pytest tests/test_cells.py tests/test_text.py` and uncomment the wide-character and `Text.divide` benchmark tests.
-> 3. **Fix Wide-Character Cell Math & Optimize `Text.divide`**: Fix the cell-boundary bugs and refactor `Text.divide` to sub-quadratic complexity.
-> 4. **Verify Edge Cases**: Test `max_size=1` with CJK characters, combining accents at wrap boundaries, and long background spans (`Span(0, len(text))`) combined with 10,000 inner token spans.
+> Please explore the cell-measurement and text-wrapping modules in the codebase, re-enable any commented-out wide-character and benchmark tests, fix the cell-boundary bugs, and refactor `Text.divide` to sub-quadratic complexity.
 
 ---
 

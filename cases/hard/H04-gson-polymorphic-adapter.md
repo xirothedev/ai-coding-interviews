@@ -35,24 +35,25 @@ mvn test-compile
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Welcome to Your AI-Enabled SWE Coding Interview
+> ### Production Incident Report: 64-Bit ID Precision Loss in Polymorphic JSON & Concurrent Adapter Lookup
 >
-> You are working inside `google/gson`. You may use the AI Assistant as much as you like. We are evaluating your ability to trace multi-file adapter pipelines in Java, preserve numerical precision and thread-safety invariants, and verify edge cases with JUnit tests.
+> A payment processing service using our JSON library for polymorphic subtype deserialization (`RuntimeTypeAdapterFactory`) alongside dynamic `Map<String, Object>` metadata fields (configured with `LONG_OR_DOUBLE` number handling) is hitting three production defects:
 >
-> ### Problem Context
+> 1. **Silent 64-Bit Integer Precision Corruption (`> 2^53`)**:
+>    - When `{"txId": 9007199254740993}` is deserialized directly into a `Map<String, Object>` from a raw JSON stream, `txId` is accurately parsed as `Long.valueOf(9007199254740993L)`.
+>    - However, when that exact same `Map<String, Object>` sits inside a polymorphic parent object deserialized via `RuntimeTypeAdapterFactory` (which buffers the JSON into an in-memory element tree before delegating to the subtype adapter), `txId` is silently corrupted into `9007199254740992L` or a `Double` (`9.007199254740992E15`) because the buffered tree-reading path routes numbers through 64-bit IEEE-754 floating-point!
+> 2. **Discriminator Field Collision When `maintainType = true`**:
+>    - When `RuntimeTypeAdapterFactory` is configured with `maintainType = true` and a concrete subtype class also declares a Java field matching the discriminator key name (e.g., `final String type = "card"` matching the registered subtype label `"card"`), serialization throws `JsonParseException` ("already defines a field named type").
+>    - Requirement: Serialization must succeed when the subtype field's value matches the registered label (or when `maintainType` is enabled with a consistent label), while **still** throwing `JsonParseException` if the POJO's field value contradicts the registered subtype label!
+> 3. **Thread-Safe Adapter Resolution for Mutually Recursive Types**:
+>    - When multiple threads concurrently request a `TypeAdapter` for mutually recursive classes (`NodeA <-> NodeB`) for the first time, an in-progress placeholder adapter can be published to the shared adapter cache before initialization completes, exposing an unresolved delegate to other threads.
 >
-> A payment processing service using Gson's polymorphic deserialization (`RuntimeTypeAdapterFactory`) and dynamic `Map<String, Object>` fields (`ObjectTypeAdapter` with `ToNumberPolicy.LONG_OR_DOUBLE`) is hitting three production bugs:
+> ### Acceptance Criteria
 >
-> 1. **64-Bit Snowflake ID Precision Corruption**: When a JSON payload is deserialized directly via `JsonReader`, `{"txId": 9007199254740993}` in a `Map<String, Object>` field parses accurately as `Long.valueOf(9007199254740993L)`. However, when the same `Map<String, Object>` sits _inside_ a polymorphic class handled by `RuntimeTypeAdapterFactory` (which buffers the stream into a `JsonElement` and reads it via `JsonTreeReader`), `txId` is corrupted into a `Double` (`9.007199254740992E15`) or loses its last digit!
-> 2. **Discriminator Field Collision (`maintainType = true`)**: If a subtype class declares `final String type = "card"` matching the registered subtype label `"card"`, `RuntimeTypeAdapterFactory` throws `JsonParseException` ("already defines a field named type") instead of serializing cleanly (while still throwing `JsonParseException` if the POJO field value _contradicts_ the registered subtype label!).
-> 3. **Thread-Safety of Cyclic `TypeAdapter` Resolution**: In `Gson.getAdapter(TypeToken<T>)`, ensure that resolving mutually recursive classes (`NodeA <-> NodeB`) across multiple threads never exposes an uninitialized `FutureTypeAdapter` in `typeTokenCache`.
->
-> ### Your Tasks
->
-> 1. **Explore & Trace**: Trace `RuntimeTypeAdapterFactory.create()`, `Streams.parse()`, `JsonTreeReader`, `ObjectTypeAdapter`, and `Gson.getAdapter()`.
-> 2. **Run & Uncomment Tests**: Run `mvn test -Dtest=RuntimeTypeAdapterFactoryTest,ObjectTypeAdapterTest,ConcurrencyTest` and uncomment the disabled tests.
-> 3. **Fix Precision Loss, Discriminator Collision & Cache Publication**: Implement clean fixes across the affected classes without breaking existing Gson tests.
-> 4. **Verify Edge Cases**: Test `9007199254740993L`, `BigDecimal` fallback for numbers exceeding `Long.MAX_VALUE`, contradictory discriminator values, and 16-thread concurrent adapter lookup.
+> 1. Search the codebase to trace how polymorphic deserialization buffers JSON into a tree, how tree-based readers and number policies parse numbers into `Object` maps, and how recursive `TypeAdapter` instances are cached. Uncomment any disabled regression tests in the test suite.
+> 2. Fix the buffered tree number-reading path so 64-bit `Long` values (`9007199254740993L`, `Long.MAX_VALUE`, `Long.MIN_VALUE`) preserve full 64-bit integer precision under `LONG_OR_DOUBLE` while still falling back to `Double` for decimal or out-of-range floating-point numbers.
+> 3. Fix `RuntimeTypeAdapterFactory` discriminator serialization so consistent subtype fields serialize cleanly without weakening validation against contradictory discriminator values.
+> 4. Ensure concurrent `getAdapter` calls on cyclic type graphs are 100% thread-safe and never expose uninitialized proxy adapters to other threads, and verify all JUnit tests pass.
 
 ---
 

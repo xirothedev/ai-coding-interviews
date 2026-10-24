@@ -40,19 +40,19 @@ In `markdown_it/rules_block/table.py` (`escapedSplit(string: str) -> list[str]` 
 
 > ### Welcome to Your AI-Enabled SWE Coding Interview
 >
-> You are working on the GFM (GitHub Flavored Markdown) Table block parser in `markdown-it-py` (`markdown_it/rules_block/table.py`). You have full access to the AI Assistant and `pytest`.
+> You are working on our GFM (GitHub Flavored Markdown) Table block parser. You have full access to the AI Assistant and the test runner.
 >
-> ### Problem Context
+> ### What We Need You to Do
 >
 > Users rendering technical documentation tables have reported two bugs and requested one feature extension:
 >
-> 1. **Bug A — Pipes Inside Inline Code Spans & Escape Parity**:
+> 1. **Bug A — Pipes Inside Inline Code Spans & Backslash Escape Parity**:
 >    - In Markdown tables, `|` separates columns **unless**:
 >      - It is preceded by an **odd** number of backslashes (e.g., `\|` or `\\\|` is an escaped literal pipe `|`, whereas `\\|` is an escaped backslash `\` followed by a **real** column separator `|`!).
->      - It appears inside a matched inline code span (e.g., ``| `x | y` |`` or `|`x | `| y`` | ``). Note: if a backtick run is **unclosed** on that line (e.g., `` |`unclosed | next_col | ``), the backtick is literal text and the `|` **does** act as a column separator!
+>      - It appears inside a matched inline code span (e.g., ``| `x | y` |`` or `|`x | `| y`` | ``). Note: if a backtick run is **unclosed** on that line (e.g., `` |`unclosed | next_col | ``), the backtick is literal text and the `|` **does** act as a column separator.
 > 2. **Bug B — Linear $O(N)$ Performance Requirement (No ReDoS)**:
 >    - Malformed lines with 10,000 backticks or pipes must parse in `< 20ms` without catastrophic regex backtracking.
-> 3. **Feature Extension — Empty-Cell Colspan (`||`)**:
+> 3. **Feature Extension — Empty-Cell Colspan & Column Normalization**:
 >    - Support consecutive unescaped pipes (or explicit colspan attribute generation on `td`/`th` tokens when configured) and ensure rows with fewer cells than the header row are padded with empty cells while rows with excess cells are truncated to match the header column count.
 >
 > ### Examples
@@ -62,12 +62,7 @@ In `markdown_it/rules_block/table.py` (`escapedSplit(string: str) -> list[str]` 
 > - `| a \\| b |` → **2 cells**: `"a \\"` and `"b"` _(even number of backslashes before `|` means `|` is NOT escaped!)_
 > - ``| `unclosed | b |`` → **2 cells**: ``"`unclosed"`` and `"b"` _(backtick was never closed on the row!)_
 >
-> ### Your Tasks
->
-> 1. **Explore & Trace**: Inspect `escapedSplit(string: str) -> list[str]` and `table()` in `markdown_it/rules_block/table.py` and see how table header rows, delimiter rows (`|---|:---:|`), and body rows are tokenized.
-> 2. **Run & Uncomment Tests**: Run `pytest` and uncomment the table edge-case tests.
-> 3. **Fix `escapedSplit` & Implement Colspan/Alignment Rules**: Implement a linear-time $O(N)$ row scanner in `escapedSplit` that handles escape parity (`isEscaped` toggling) and matched backtick runs accurately.
-> 4. **Verify Edge Cases**: Test `\\|`, `\\\|`, multi-backtick code spans (` ``a | b`` `), unclosed backticks, and a 20,000-character stress input.
+> Please explore the table parser in the codebase, re-enable any commented-out table tests, implement a linear-time $O(N)$ row scanner that handles escape parity and matched backtick runs accurately, and verify edge cases with unit tests.
 
 ---
 

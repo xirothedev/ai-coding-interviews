@@ -38,23 +38,19 @@ pytest tests/test_validators.py
 >
 > You are working inside `pydantic`. You have full access to the AI Assistant and `pytest`. We are evaluating your ability to reason about Python's Method Resolution Order (MRO), metaclass schema construction, and performance-sensitive object copying.
 >
-> ### Problem Context
+> ### What We Need You to Do
 >
-> 1. **Validator Inheritance & Method Override Contract (`pydantic/_internal/_decorators.py`)**:
->    - When `Child(Parent)` defines a `@model_validator` or `@field_validator` with the **exact same method name** as `Parent`, `Child`'s validator must **override (replace)** `Parent`'s validator of that name—not run both!
->    - When `Parent` and `Child` define validators with _different_ method names, execution order MUST respect mode semantics:
+> 1. **Validator Inheritance & Method Override Contract**:
+>    - When `Child(Parent)` defines a `@model_validator` or `@field_validator` with the **exact same method name** as `Parent`, `Child`'s validator must **override (replace)** `Parent`'s validator of that name—not run both.
+>    - Furthermore, if a subclass overrides a decorated parent validator method with a plain undecorated method of the same name, the parent's stale validator must not execute.
+>    - When `Parent` and `Child` define validators with _different_ method names, execution order must respect mode semantics:
 >      - `mode='after'` validators run **Base → Derived (`Parent` first, then `Child`)** so `Child` can rely on invariants established by `Parent`.
 >      - `mode='before'` (and `mode='wrap'`) validators run **Derived → Base (`Child` first/outermost, then `Parent`)** so `Child` can pre-process raw inputs before `Parent`'s schema parses them.
-> 2. **Safe Container Isolation in `model_copy(update=...)` (`pydantic/main.py`)**:
->    - Calling `b = a.model_copy(update={'name': 'new'})` and then appending to `b.tags` (where `tags: list[str] = []` or `Field(default_factory=list)`) or `b.__pydantic_extra__` currently mutates `a.tags` / `a.__pydantic_extra__` when `deep=False`!
+> 2. **Safe Container Isolation in `model_copy(update=...)`**:
+>    - Calling `b = a.model_copy(update={'name': 'new'})` and then mutating `b.tags` (where `tags: list[str] = []` or `Field(default_factory=list)`) or `b.__pydantic_extra__` currently mutates `a.tags` / `a.__pydantic_extra__` when `deep=False`.
 >    - However, blindly running `copy.deepcopy(self)` when `deep=False` is **unacceptable**: models with `model_config = ConfigDict(arbitrary_types_allowed=True)` holding non-pickleable objects (e.g., `threading.Lock()`, sockets, or DB connections) must not crash on `model_copy()`, and copying 50,000 models must complete in `< 0.15s`.
 >
-> ### Your Tasks
->
-> 1. **Explore & Trace**: Read `DecoratorInfos.build()` in `pydantic/_internal/_decorators.py`, `_model_construction.py`, and `BaseModel.model_copy()` in `pydantic/main.py`.
-> 2. **Uncomment & Run Tests**: Run `pytest tests/test_validators.py` and uncomment the failing MRO override and `model_copy` isolation tests.
-> 3. **Fix Validator MRO Resolution & `model_copy` Isolation**: Implement fixes that satisfy both `mode='before'` and `mode='after'` ordering invariants and isolate mutable field/extra containers safely.
-> 4. **Verify Edge Cases**: Test diamond inheritance (`Base -> MixinA, MixinB -> Sub`), child method overriding parent validator _without_ re-applying `@model_validator`, and `arbitrary_types_allowed=True` models containing a `threading.Lock`.
+> Please explore how decorator collection, metaclass schema construction, and `model_copy` work in the codebase, re-enable any commented-out validator/copy tests, fix both issues, and verify diamond inheritance and `threading.Lock` edge cases.
 
 ---
 

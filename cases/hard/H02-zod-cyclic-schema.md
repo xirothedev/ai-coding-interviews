@@ -40,43 +40,45 @@ npm install && npm test
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Welcome to Your AI-Enabled SWE Coding Interview
+> ### Bug Report & Feature Request: Async Validation Path Corruption & Cyclic Graph Handling
 >
-> You are working on `zod`, a TypeScript-first schema validation library. You have full access to the AI Assistant. We are evaluating how you analyze existing abstractions, avoid subtle graph/concurrency bugs, and optimize performance.
+> Users validating complex nested data structures and recursive schemas have reported two critical issues in our schema validation library:
 >
-> ### Problem Context
+> 1. **Corrupted Error Paths During Async Validation**:
+>    - When validating nested objects or unions asynchronously (`await schema.safeParseAsync(data)`), validation errors intermittently report mutated or wrong `issue.path` arrays (for example, `["users", 0, "age", "name"]` instead of `["users", 0, "name"]`) when multiple async branches or properties resolve concurrently.
+> 2. **Stack Overflow on Cyclic Object Graphs vs. Valid Shared DAG References**:
+>    - When validating recursive schemas defined with `z.lazy(...)` against runtime objects that contain circular references (such as doubly-linked AST/DOM nodes or ORM entities where `user.posts[0].author === user`), validation crashes the process with `RangeError: Maximum call stack size exceeded`.
+>    - **Crucial Requirement — Cycles vs. Shared DAG Siblings**:
+>      - A **True Cycle** (an object appearing inside one of its own descendants along the active traversal chain, such as `a.next = a`) **must** be caught and fail validation cleanly with a custom validation issue (`code: ZodIssueCode.custom`, `message: "Circular reference detected"` at the exact offending path) instead of throwing `RangeError`.
+>      - A **Shared Non-Cyclic Reference (DAG)** (the exact same object instance referenced by two sibling branches or fields, such as `const addr = { zip: "10001" }; const order = { billing: addr, shipping: addr }`) is **completely valid** and **must pass** validation in both synchronous (`safeParse`) and asynchronous (`safeParseAsync`) modes!
 >
-> 1. **Async Path Corruption Bug**: When validating objects or unions asynchronously (`await schema.safeParseAsync(data)`), validation errors intermittently report the wrong `issue.path` (e.g., `["users", 0, "age", "name"]` instead of `["users", 0, "name"]`).
-> 2. **Cycle Detection in `ZodLazy`**: When users validate cyclic object graphs (such as doubly-linked DOM/AST nodes or ORM entities where `user.posts[0].author === user`), `z.lazy()` crashes with `RangeError: Maximum call stack size exceeded`.
-> 3. **Critical Distinction — Cycles vs. Shared DAG References**:
->    - A **Cycle** (an object appearing inside one of its own descendants: `a.child = a`) MUST be detected and fail validation cleanly with a `ZodIssueCode.custom` (`"Circular reference detected"` at the offending path) instead of throwing `RangeError`.
->    - A **Shared DAG Reference** (the same non-cyclic object referenced by two sibling fields, e.g., `const addr = { zip: "10001" }; const order = { billing: addr, shipping: addr }`) is **100% VALID** and MUST succeed!
->
-> ### Examples
+> ### Expected Behavior Examples
 >
 > ```ts
 > const NodeSchema: z.ZodType<any> = z.lazy(() =>
 >   z.object({ name: z.string(), next: NodeSchema.optional() }),
 > );
 >
-> // Example 1: True Cycle -> Must return { success: false } with path: ["next", "next"]
+> // 1. True Cycle -> Fails cleanly with path ["next", "next"]
 > const a: any = { name: "A" };
 > a.next = { name: "B", next: a };
-> NodeSchema.safeParse(a); // -> { success: false, error: ZodError([ { message: "Circular reference detected", path: ["next", "next"] } ]) }
+> NodeSchema.safeParse(a);
+> // -> { success: false, error: ZodError([{ code: "custom", message: "Circular reference detected", path: ["next", "next"] }]) }
 >
-> // Example 2: Shared DAG Sibling -> Must return { success: true }!
+> // 2. Shared DAG Sibling -> Succeeds in both sync and async validation!
 > const leaf = { name: "Leaf" };
 > const root = { left: leaf, right: leaf };
 > const TreeSchema = z.object({ left: NodeSchema, right: NodeSchema });
-> TreeSchema.safeParse(root); // -> { success: true, data: { left: { name: "Leaf" }, right: { name: "Leaf" } } }
+> TreeSchema.safeParse(root);
+> // -> { success: true, data: { left: { name: "Leaf" }, right: { name: "Leaf" } } }
 > ```
 >
-> ### Your Tasks
+> ### Acceptance Criteria
 >
-> 1. **Explore & Trace**: Inspect `src/types.ts` (`ZodType`, `ZodObject`, `ZodUnion`, `ZodLazy`) and `src/helpers/parseUtil.ts`.
-> 2. **Uncomment & Run Tests**: Run `npm test` and uncomment the disabled tests in `src/__tests__/recursive.test.ts` and `src/__tests__/unions.test.ts`.
-> 3. **Fix Async Path Isolation & Implement Ancestor Cycle Detection**: Fix the `parseAsync` path corruption bug and add cycle detection to `ZodLazy` (or `ParseContext`) that rejects true cycles while permitting shared DAG references.
-> 4. **Verify Performance & Edge Cases**: Ensure a 5,000-node deep/wide valid tree parses in `< 50ms` and handle `parseAsync` cycle cleanups properly when promises settle.
+> 1. Search the codebase to trace how parse context paths are constructed and propagated across synchronous and asynchronous schema parsers, and uncomment any disabled recursive/union regression tests.
+> 2. Fix the async path mutation bug so concurrent async object/union validations always report exact, isolated `issue.path` arrays.
+> 3. Implement cycle detection for recursive schemas that rejects ancestor cycles with `"Circular reference detected"` at the offending path while allowing shared DAG references in both sync and async execution.
+> 4. Ensure that validating a 5,000-node deep or wide valid object graph completes in `< 50ms` with no memory leaks or lingering state after promises settle.
 
 ---
 

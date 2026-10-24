@@ -39,21 +39,19 @@ In `emilybache/DeliveryController-Refactoring-Kata` (`python/`):
 
 > ### Welcome to Your AI-Enabled SWE Coding Interview
 >
-> You are working on the **Delivery Controller** service (`emilybache/DeliveryController-Refactoring-Kata`). You have full access to the AI Assistant and `pytest`.
+> You are working on our **Delivery Controller** service, which processes GPS arrival events (`DeliveryEvent(id, time_of_delivery, location)`), updates the delivery schedule, recalculates average driving speed via `MapService`, and sends customer notifications via `EmailGateway`. You have full access to the AI Assistant and the test runner.
 >
-> ### Problem Context
+> ### What We Need You to Do
 >
-> `DeliveryController.update_delivery(delivery_event)` receives GPS arrival events (`DeliveryEvent(id, time_of_delivery, location)`), updates the delivery schedule, recalculates average driving speed via `MapService`, and sends customer notifications via `EmailGateway`.
+> 1. **Decouple External Dependencies & Fix Core Time/Speed Calculations**:
+>    - Right now, running the unit test suite fails because `DeliveryController` hardcodes a live local SMTP email gateway and map service on construction. Make `email_gateway` and `map_service` injectable via `DeliveryController.__init__(self, delivery_schedule, email_gateway=None, map_service=None)` while preserving defaults for existing callers.
+>    - Fix the 10-minute grace window check: a delivery arriving within `<= 10 minutes` of its scheduled time (`time_difference <= timedelta(minutes=10)`) is `on_time = True`; a delivery arriving `> 10 minutes` late must explicitly set `delivery.on_time = False`.
+>    - Fix average speed calculation in `MapService`: it currently uses `elapsed_time.seconds` instead of `elapsed_time.total_seconds()` (truncating multi-day durations and crashing when `elapsed_time <= 0`).
+> 2. **Ensure Idempotent Event Replay & Accurate Next-Stop ETA Notification**:
+>    - **Idempotent Webhook Replay**: GPS trackers deliver `DeliveryEvent` webhooks with at-least-once semantics. Currently, when the first event arrives, the controller overwrites `delivery.time_of_delivery` with the actual arrival timestamp. If a duplicate webhook for the same `delivery.id` arrives a second time, it compares the arrival timestamp against itself (`time_difference = 0`), **flipping a late delivery (`on_time = False`) to `on_time = True` and sending duplicate emails**! Make `update_delivery(delivery_event)` idempotent so duplicate events for an already-arrived delivery are safely ignored.
+>    - **Next Unarrived Stop ETA**: When emailing the next stop on the schedule with an updated ETA, do not blindly pick the adjacent element `i + 1` if that stop has already arrived out-of-order. Instead, notify the next **unarrived** (`not d.arrived`) stop after the current stop (if any exists).
 >
-> ### Your Tasks
->
-> 1. **Task 1 — Dependency Injection & Core Boundary Fixes**:
->    - Make `email_gateway` and `map_service` injectable in `DeliveryController.__init__(self, delivery_schedule, email_gateway=None, map_service=None)` (defaulting to `EmailGateway()` and `MapService()` for backward compatibility) so unit tests in `test_delivery_service.py` run cleanly without a local SMTP server.
->    - Fix the 10-minute grace window boundary: a delivery arriving within `<= 10 minutes` (`time_difference <= timedelta(minutes=10)`) is `on_time = True`; a delivery arriving `> 10 minutes` late must explicitly have `delivery.on_time = False`.
->    - Fix `MapService.update_average_speed` in `map_service.py` to use `elapsed_time.total_seconds()` instead of `elapsed_time.seconds` (which truncates days), and guard against `elapsed_time.total_seconds() <= 0`.
-> 2. **Task 2 — Idempotent Event Replay & Out-of-Order Next-Stop ETA**:
->    - **Idempotent Webhook Replay**: GPS trackers deliver `DeliveryEvent` webhooks with at-least-once semantics. In the current code, `update_delivery` overwrites `delivery.time_of_delivery = delivery_event.time_of_delivery` on arrival. If the same `DeliveryEvent` is replayed a second time for an already-arrived `delivery.id`, the legacy code computes `time_difference = 0`, **flipping a late delivery (`on_time = False`) to `on_time = True` and sending duplicate emails**! Make `update_delivery(delivery_event)` idempotent: if `delivery.arrived` is already `True`, ignore the duplicate replay (do not recompute `on_time`, do not update `map_service`, and do not send duplicate emails).
->    - **Next Unarrived Stop ETA**: When a delivery completes and the controller emails the next customer on the schedule with an updated ETA, do **not** blindly index `self.delivery_schedule[i + 1]` if `delivery_schedule[i + 1]` has already arrived out-of-order! Instead, select the next **unarrived** (`not d.arrived`) delivery after index `i` (if any exists).
+> Please explore the codebase, fix the dependency injection and calculation bugs, implement idempotent replay and next-unarrived-stop selection, and add unit tests covering duplicate webhooks and out-of-order deliveries.
 
 ---
 

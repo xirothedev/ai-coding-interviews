@@ -36,25 +36,20 @@ pytest
 
 > ### Welcome to Your AI-Enabled SWE Coding Interview
 >
-> You are working on the Formula 1 Tire Pressure Monitoring System (`TirePressureMonitoringSystem` in `Racing-Car-Katas`). You have full access to the AI Assistant and `pytest`.
+> You are working on our Formula 1 Tire Pressure Monitoring System (`Alarm` and `Sensor`). You have full access to the AI Assistant and the test suite.
 >
-> ### Problem Context
+> ### What We Need You to Do
 >
-> 1. **Dependency Injection & Safety-Latch Bug**:
->    - Refactor `Alarm` so a custom/mock `sensor` can be passed to `Alarm(sensor=...)`, while **preserving backward compatibility** for existing callers that call `Alarm()` with zero arguments!
->    - **Safety-Latch Invariant**: Once `is_alarm_on` triggers (`True`), subsequent normal `check()` readings MUST NOT silence the alarm! It must remain `True` until an explicit `alarm.reset()` method is called (which resets both `is_alarm_on` and the sliding window history).
-> 2. **New Feature — Debounced Spike Filtering & 3-Sample Rapid Puncture Detector**:
->    - Normal operating range is **`17.0 <= psi <= 21.0`** (inclusive).
->    - **Rule A — Critical Extreme Bounds (`< 15.0` or `> 23.0`)**: Any single reading strictly `< 15.0` or `> 23.0` triggers the alarm **immediately** on that first reading.
->    - **Rule B — Debounced Minor Out-of-Range (`[15.0, 17.0)` or `(21.0, 23.0]`)**: A single transient reading in `[15.0, 17.0)` or `(21.0, 23.0]` does **NOT** trigger the alarm by itself; the alarm triggers only if **2 consecutive readings** are outside `[17.0, 21.0]`.
->    - **Rule C — 3-Sample Rapid Pressure Drop (Slow Puncture Detector)**: Even if all readings remain inside `[17.0, 21.0]`, if the current reading has dropped by **`>= 3.0 psi`** compared to either the reading 1 step ago OR the reading 2 steps ago (i.e., within the last 3 readings `[r_{t-2}, r_{t-1}, r_t]`, `max(r_{t-2}, r_{t-1}) - r_t >= 3.0`, e.g., `20.8 -> 19.2 -> 17.5`), trigger the alarm immediately!
+> 1. **Support Sensor Dependency Injection & Safety-Latch Reset**:
+>    - Allow a custom or fake `sensor` to be passed into `Alarm(sensor=...)` for deterministic testing, while preserving backward compatibility for callers that instantiate `Alarm()` with zero arguments.
+>    - **Safety-Latch Invariant**: Once `is_alarm_on` triggers (`True`), subsequent normal `check()` readings must **never** silence the alarm automatically. It must stay `True` until an explicit `alarm.reset()` method is called (which clears both `is_alarm_on` and any sliding-window reading history).
+> 2. **Add Debounced Spike Filtering & 3-Sample Rapid Puncture Detection**:
+>    - Normal operating pressure is **`17.0 <= psi <= 21.0`** (inclusive).
+>    - **Rule A — Critical Extreme Bounds (`< 15.0` or `> 23.0`)**: Any single reading strictly `< 15.0` or `> 23.0` latches the alarm on **immediately**.
+>    - **Rule B — Debounced Minor Out-of-Range (`[15.0, 17.0)` or `(21.0, 23.0]`)**: A single transient reading in `[15.0, 17.0)` or `(21.0, 23.0]` does **not** trigger the alarm by itself; the alarm triggers only when **2 consecutive readings** fall outside `[17.0, 21.0]`.
+>    - **Rule C — 3-Sample Rapid Pressure Drop (Slow Puncture Detector)**: Even if every reading stays inside `[17.0, 21.0]`, if the current reading has dropped by **`>= 3.0 psi`** compared to either the reading 1 step ago or the reading 2 steps ago (i.e., within the last 3 readings `[r_{t-2}, r_{t-1}, r_t]`, `max(r_{t-2}, r_{t-1}) - r_t >= 3.0`, such as `20.8 -> 19.2 -> 17.5`), trigger the alarm immediately.
 >
-> ### Your Tasks
->
-> 1. **Explore & Trace**: Inspect `tire_pressure_monitoring.py`, `sensor.py`, and `test_tire_pressure_monitoring.py`. Run `pytest`.
-> 2. **Uncomment & Fix Latch / DI**: Make `sensor` injectable (`sensor: Sensor | None = None`), fix the safety-latch invariant, and add `reset()`.
-> 3. **Implement Rules A, B & C**: Implement critical bounds, 2-sample debounce, and the 3-sample `>= 3.0 psi` puncture drop detector.
-> 4. **Verify Edge Cases**: Test `[16.5, 19.0, 16.5]` (non-consecutive minor spikes → alarm stays `False`!), `[20.8, 19.2, 17.5]` (all inside `[17, 21]`, but `20.8 - 17.5 = 3.3 >= 3.0` → alarm `True`!), and `reset()` clearing the history buffer.
+> Please explore the codebase, re-enable any commented-out tests, implement sensor injection, safety latching, `reset()`, and Rules A/B/C, and make sure edge cases (such as non-consecutive spikes and post-reset readings) are covered by unit tests.
 
 ---
 

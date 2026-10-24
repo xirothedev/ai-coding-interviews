@@ -36,33 +36,28 @@ npm test
 
 > ### Welcome to Your AI-Enabled SWE Coding Interview
 >
-> You are working on the retry middleware of an HTTP client (`ky`). You have full access to the AI Assistant and the test runner.
+> You are working on the retry and backoff engine of our HTTP client. You have full access to the AI Assistant and the test runner.
 >
-> ### Problem Context
+> ### What We Need You to Do
 >
-> Production services using our retry middleware hit three reliability bugs during an upstream outage:
+> Production services using our HTTP retry logic hit three reliability issues during an upstream outage:
 >
-> 1. **`Retry-After` Header Bug (RFC 7231)**:
->    - Servers return `Retry-After` on `429 Too Many Requests` and `503 Service Unavailable` in **two formats**:
+> 1. **`Retry-After` Header Parsing & Cap Enforcement (RFC 7231)**:
+>    - Upstream servers return `Retry-After` on `429 Too Many Requests` and `503 Service Unavailable` in **two standard formats**:
 >      - Delay-seconds: `"120"` (wait `120,000 ms`)
 >      - HTTP-date: `"Wed, 21 Oct 2026 07:28:00 GMT"` (wait `Date.parse(header) - now`)
 >    - **Requirements**:
 >      - Parse both formats accurately.
->      - If the HTTP-date is in the past (due to clock skew), clamp the delay to `0 ms` (never negative!).
->      - If the computed `Retry-After` delay exceeds `retryOptions.maxRetryAfter` (e.g., `10_000 ms`), **abort immediately and rethrow the error without sleeping**!
+>      - If the HTTP-date is in the past (due to clock skew), clamp the delay to `0 ms` (never negative).
+>      - If the computed `Retry-After` delay exceeds `retryOptions.maxRetryAfter` (e.g., `10_000 ms`), **abort immediately and rethrow the error without sleeping**.
 > 2. **Idempotency-Aware Retry Guard**:
->    - Safe/idempotent methods (`GET`, `HEAD`, `OPTIONS`, `PUT`, `DELETE`) may retry on retryable status codes (`408`, `429`, `500`, `502`, `503`, `504`).
->    - `POST` and `PATCH` requests MUST ONLY be retried if the request headers contain a non-empty `Idempotency-Key` (case-insensitive header lookup)!
-> 3. **Full-Jitter Exponential Backoff & Unreplayable Body Guard**:
->    - When `Retry-After` is absent, compute backoff delay using **Full Jitter**: `random(0, min(capMs, baseMs * 2 ** (attempt - 1)))` using an injectable `randomFn` (defaulting to `Math.random`) for deterministic unit testing.
->    - If a request has a non-replayable body (a consumed `ReadableStream` where `body.locked` or `bodyUsed` is true and cannot be cloned), do NOT retry!
+>    - Safe/idempotent methods (`GET`, `HEAD`, `OPTIONS`, `PUT`, `DELETE`) may retry on configured retryable status codes (`408`, `429`, `500`, `502`, `503`, `504`).
+>    - `POST` and `PATCH` requests must **only** be retried if the request headers contain a non-empty `Idempotency-Key` (case-insensitive header lookup).
+> 3. **Full-Jitter Exponential Backoff & Unreplayable Stream Body Guard**:
+>    - When `Retry-After` is absent, compute backoff delay using **Full Jitter**: `random(0, min(capMs, baseMs * 2 ** (attempt - 1)))` using an injectable `randomFn` (defaulting to `Math.random`) for deterministic testing.
+>    - If a request has a non-replayable body (a consumed `ReadableStream` where `body.locked` or `bodyUsed` is true and cannot be cloned), do **not** retry.
 >
-> ### Your Tasks
->
-> 1. **Explore & Trace**: Inspect the retry delay calculation and request loop in `source/core/Ky.ts`, `source/core/retry-timing.ts`, and `source/types/retry.ts`.
-> 2. **Run & Uncomment Tests**: Run `npm test` and uncomment the failing `Retry-After`, idempotency, and stream-body retry tests in `test/retry.ts`, `test/retry-timing.ts`, and `test/retry-decisions.ts`.
-> 3. **Fix `Retry-After`, Idempotency Guard & Full-Jitter Backoff**: Implement all three requirements cleanly.
-> 4. **Verify Edge Cases**: Test past HTTP-dates, `Retry-After > maxRetryAfter` (asserting `sleep` is NOT called before throwing!), case-insensitive `idempotency-key` header, and `attempt` off-by-one indexing.
+> Please explore the codebase, re-enable any commented-out retry tests in the test suite, implement all three requirements, and verify edge cases (including past HTTP-dates, `Retry-After > maxRetryAfter` fast-fail without sleeping, case-insensitive `idempotency-key`, and stream bodies).
 
 ---
 

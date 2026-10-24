@@ -36,30 +36,25 @@ pytest
 
 > ### Welcome to Your AI-Enabled SWE Coding Interview
 >
-> You are working on an employee Expense Report generator & policy auditor (`ExpenseReport-Refactoring-Kata`). You have full access to the AI Assistant and `pytest`.
+> You are working on our employee Expense Report generator and policy auditor. You have full access to the AI Assistant and the unit test suite.
 >
-> ### Problem Context
+> ### What We Need You to Do
 >
-> 1. **Fix Existing Boundary Bug & Add `LUNCH` Expense Type**:
->    - Meal over-expense marker (`"X"` vs `" "`):
->      - `BREAKFAST`: over-expense if base USD amount is **strictly `> 1000`**.
->      - `LUNCH` (New!): counts as a Meal expense; over-expense if base USD amount is **strictly `> 2000`**.
->      - `DINNER`: over-expense if base USD amount is **strictly `> 5000`**.
->      - `CAR_RENTAL`: NOT a meal expense and never marked `"X"`.
-> 2. **New Feature — Multi-Currency Conversion (`currency: str = "USD"`, `exchange_rates: dict[str, Decimal | float]`)**:
->    - Each `Expense` now has an optional `currency: str = "USD"` (defaulting to `"USD"` with rate `1.0`).
+> 1. **Fix Meal Cap Boundaries & Add `LUNCH` Expense Support**:
+>    - Our meal over-expense marker (`"X"` vs `" "`) rules in base USD are:
+>      - `BREAKFAST`: counts as a Meal; flagged `"X"` only when base USD amount is **strictly `> 1000`**.
+>      - `LUNCH` (New!): counts as a Meal; flagged `"X"` only when base USD amount is **strictly `> 2000`**.
+>      - `DINNER`: counts as a Meal; flagged `"X"` only when base USD amount is **strictly `> 5000`**.
+>      - `CAR_RENTAL`: not a meal expense and never flagged `"X"`.
+> 2. **Support Multi-Currency Conversion (`currency: str = "USD"`, `exchange_rates: dict[str, Decimal | float]`)**:
+>    - Allow each `Expense` to carry an optional `currency: str = "USD"` (defaulting to `"USD"` with rate `1.0`), and accept an optional `exchange_rates` mapping when printing the report.
 >    - Convert each expense amount into base USD integer units using **Banker's Rounding (`ROUND_HALF_EVEN`)** _per line item_ (`converted_amount = round_half_even(expense.amount * rate)`).
->    - **Critical Accounting Invariants**:
->      - **Invariant 1**: The over-expense marker `"X"` MUST be evaluated against the **converted base USD `converted_amount`**, NOT the raw foreign currency amount! (e.g., a `DINNER` of `6000 JPY` with rate `0.0067` converts to `40 USD`, which is `<= 5000` and MUST NOT be flagged `"X"`!).
->      - **Invariant 2**: Both `"Meals:"` subtotal (`Meals: <amount>`) and `"Total:"` (`Total: <amount>`) MUST equal the exact sum of the **rounded line-item `converted_amount`s** printed on the report (never sum unrounded floats and round at the end!).
->      - Unknown currency codes must raise `ValueError("Unsupported currency: ...")`.
+>    - **Accounting Invariants**:
+>      - **Invariant 1**: The over-limit marker `"X"` must be evaluated against the **converted base USD `converted_amount`**, never the raw foreign-currency integer (for example, a `DINNER` of `6000 JPY` at rate `0.0067` converts to `40 USD <= 5000`, so it must **not** be flagged `"X"`).
+>      - **Invariant 2**: Both `"Meals:"` and `"Total:"` summary lines must equal the exact sum of the **rounded line-item `converted_amount` values** printed on the report (never sum unrounded floats and round at the end).
+>      - Unknown currency codes must raise a `ValueError("Unsupported currency: ...")`.
 >
-> ### Your Tasks
->
-> 1. **Explore & Trace**: Inspect `expense_report.py` and `test/test_expense_report.py`. Run `pytest`.
-> 2. **Uncomment & Fix Boundary Bugs**: Uncomment the tests in `test/test_expense_report.py` and fix the `> 5000` / `> 1000` boundary check.
-> 3. **Refactor & Implement `LUNCH` + Multi-Currency Support**: Replace hardcoded `if/else` chains with clean expense metadata and implement per-line-item currency conversion.
-> 4. **Verify Edge Cases**: Test `6000 JPY` dinner (`rate = 0.0067` -> `40 USD`, not flagged `"X"`), `60 EUR` breakfast (`rate = 20.0` -> `1200 USD > 1000`, flagged `"X"`!), and 3 expenses whose fractional `0.4` remainders would drift if summed before rounding.
+> Please explore the codebase, re-enable any commented-out tests, fix the boundary check, implement `LUNCH` and multi-currency conversion, and verify all accounting invariants with unit tests.
 
 ---
 

@@ -36,29 +36,23 @@ pytest
 
 > ### Welcome to Your AI-Enabled SWE Coding Interview
 >
-> You are working on the Yatzy dice scoring engine (`Yatzy-Refactoring-Kata`, focusing on `yatzy1.py` and `tests/test_yatzy1.py`). You have full access to the AI Assistant and `pytest`.
+> You are working on our Yatzy dice scoring engine (focusing on the primary `Yatzy` scorer class and its unit test suite). You have full access to the AI Assistant and the test runner.
 >
-> ### Problem Context
+> ### What We Need You to Do
 >
-> 1. **Fix Existing Strict Category Bugs (`Yatzy.fullHouse` & `Yatzy.two_pair` in `yatzy1.py`)**:
+> 1. **Fix the Strict `two_pair` & `fullHouse` Disambiguation Bugs**:
 >    - In strict Scandinavian Yatzy:
->      - **`two_pair`**: Requires two **distinct** pairs of different die faces (e.g., `[3, 3, 5, 5, 1]` → `3+3+5+5 = 16`). Four of the same face (`[3, 3, 3, 3, 1]`) is **NOT** two pairs and must score **`0`**!
->      - **`fullHouse`**: Requires `3` of one face and `2` of a **different** face (e.g., `[2, 2, 3, 3, 3]` → `13`). Five of the same face (`[4, 4, 4, 4, 4]`) is **NOT** a full house and must score **`0`**!
-> 2. **New Feature — Wild Joker Dice (`score_with_joker(dice, category_fn)`)**:
->    - Implement `score_with_joker(dice: list[int], category_fn: Callable)`:
->      - Each die in the 5-dice list is either a standard face (`1..6`) or **`0` (a Wild Joker)**.
->      - Each `0` Joker independently transforms into whatever standard die face (`1..6`) **maximizes** the score of `category_fn` for that 5-dice roll!
->      - Examples:
+>      - **`two_pair`**: Requires two **distinct** pairs of different die faces (e.g., `[3, 3, 5, 5, 1]` → `3 + 3 + 5 + 5 = 16`). Four of the same face (`[3, 3, 3, 3, 1]`) is **not** two pairs and must score **`0`**.
+>      - **`fullHouse`**: Requires `3` of one face and `2` of a **different** face (e.g., `[2, 2, 3, 3, 3]` → `13`). Five of the same face (`[4, 4, 4, 4, 4]`) is **not** a full house and must score **`0`**.
+> 2. **Implement Wild Joker Dice Scoring (`score_with_joker(dice, category_fn)`)**:
+>    - Add `score_with_joker(dice: list[int], category_fn: Callable)`:
+>      - Each die in the 5-dice roll is either a standard face (`1..6`) or **`0` (a Wild Joker)**.
+>      - Each `0` Joker independently takes whatever standard face value (`1..6`) **maximizes** the score of `category_fn` for that 5-dice roll:
 >        - `score_with_joker([0, 2, 3, 4, 5], Yatzy.smallStraight)` → Joker becomes `1` → scores `15`.
 >        - `score_with_joker([0, 2, 3, 4, 5], Yatzy.largeStraight)` → Joker becomes `6` → scores `20`.
->        - `score_with_joker([0, 0, 4, 4, 4], Yatzy.fullHouse)` → Both jokers become `6` (`[6, 6, 4, 4, 4]`, NOT `4` because `[4, 4, 4, 4, 4]` scores `0` in strict `fullHouse`!) → scores `6+6+4+4+4 = 24`.
+>        - `score_with_joker([0, 0, 4, 4, 4], Yatzy.fullHouse)` → Both jokers become `6` (`[6, 6, 4, 4, 4]`, not `4` because `[4, 4, 4, 4, 4]` scores `0` under strict `fullHouse`!) → scores `24`.
 >
-> ### Your Tasks
->
-> 1. **Explore & Run Tests**: Read `yatzy1.py` and `tests/test_yatzy1.py`. Run `pytest`.
-> 2. **Uncomment & Fix Strict `fullHouse` / `two_pair` Bugs**: Uncomment the disabled tests in `tests/test_yatzy1.py` and fix `fullHouse` and `two_pair` in `yatzy1.py`.
-> 3. **Refactor & Implement `score_with_joker`**: Clean up the category scorers and implement `score_with_joker`.
-> 4. **Verify Edge Cases**: Test `[0, 0, 4, 4, 4]` on `Yatzy.fullHouse` (must return `24`, not `0` or `20`!), `[0, 3, 3, 3, 1]` on `Yatzy.two_pair` (joker becomes `1` → `[1, 3, 3, 3, 1]` → `3+3+1+1 = 8`), and 5 jokers `[0, 0, 0, 0, 0]`.
+> Please explore the codebase, re-enable any commented-out tests, fix the strict category scoring rules, implement `score_with_joker`, and verify edge cases (including multiple jokers on `fullHouse` and `two_pair`).
 
 ---
 

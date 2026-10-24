@@ -34,27 +34,25 @@ cargo test --test stream
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Welcome to Your AI-Enabled SWE Coding Interview
+> ### Production Bug Report: Streaming JSON Framing & Split Multi-Byte UTF-8 Over Chunked Readers
 >
-> You are working inside `serde_json`, Rust's foundational JSON serialization library. You have full access to the AI Assistant and `cargo test`. Remember: **introducing unsound `unsafe` blocks (such as lifetime transmutation) is strictly prohibited**.
+> Engineers streaming concatenated and newline-delimited JSON payloads over TCP sockets (`StreamDeserializer` backed by an `io::Read` stream) have reported two critical bugs in our Rust JSON library:
 >
-> ### Problem Context
+> 1. **Self-Delimiting Composite vs. Adjacent Scalar Framing in `StreamDeserializer`**:
+>    - Valid self-delimiting JSON values (`{"a":1}{"b":2}`, `[1,2][3,4]`, `"hello""world"`) must parse cleanly back-to-back without requiring intervening whitespace.
+>    - Conversely, non-delimited adjacent scalars (`123true`, `truefalse`, `null123`, `123"abc"`) are invalid JSON framing and **must be rejected** with a syntax error (`TrailingCharacters` / `ExpectedSomeValue`), whereas `123 true` (whitespace-separated) or `123[1]` (where `[` is a valid self-delimiting token after a number) must succeed.
+>    - Calling `byte_offset()` on the stream must always report the exact byte index at the end of each deserialized value and upon reaching EOF.
+> 2. **Multi-Byte UTF-8 Codepoints Split Across `io::Read` Chunk Boundaries**:
+>    - When streaming from a network socket or chunked `io::Read` source where a single `read()` call yields only `1` or `2` bytes of a 3- or 4-byte UTF-8 sequence (e.g., `€` or `🦀` = `[0xF0, 0x9F, 0xA6, 0x80]`), the streaming reader falsely fails with `InvalidUnicodeCodePoint`.
+>    - The reader must seamlessly accumulate bytes across arbitrary chunk boundaries and validate UTF-8 properly while preserving zero-copy borrowed string lifetimes (`'de`) when reading from in-memory slices.
+>    - **Strict Safety Rule**: Introducing unsound `unsafe` blocks (such as transmuting scratch-buffer lifetimes `'s` to `'de`) is strictly forbidden.
 >
-> Engineers streaming newline-delimited and concatenated JSON over TCP sockets (`serde_json::StreamDeserializer` backed by `IoRead<R>`) have reported two critical bugs:
+> ### Acceptance Criteria
 >
-> 1. **Streaming Framing Invariant (`StreamDeserializer` in `src/de.rs`)**:
->    - Valid self-delimiting JSON composites (`{"a":1}{"b":2}`, `[1,2][3,4]`, `"hello""world"`) must parse cleanly back-to-back without requiring whitespace between them.
->    - Invalid non-delimited JSON scalars (`123true`, `truefalse`, `null123`) MUST be rejected with a syntax error (`TrailingCharacters` / `ExpectedSomeValue`), whereas `123 true` (separated by whitespace) or `123[1]` (`[` is a valid self-delimiter after a number) must succeed!
->    - `stream.byte_offset()` must return the exact byte index at the end of each item and upon EOF.
-> 2. **Multi-Byte UTF-8 Split Across TCP/Chunk Boundaries (`IoRead` in `src/read.rs`)**:
->    - When reading from a buffered network socket or chunked reader where a single `read()` call yields only `1` or `2` bytes of a 4-byte UTF-8 sequence (e.g., `🦀` = `[0xF0, 0x9F, 0xA6, 0x80]`), `IoRead` must seamlessly accumulate bytes into its scratch buffer and validate the complete UTF-8 sequence without corrupting lifetimes or rejecting valid UTF-8.
->
-> ### Your Tasks
->
-> 1. **Explore & Trace**: Inspect the `Read<'de>` trait in `src/read.rs` (`SliceRead`, `StrRead`, `IoRead`, `Reference<'de, 's, T>`) and `StreamDeserializer` in `src/de.rs`.
-> 2. **Run & Uncomment Tests**: Run `cargo test --test stream` and uncomment the failing framing and chunk-split tests.
-> 3. **Fix `StreamDeserializer` Framing & `IoRead` Chunked UTF-8 Parsing**: Fix both defects using safe Rust (or existing verified invariants in `src/read.rs`) while maintaining zero-copy `Reference::Borrowed<'de>` for `SliceRead`.
-> 4. **Write a `ChunkedReader` Stress Test**: In `tests/stream.rs`, implement a `ChunkedReader<R>` wrapper that returns at most `N` bytes (`N = 1, 2, 3`) per `io::Read::read()` call, and verify that streaming a mix of emojis (`"🦀🚀"`), escaped surrogates (`"\uD83E\uDD80"`), numbers, and objects yields identical results and `byte_offset()` values as `SliceRead`.
+> 1. Locate the streaming deserializer and `io::Read` / slice reader implementations in the codebase, and uncomment any disabled streaming framing and chunk-boundary tests.
+> 2. Fix `StreamDeserializer` post-value delimiter handling so self-delimiting composites succeed back-to-back, non-delimited scalars are rejected, and `byte_offset()` remains exact.
+> 3. Fix streaming string parsing over `io::Read` so multi-byte UTF-8 characters split across arbitrary `read()` calls succeed without unsound lifetime transmutation.
+> 4. Add a stress test using a custom `io::Read` wrapper that yields at most `N` bytes (`N = 1, 2, 3`) per `read()` call, verifying that streaming a mix of multi-byte emojis (`"🦀🚀"`), escaped UTF-16 surrogate pairs (`"\uD83E\uDD80"`), scalars, and objects produces identical results and `byte_offset()` positions as in-memory slice deserialization.
 
 ---
 

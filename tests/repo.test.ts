@@ -56,6 +56,13 @@ describe("AI Coding Interviews Repository Integrity", () => {
         expect(content).toContain(heading);
       }
       expect(content).toMatch(/https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+/);
+
+      // Ensure Section 2 (Candidate Instructions) is written as a natural prompt without file/line spoilers
+      const sec2Start = content.indexOf("## 2. Candidate Instructions");
+      const sec3Start = content.indexOf("## 3. The AI Traps");
+      const sec2Content = content.slice(sec2Start, sec3Start);
+      expect(sec2Content).not.toMatch(/\b[A-Za-z0-9_-]+\.(py|ts|tsx|go|java|rs|cs|kt)\b/);
+      expect(sec2Content).not.toMatch(/\bline\s+\d+\b/i);
     }
   });
 

@@ -35,22 +35,23 @@ rm -rf .git && git init && git add . && git commit -m "Initial interview baselin
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
 > **Copy and share this section with the candidate (or use it for self-practice before reading sections 3–5).**
+>
+> **Authoring Guideline (No File Path / Line Number Spoilers!)**: Write this section like a natural Tech Lead prompt, production incident ticket, or GitHub issue report. **Do NOT mention specific filenames, file paths, line numbers, or internal private helper names** here—evaluating how quickly the candidate locates the relevant modules, traces call flows, and builds context for their AI assistant is a core part of the interview!
 
-### Background
+### Ticket / Problem Statement
 
-Summarize the domain rules and what the module is supposed to do.
+Describe the real-world bug report, production incident, or feature request in natural engineering language, as a user or Tech Lead would report it.
 
-### Your Tasks (Checkpoints)
+### Behavioral Requirements & Invariants
 
-1. **Checkpoint 1 — Explore & Trace (`~10 mins`)**:
-   - Explore the target files and trace how data flows from entry point to output.
-   - Run the existing test suite and uncomment any disabled/commented unit tests.
-2. **Checkpoint 2 — Diagnose & Fix Seeded/Existing Bugs (`~15 mins`)**:
-   - Identify why the failing/uncommented tests break (or where the existing implementation violates the domain specification) and fix the root cause without breaking existing callers.
-3. **Checkpoint 3 — Implement Core Feature / Production Optimization (`~20 mins`)**:
-   - Implement the new requirement or scale optimization so that both toy fixtures and production-scale workloads pass within constraints.
-4. **Checkpoint 4 — Edge Cases, Regression Check & Solution Defense (`~15 mins`)**:
-   - Add unit tests covering boundary conditions and explain why your solution is correct, what assumptions the AI made that you had to override, and any architectural trade-offs.
+Specify all domain rules, edge-case contracts, backwards-compatibility guarantees, and scale/latency targets clearly so the candidate knows _what_ behavior is required without being told _where_ in the codebase to edit.
+
+### Acceptance Criteria
+
+1. **Explore & Reproduce**: Search the codebase to locate the relevant modules and existing test suite. Uncomment or enable any disabled regression tests and reproduce the reported failures.
+2. **Fix Root Causes**: Resolve the underlying defects cleanly without breaking existing callers or public contracts.
+3. **Deliver Feature / Scale Target**: Ensure both standard functional fixtures and high-scale/concurrent workloads meet the required invariants and performance budgets.
+4. **Verify & Defend**: Add regression tests covering boundary conditions, run the test suite to verify zero regressions, and be ready to walk through your design decisions and trade-offs.
 
 ---
 

@@ -36,34 +36,35 @@ In `httpx/_client.py`:
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Welcome to Your AI-Enabled SWE Coding Interview
+> ### Production Incident & Feature Ticket: HTTP Redirect Security, Pool Leaks & Loop Detection
 >
-> You are working inside a production-grade synchronous/asynchronous HTTP client (`httpx`). You may use the AI Assistant as much or as little as you like, but you are evaluated on how you navigate the codebase, decompose changes, verify AI output, and defend your solution.
+> Security audit and production logs flagged three issues in our synchronous and asynchronous HTTP client around redirect handling (`301`, `302`, `303`, `307`, `308`):
 >
-> ### Problem Context
+> 1. **Cross-Origin & Scheme-Downgrade Credential Leak**:
+>    - When following redirects, sensitive `Authorization` headers are being leaked across `https://` → `http://` scheme downgrades and non-standard port switches (`:443` → `:8443`). Conversely, valid `http://example.com:80` → `https://example.com:443` upgrades on the same host with default ports are mistakenly stripping `Authorization`.
+>    - In addition, when a `POST` request receives a `303 See Other` redirect and switches to `GET`, removing body-related headers (`Content-Length`, `Transfer-Encoding`) mutates the original request's headers in-place inside `response.history[0].request.headers`, corrupting audit logs.
+> 2. **Async Connection Pool Exhaustion on Task Cancellation**:
+>    - In services running with a bounded connection pool (e.g., `max_connections=5`), cancelling an async request task while it is reading an intermediate redirect response body permanently leaks a connection slot, eventually hanging all subsequent requests.
+> 3. **State-Aware Redirect Cycle Detection**:
+>    - Right now, redirect loops always spin for the full `max_redirects=20` hops before failing with `TooManyRedirects`.
+>    - We need deterministic cycle detection that aborts immediately with `TooManyRedirects` when a stateless redirect loop occurs, **without** breaking valid OAuth/SSO login flows where `GET /dashboard` → `302 /login` (which sets a session cookie via `Set-Cookie`) → `302 /dashboard` succeeds, or `POST /submit` → `303 /submit` (which transitions to `GET /submit`).
 >
-> Enterprise users have reported three critical issues with HTTP redirect handling (`301`, `302`, `303`, `307`, `308`):
+> ### Expected Behavioral Contracts
 >
-> 1. **Security & Audit Defect**: When following redirects, sensitive `Authorization` headers are leaked during `https://` → `http://` downgrades or non-standard port switches (`:443` → `:8443`), while `http://example.com:80` → `https://example.com:443` upgrades mistakenly strip `Authorization`. Additionally, `POST` → `303 See Other` (`GET`) mutates the original request's headers inside `response.history[0].request.headers`.
-> 2. **Async Pool Exhaustion**: Under `Limits(max_connections=5)`, cancelling an `AsyncClient` task while it is reading an intermediate redirect response permanently leaks a connection slot, eventually hanging all future requests.
-> 3. **Stateful Redirect Cycle Detection**: Currently, redirect loops always run for `max_redirects=20` hops before raising `TooManyRedirects`. We need deterministic cycle detection that aborts immediately when a stateless redirect cycle occurs, **without** breaking valid OAuth/login flows where `GET /dashboard` → `302 /login` (sets a session cookie via `Set-Cookie`) → `302 /dashboard` succeeds!
+> - **Origin Equality & Safe HTTPS Upgrades**:
+>   - `https://api.example.com/v1` and `https://api.example.com:443/v2` share the same origin (implicit default port `443` for `https`, `80` for `http`) and must retain `Authorization`.
+>   - `https://api.example.com/v1` → `http://api.example.com/v2` is a scheme downgrade and **must strip** `Authorization`.
+>   - `http://api.example.com/v1` → `https://api.example.com/v2` (or `:80` → `:443`) on the same host with default ports is a safe HTTPS upgrade and **must retain** `Authorization`, whereas switching to a non-default port (e.g., `http://api.example.com:8080` → `https://api.example.com:8443`) must strip `Authorization`.
+>   - Request objects recorded in `response.history` must never have their headers mutated by subsequent redirect hops.
+> - **Stateful vs. Stateless Redirect Loops**:
+>   - `GET /a` → `302 /b` → `302 /a` (with no `Set-Cookie` state change and identical HTTP method) must raise `TooManyRedirects` immediately upon encountering the repeat of `('GET', 'https://.../a')`.
+>   - `POST /submit` → `303 /submit` (`GET /submit`) and `GET /app` → `302 /auth` (`Set-Cookie: sid=123`) → `302 /app` are valid state transitions and must **not** raise `TooManyRedirects`.
 >
-> ### Specification & Examples
+> ### Acceptance Criteria
 >
-> - **Origin Equality (`_same_origin`)**:
->   - `https://api.example.com/v1` and `https://api.example.com:443/v2` → **Same Origin** (`port` defaults to `443` for `https`).
->   - `https://api.example.com/v1` → `http://api.example.com/v2` → **Downgrade** (MUST strip `Authorization`).
->   - `http://api.example.com/v1` → `https://api.example.com/v2` → **Safe HTTPS Upgrade on same host/default ports** (Keep `Authorization`).
-> - **Stateful vs. Stateless Redirect Loop**:
->   - `GET /a` → `302 /b` → `302 /a` (no `Set-Cookie` header and method unchanged) → Raise `TooManyRedirects` immediately on the repeat of `('GET', 'https://.../a')`.
->   - `POST /submit` → `303 /submit` (`GET /submit`) OR `GET /app` → `302 /auth` (`Set-Cookie: sid=123`) → `302 /app` → **Valid** (must NOT raise `TooManyRedirects`).
->
-> ### Your Tasks
->
-> 1. **Explore & Trace**: Map module-level `_same_origin(url, other)` and `_is_https_redirect(url, location)`, along with `BaseClient`, `Client`, and `AsyncClient` redirect handling in `httpx/_client.py` and URL port normalization in `httpx/_urls.py`.
-> 2. **Run & Uncomment Tests**: Run `pytest tests/client/test_redirects.py`. Uncomment the disabled redirect security and cancellation tests and observe the failures.
-> 3. **Fix Redirect Headers & Async Pool Leak**: Fix origin comparison, preserve `response.history` request header immutability, and ensure `AsyncClient` releases connections on task cancellation.
-> 4. **Implement Cycle Detection & Verify**: Implement state-aware redirect loop detection and write unit tests covering OAuth cookie redirects, `POST -> 303 GET` self-redirects, and task cancellation.
+> 1. Locate the redirect, URL origin, and client request-handling logic in the codebase, and uncomment any disabled redirect security and cancellation tests in the test suite.
+> 2. Fix origin comparison, preserve header immutability across `response.history`, and guarantee that cancelling an async request mid-redirect always closes and releases the underlying response connection back to the pool.
+> 3. Implement state-aware redirect cycle detection for both sync and async clients, and add regression tests covering OAuth cookie redirects, `POST -> 303 GET` self-redirects, and async task cancellation under tight connection limits.
 
 ---
 

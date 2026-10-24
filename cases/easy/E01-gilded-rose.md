@@ -38,31 +38,28 @@ pytest
 >
 > You are working on the inventory quality updater for the **Gilded Rose** inn. You may use the AI Assistant as much or as little as you like.
 >
-> ### Domain Rules
+> ### What We Need You to Do
 >
-> Every item has two properties:
+> Our daily inventory update job tracks two properties for every item:
 >
 > - `sell_in`: Number of days remaining to sell the item.
 > - `quality`: How valuable the item is (`0 <= quality <= 50` for all items except `"Sulfuras"`).
 >
-> At the end of each day, `update_quality()` lowers both values for every item according to these rules:
+> Right now, our team noticed a boundary bug in how **Backstage passes** are updated around concert threshold days (`10` days, `5` days, and after the concert passes), and a few regression tests in the test suite have been temporarily commented out.
+>
+> In addition to fixing that bug, we need to roll out support for **`"Conjured"`** items (any item whose name starts with `"Conjured "`):
 >
 > 1. **Standard Items**: Degrade in `quality` by `1` before expiration (`sell_in > 0`), and by `2` per day once the sell-by date has passed (`sell_in <= 0`).
-> 2. **`"Aged Brie"`**: Actually _increases_ in `quality` the older it gets (`+1` when `sell_in > 0`, `+2` when `sell_in <= 0`), capped at `50`.
-> 3. **`"Sulfuras, Hand of Ragnaros"`**: A legendary item; its `sell_in` never changes and its `quality` is always `80` (never alters).
+> 2. **`"Aged Brie"`**: _Increases_ in `quality` the older it gets (`+1` when `sell_in > 0`, `+2` when `sell_in <= 0`), capped at `50`.
+> 3. **`"Sulfuras, Hand of Ragnaros"`**: A legendary item; its `sell_in` never changes and its `quality` is always `80`.
 > 4. **`"Backstage passes to a TAFKAL80ETC concert"`**: Increases in `quality` by `+1` when `sell_in > 10`, by `+2` when `6 <= sell_in <= 10`, by `+3` when `1 <= sell_in <= 5`, and drops to **`0`** after the concert (`sell_in <= 0`), always capped at `50`.
-> 5. **New Requirement — `"Conjured"` Items (Prefix `"Conjured "`)**:
+> 5. **New `"Conjured"` Modifier Rule (Prefix `"Conjured "`)**:
 >    - Normal Conjured items (e.g., `"Conjured Mana Cake"`) degrade in `quality` **twice as fast** as standard items (`-2` when `sell_in > 0`, `-4` when `sell_in <= 0`), floored at `0`.
 >    - `"Conjured Aged Brie"` increases in `quality` **twice as fast** as normal `"Aged Brie"` (`+2` when `sell_in > 0`, `+4` when `sell_in <= 0`), capped at `50`.
 >    - `"Conjured Sulfuras, Hand of Ragnaros"` remains legendary (`sell_in` unchanged, `quality == 80`).
->    - Note: You must **not** alter the `Item` class or `items` property signature!
+>    - Important constraint: Do **not** alter the `Item` class definition or the `items` property signature.
 >
-> ### Your Tasks
->
-> 1. **Explore & Run Tests**: Open `gilded_rose.py` and `tests/test_gilded_rose.py`. Run the unit test suite.
-> 2. **Uncomment & Fix Existing Bugs**: Uncomment the disabled tests in `tests/test_gilded_rose.py` and fix the existing boundary bug in `Backstage passes`.
-> 3. **Refactor & Implement `"Conjured"` Support**: Cleanly support `"Conjured "` items (including `"Conjured Aged Brie"` and `"Conjured Sulfuras"`).
-> 4. **Verify Edge Cases**: Test `Conjured` items with `quality = 1` and `sell_in = 0` (must clamp to `0`, never negative!) and `Conjured Aged Brie` with `quality = 49` (must clamp to `50`).
+> Please explore the codebase, re-enable any commented-out tests, fix the existing defect, implement the `"Conjured"` rules cleanly, and make sure edge cases (such as `quality = 1` at `sell_in = 0` or `quality = 49` on `"Conjured Aged Brie"`) are covered by tests.
 
 ---
 

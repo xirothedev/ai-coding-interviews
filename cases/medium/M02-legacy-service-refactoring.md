@@ -43,23 +43,23 @@ The repository is a multi-module Gradle build with two modules (`:monolith` and 
 
 > ### Welcome to Your AI-Enabled SWE Coding Interview
 >
-> You are working on extracting a core graph shortest-path calculation engine (`Dijkstra` and `Algorithm`) out of a legacy database-coupled `:monolith` module into a clean, reusable `:library` module (`JLLeitschuh/refactoring-interview-question`). You may use the AI Assistant freely.
+> You are working on extracting our core graph shortest-path calculation engine (`Dijkstra` and `Algorithm`) out of a legacy database-coupled `:monolith` module into a clean, reusable `:library` module. You may use the AI Assistant freely.
 >
-> ### Your Tasks
+> ### What We Need You to Do
 >
-> 1. **Task 1 — Decouple `Dijkstra` & Pass `DijkstraTest.java` (`:library`)**:
->    - In `library/.../Dijkstra.java` (and `monolith/.../Dijkstra.java`), remove the coupling to `GraphService` and eliminate the mutable `private Node source` field so `Dijkstra` is a pure, stateless/thread-safe shortest-path calculator operating on domain `Graph` / `Node` / `Edge` objects.
->    - Remove the `@Disabled` annotation in `library/src/test/java/org/MechanizedLogic/library/DijkstraTest.java` and ensure all `DijkstraTest` unit tests pass.
-> 2. **Task 2 — Extract `Algorithm` into `:library` via Dependency Inversion & Fix N+1 Lookup**:
->    - Refactor `library/.../Algorithm.java` using clean interfaces (e.g., `GraphRepository` / `PathStore` / `EventListener` or functional seams) so `:library` has zero compile-time dependencies on `:monolith`'s `GraphService`, `PathsService`, `EventService`, or `GraphUsersService`.
->    - Eliminate the redundant `graphService.getByUuid(uuid)` `N+1` lookup when running across already-loaded `Graph` objects.
->    - **Strict Backward Compatibility**: Keep `:monolith`'s `AlgorithmEngine` and `AlgorithmEngineTest.java` 100% backward-compatible (adapting `:monolith`'s services to `:library`'s `Algorithm`).
-> 3. **Task 3 — Enable `@Disabled` `AlgorithmTest.java` (`:library`)**:
->    - Remove `@Disabled` from `library/src/test/java/org/MechanizedLogic/library/AlgorithmTest.java` and pass all unit tests against the decoupled `:library` `Algorithm`.
-> 4. **Task 4 — Atomic Batch Execution (`runForAll(boolean failFast)`)**:
+> 1. **Decouple `Dijkstra` & Re-enable its Unit Tests (`:library`)**:
+>    - Right now, `Dijkstra` is coupled to database-backed `GraphService` calls and holds mutable instance state (`source` node), making it stateful across runs and impossible to test without a live database.
+>    - Refactor `Dijkstra` into a pure, stateless/thread-safe shortest-path calculator operating on domain `Graph` / `Node` / `Edge` objects, remove `@Disabled` from the `Dijkstra` unit test suite in `:library`, and make sure all directed and undirected graph tests pass.
+> 2. **Extract `Algorithm` into `:library` via Dependency Inversion & Eliminate the N+1 Query**:
+>    - Refactor `Algorithm` in `:library` using clean interfaces or seams so `:library` has zero compile-time dependencies on `:monolith`'s `GraphService`, `PathsService`, `EventService`, or `GraphUsersService`.
+>    - Eliminate the redundant `N+1` lookup where `runForAll()` fetches all graphs and then re-queries each graph by UUID one by one.
+>    - **Strict Backward Compatibility**: Keep `:monolith`'s `AlgorithmEngine` public API and its existing `:monolith` test suite 100% passing without modification.
+> 3. **Re-enable the `:library` `Algorithm` Test Suite**:
+>    - Remove `@Disabled` from the `Algorithm` unit test suite in `:library` and ensure all path calculation and event notification tests pass.
+> 4. **Add Atomic Batch Execution (`runForAll(boolean failFast)`)**:
 >    - Add an overloaded `runForAll(boolean failFast)` method (while preserving zero-arg `runForAll()`):
->      - When `failFast = true`: compute shortest paths for all graphs in the batch **before** persisting any path to `PathsService.saveNew(...)` (or `PathStore`). If any graph in the batch is invalid/corrupted or throws an exception, abort immediately so **zero partial writes** are persisted to `PathsService`!
->      - When `failFast = false`: persist valid graphs' paths and record/notify failure events for invalid graphs without aborting the batch.
+>      - When `failFast = true`: compute shortest paths for all graphs in the batch **before** persisting any path to storage. If any graph in the batch is invalid/corrupted or throws an exception, abort immediately so **zero partial writes** are persisted.
+>      - When `failFast = false`: persist paths for valid graphs and emit failure events for invalid graphs without aborting the batch.
 
 ---
 

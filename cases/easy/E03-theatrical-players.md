@@ -36,26 +36,21 @@ pytest
 
 > ### Welcome to Your AI-Enabled SWE Coding Interview
 >
-> You are working on the invoice statement generator for a theatrical company (`Theatrical-Players-Refactoring-Kata`). You have full access to the AI Assistant and unit test suite.
+> You are working on the invoice statement generator for a theatrical company. You have full access to the AI Assistant and the unit test suite.
 >
-> ### Problem Context
+> ### What We Need You to Do
 >
-> 1. **Fix Existing Comedy Boundary Bug**:
->    - For `"comedy"` plays, base cost is `$300.00` (`30000` cents) plus `$3.00` (`300` cents) per attendee. If `audience > 20` (strictly greater than 20), add a `$100.00` (`10000` cents) surcharge plus `$5.00` (`500` cents) for each attendee over `20`.
->    - Currently, `audience == 20` is being overcharged!
-> 2. **New Play Type — `"history"` & Repertoire Bonus Rule**:
->    - Base cost: `$350.00` (`35000` cents). If `audience > 25`, add `$15.00` (`1500` cents) for each attendee over `25`.
->    - Volume credits for `"history"`: Base credits = `max(audience - 25, 0) + math.floor(audience / 10)`.
->    - **Cross-Play Repertoire Bonus**: If the customer's invoice contains **at least one `"tragedy"` play AND at least one `"history"` play** (in **any** order in `invoice["performances"]`!), every `"history"` performance on that invoice receives **double (`2x`)** its volume credits!
-> 3. **HTML Statement Renderer (`html_statement(invoice, plays)`)**:
->    - Implement `html_statement(invoice, plays)` returning an HTML table/list matching the exact numbers of `statement(invoice, plays)` without duplicating pricing or credit calculation formulas across the two functions!
+> 1. **Fix the Comedy Audience Surcharge Boundary Bug**:
+>    - For `"comedy"` plays, the base cost is `$300.00` (`30000` cents) plus `$3.00` (`300` cents) per attendee. Only when the audience is **strictly greater than `20`** (`audience > 20`) should we add the `$100.00` (`10000` cents) surcharge plus `$5.00` (`500` cents) per attendee over `20`.
+>    - Right now, an audience of exactly `20` people is being overcharged.
+> 2. **Support `"history"` Plays & the Cross-Play Repertoire Bonus**:
+>    - Base cost for `"history"`: `$350.00` (`35000` cents). If `audience > 25`, add `$15.00` (`1500` cents) for each attendee over `25`.
+>    - Base volume credits for `"history"`: `max(audience - 25, 0) + floor(audience / 10)`.
+>    - **Cross-Play Repertoire Bonus**: If the invoice contains **at least one `"tragedy"` play AND at least one `"history"` play** (regardless of which one appears first in the invoice's performance list), every `"history"` performance on that invoice earns **double (`2x`)** its volume credits.
+> 3. **Add an HTML Statement Renderer (`html_statement(invoice, plays)`)**:
+>    - Implement `html_statement(invoice, plays)` returning an HTML representation with the exact same figures as the plain-text `statement(invoice, plays)`, refactored cleanly so pricing and credit formulas are never duplicated across the two output formats.
 >
-> ### Your Tasks
->
-> 1. **Explore & Run Tests**: Read `statement.py` and `tests/test_statement.py` (along with `tests/new_plays.json` and `tests/invoice_new_plays.json`), and run `pytest`.
-> 2. **Uncomment & Fix Boundary Bug**: Uncomment the tests in `tests/test_statement.py` and fix the `comedy` `audience == 20` bug.
-> 3. **Refactor (Split Phase) & Add `"history"` + `html_statement`**: Extract a shared intermediate calculation model so `statement()` and `html_statement()` share 100% of pricing/credit logic, and implement `"history"`.
-> 4. **Verify Edge Cases**: Test an invoice where `"history"` is the **first** performance in the list and `"tragedy"` is the **last** performance (verifying the `2x` history credit bonus still triggers!).
+> Please explore the codebase, re-enable any disabled tests in the test suite, fix the boundary bug, implement `"history"` plays and `html_statement`, and verify that the repertoire bonus works regardless of performance order.
 
 ---
 

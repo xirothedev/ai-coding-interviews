@@ -36,25 +36,20 @@ pytest
 
 > ### Welcome to Your AI-Enabled SWE Coding Interview
 >
-> You are working on the Tennis Scoring Engine (`Tennis-Refactoring-Kata`), focusing on **`TennisGame1` in `tennis1.py`** (and **`TennisGame3` in `tennis3.py`**). You have full access to the AI Assistant and `pytest`.
+> You are working on our Tennis Match Scoring Engine (focusing on `TennisGame1` and `TennisGame3`). You have full access to the AI Assistant and the test suite.
 >
-> ### Problem Context
+> ### What We Need You to Do
 >
-> 1. **Bug in Custom Player Names & High Deuce Counts (`TennisGame1` & `TennisGame3`)**:
->    - Look at how `won_point(player_name)` and `score()` in `TennisGame1` (`tennis1.py`) and `TennisGame3` (`tennis3.py`) handle player names other than `"player1"` / `"player2"` (e.g., `TennisGame1("Serena", "Venus")`) and high deuce scores (`15–15`, `16–15`). Fix the hardcoded `"player1"` assumptions and any formatting bugs!
-> 2. **Terminal State Guard (Post-Win Immutability in `TennisGame1` & `TennisGame3`)**:
->    - Once a game has reached a terminal `"Win for <player>"` state, calling `won_point()` again MUST raise a `ValueError("Game is already over")` (or language-equivalent exception) instead of continuing to mutate points (which currently allows the losing player to score twice after losing `4–2` and turn a finished game back into `"Deuce"`!).
-> 3. **New Feature — Set Tie-Break Mode (`is_tie_break: bool = False` in `TennisGame1`)**:
->    - Add an optional `is_tie_break: bool = False` parameter to `TennisGame1.__init__`:
->      - In Tie-Break mode, scores are formatted using **raw numerical points** (`"0-0"`, `"1-0"`, `"6-6"`, `"7-6"`, `"8-8"`), NEVER `"Love"`, `"Fifteen"`, `"Deuce"`, or `"Advantage"`.
->      - A player wins a Tie-Break when they reach **at least `7` points AND lead by `>= 2` points** (e.g., `7–0`, `7–5`, `8–6`, `12–10` → `"Win for <player>"`). At `6–6` or `7–6`, the game is still ongoing and `score()` returns `"6-6"` or `"7-6"`!
+> 1. **Fix Custom Player Name & High-Deuce Bugs**:
+>    - When a match is initialized with custom player names (such as `"Serena"` and `"Venus"` instead of `"player1"` and `"player2"`), points and win/advantage announcements are attributed to the wrong player or formatted with hardcoded names. Also check that high deuce scores (`15–15`, `16–15`) work properly.
+> 2. **Enforce Post-Win Terminal State Immutability**:
+>    - Once a game has been won by either player (`"Win for <player>"`), calling `won_point()` again must raise a `ValueError("Game is already over")` (or language-equivalent error) rather than continuing to increment points and turning a finished game back into `"Deuce"`.
+> 3. **Add Set Tie-Break Mode (`is_tie_break: bool = False` on `TennisGame1`)**:
+>    - Support an optional `is_tie_break: bool = False` flag when constructing `TennisGame1`:
+>      - In Tie-Break mode, ongoing scores are formatted as **raw numeric strings** (`"0-0"`, `"1-0"`, `"4-2"`, `"6-6"`, `"7-6"`, `"8-8"`), never `"Love"`, `"Fifteen"`, `"Deuce"`, or `"Advantage"`.
+>      - A player wins a Tie-Break only when they reach **at least `7` points AND lead by at least `2` points** (e.g., `7–0`, `7–5`, `8–6`, `12–10` → `"Win for <player>"`). At `6–6` or `7–6`, the tie-break is still active and returns `"6-6"` or `"7-6"`.
 >
-> ### Your Tasks
->
-> 1. **Explore & Run Tests**: Inspect `tennis1.py`, `tennis3.py`, and `tests/tennis_test.py`. Run `pytest`.
-> 2. **Uncomment & Fix Existing Bugs**: Uncomment the custom-player-name and high-deuce tests in `tests/tennis_test.py` and fix the bugs in `TennisGame1` and `TennisGame3`.
-> 3. **Implement Post-Win Guard & Tie-Break Mode**: Add terminal state protection and `is_tie_break=True` support while keeping all existing parameterized tests passing.
-> 4. **Verify Edge Cases**: Test scoring after `"Win for Serena"` raises `ValueError`, test `7–6` in Tie-Break returns `"7-6"` (NOT `"Win"` and NOT `"Advantage"`), and test `8–6` in Tie-Break returns `"Win for <player>"`.
+> Please explore the codebase, re-enable any commented-out tests, fix the player name and terminal state issues, implement Tie-Break mode, and verify all edge cases with unit tests.
 
 ---
 

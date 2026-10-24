@@ -36,27 +36,24 @@ PYTHONPATH=src pytest
 
 > ### Welcome to Your AI-Enabled SWE Coding Interview
 >
-> You are working on the dynamic pricing calculator for a ski resort (`Lift-Pass-Pricing-Refactoring-Kata`). You have full access to the AI Assistant and test suite.
+> You are working on the dynamic lift-pass pricing service for a ski resort. You have full access to the AI Assistant and the test suite.
 >
-> ### Problem Context
+> ### What We Need You to Do
 >
-> 1. **Fix Existing Age Bracket Boundary Bug**:
->    - Children strictly under 6 (`age < 6`) are always `0` cost (for both `1jour` and `night` passes).
->    - Youth (`6 <= age < 15`): `1jour` is `70%` of base price (`math.ceil(base * 0.7)`), `night` is `0`.
->    - Adults (`15 <= age <= 64`): `1jour` is `100%` of base price, `night` is `$19`.
->    - Seniors (`age > 64`): `1jour` is `75%` of base price (`math.ceil(base * 0.75)`), `night` is `40%` of `$19` (`math.ceil(19 * 0.4) = $8`).
->    - On non-holiday Mondays, `1jour` passes for ages `>= 15` receive a `35%` Monday discount (`* 0.65`).
-> 2. **New Feature — Group Checkout (`calculate_group_price(pass_type, base_price, ages, date_str, holidays)`)**:
->    - Calculate the total price for a group of skiers given their list of `ages: list[int]`.
->    - **Group Discount Rule**: If the group contains **`4 or more PAYING skiers`** (i.e., skiers whose individual pass price before group discount is **`> 0`**—so children `age < 6` on `1jour` and anyone `< 15` on `night` passes do **NOT** count toward the `4` paying skiers threshold!), apply an additional `10%` group discount (`* 0.90`) on non-holiday dates, rounding each paying skier's final ticket with `math.ceil()`!
->    - On holidays, the `10%` group discount (just like the Monday `35%` discount) is **blacked out (disabled)**.
+> 1. **Fix the Age Bracket Boundary Defect**:
+>    - Our pricing rules by age bracket are:
+>      - Children strictly under 6 (`age < 6`): always `0` cost (for both `1jour` day passes and `night` passes).
+>      - Youth (`6 <= age < 15`): `1jour` is `70%` of the base price (`ceil(base * 0.7)`), while `night` is `0`.
+>      - Adults (`15 <= age <= 64`): `1jour` is `100%` of the base price, while `night` is `$19`.
+>      - Seniors (`age > 64`): `1jour` is `75%` of the base price (`ceil(base * 0.75)`), while `night` is `40%` of `$19` (`ceil(19 * 0.4) = $8`).
+>      - On non-holiday Mondays, `1jour` passes for ages `>= 15` receive a `35%` Monday discount (`* 0.65`).
+>    - Right now, exact boundary ages (`6` and `64`) are being misclassified.
+> 2. **Add Group Checkout Pricing (`calculate_group_price(pass_type, base_price, ages, date_str, holidays)`)**:
+>    - We need a pure pricing function that computes the total cost for a group of skiers given their list of `ages`.
+>    - **Group Discount Rule**: When a group has **`4 or more PAYING skiers`** (meaning skiers whose individual ticket price before the group discount is **strictly greater than `0`**—so free children `< 6` on `1jour` and free youth `< 15` on `night` passes do **not** count toward the `4`-skier threshold), apply an additional `10%` group discount (`* 0.90`) on non-holiday dates, rounding each paying skier's ticket with `ceil()`.
+>    - On holidays, both the Monday `35%` discount and the `10%` group discount are blacked out (disabled).
 >
-> ### Your Tasks
->
-> 1. **Explore & Trace**: Read `src/prices.py` and `test/test_prices.py` to understand the deeply nested legacy pricing rules.
-> 2. **Run & Uncomment Tests**: Run `PYTHONPATH=src pytest` and uncomment the boundary and group-pricing tests.
-> 3. **Fix Age Boundaries & Implement `calculate_group_price`**: Refactor the pure pricing logic from HTTP/DB concerns and implement `calculate_group_price`.
-> 4. **Verify Edge Cases**: Test a group of `[30, 32, 4, 5]` (2 adults + 2 free 4/5-year-olds = only `2` paying skiers → NO group discount!), `[30, 32, 35, 10]` on a `night` pass (`10`-year-old is free at night → only `3` paying skiers → NO group discount!), and a non-holiday Monday with 4 paying adults.
+> Please explore the codebase, decouple pure pricing calculations from HTTP/database plumbing where helpful, re-enable any commented-out tests, fix the boundary bug, and implement `calculate_group_price` with full edge-case tests.
 
 ---
 

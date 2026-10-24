@@ -36,25 +36,19 @@ pytest
 
 > ### Welcome to Your AI-Enabled SWE Coding Interview
 >
-> You are working on a CI/CD Build Pipeline orchestrator (`BuildPipeline-Refactoring-Kata`). You have full access to the AI Assistant and test runner.
+> You are working on our CI/CD Build Pipeline orchestrator. You have full access to the AI Assistant and the test runner.
 >
-> ### Problem Context
+> ### What We Need You to Do
 >
-> 1. **Fix Existing Test Status Bug**:
->    - If a project has tests (`project.has_tests()`), `project.run_tests()` must return `"success"` for tests to pass. Any other return value (`"failure"`, `"error"`, `""`) must mark the test stage as failed, log `"Tests failed"`, and **skip deployment completely**.
-> 2. **New Feature — Deployment Retry Policy (`max_deploy_retries: int = 0`)**:
->    - Add `max_deploy_retries: int = 0` to `Pipeline` (or `Pipeline.run(project, max_deploy_retries=0)`):
->      - If the test stage passes, attempt `project.deploy()`.
->      - `project.deploy()` returns `"success"` on success, and any other string on failure.
->      - If `deploy()` fails and `max_deploy_retries > 0`, retry `project.deploy()` up to `max_deploy_retries` additional times (total attempts `<= 1 + max_deploy_retries`), stopping as soon as an attempt returns `"success"`.
->      - **Critical Notification Invariant**: Regardless of how many retry attempts occur, `emailer.send(...)` MUST be called **at most once per `Pipeline.run()`** (at the end of the pipeline, if `config.send_email_summary()` is enabled), reporting the final outcome (`"Deployment completed successfully"` if any retry succeeded, or `"Deployment failed"` if all retries failed)!
+> 1. **Fix the Test Stage Status Check**:
+>    - When a project has automated tests (`project.has_tests()`), running the test stage must return `"success"` for the pipeline to proceed. Any other return status (`"failure"`, `"error"`, or an empty/unexpected string) must mark the test stage as failed, log `"Tests failed"`, and **skip deployment completely**.
+> 2. **Add a Deployment Retry Policy (`max_deploy_retries: int = 0`)**:
+>    - Support an optional `max_deploy_retries: int = 0` parameter on the pipeline (or its `run` method):
+>      - When the test stage passes, attempt deployment (`project.deploy()`), which returns `"success"` on success and any other string on failure.
+>      - If deployment fails and `max_deploy_retries > 0`, retry `project.deploy()` up to `max_deploy_retries` additional times (up to `1 + max_deploy_retries` total attempts), stopping immediately once an attempt returns `"success"`.
+>      - **Single Summary Email Invariant**: No matter how many retry attempts run, the summary emailer (`emailer.send(...)`) must be called **at most once per pipeline run** (at the very end of the pipeline, if email summaries are enabled in config), reporting the final outcome (`"Deployment completed successfully"` if any retry succeeded, or `"Deployment failed"` if all retries failed).
 >
-> ### Your Tasks
->
-> 1. **Explore & Trace**: Inspect `build_pipeline/pipeline.py`, `build_pipeline/project.py`, and `tests/test_pipeline.py`. Run `pytest`.
-> 2. **Uncomment & Fix Test Stage Bug**: Uncomment the tests in `tests/test_pipeline.py` and fix the test-stage status check.
-> 3. **Refactor & Implement Deployment Retries**: Separate stage execution from logging/email notifications and implement `max_deploy_retries`.
-> 4. **Verify Edge Cases**: Test `max_deploy_retries = 3` where attempt #1 and #2 fail and attempt #3 succeeds (assert `deploy()` called `3` times and `emailer.send("Deployment completed successfully")` called **exactly `1` time**!).
+> Please explore the codebase, re-enable any commented-out tests in the test suite, fix the test-stage status check, implement deployment retries without sending duplicate failure emails on transient retries, and verify your changes with unit tests.
 
 ---
 

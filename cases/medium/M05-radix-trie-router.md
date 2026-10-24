@@ -37,35 +37,30 @@ npx vitest run src/router/trie-router
 
 > ### Welcome to Your AI-Enabled SWE Coding Interview
 >
-> You are working on the Radix/Trie URL Router (`src/router/trie-router`). You have full access to the AI Assistant and test runner.
+> You are working on our Radix/Trie URL Router. You have full access to the AI Assistant and the test runner.
 >
-> ### Problem Context
+> ### What We Need You to Do
 >
 > Our HTTP framework routes incoming paths (`GET /orgs/acme/repos/core/issues`) against registered patterns containing **static segments**, **named parameters (`:name`, `:id{[0-9]+}`)**, **optional parameters (`:version?`)**, and **wildcards (`*` or `*filepath`)**.
 >
 > Users have reported three routing defects:
 >
 > 1. **Dead-End Prefix Backtracking Bug**:
->    - Registered routes:
+>    - Suppose these routes are registered:
 >      - `GET /users/admin/audit-log`
 >      - `GET /users/:username/followers`
 >      - `GET /users/*`
->    - When a request arrives for `GET /users/admin/followers`, the router enters the static `"admin"` branch, sees no `"followers"` child, and returns `404 Not Found`—failing to backtrack and match `:username = "admin"`!
+>    - When a request arrives for `GET /users/admin/followers`, the router enters the static `"admin"` branch, sees no `"followers"` child, and returns `404 Not Found`—failing to backtrack and match `:username = "admin"`.
 > 2. **Parameter State Pollution During Backtracking**:
->    - Registered routes:
+>    - Suppose these routes are registered:
 >      - `GET /v1/:orgId/billing/invoices`
 >      - `GET /v1/:tenantId/*`
->    - When `GET /v1/acme/billing/summary` is requested, Branch 1 captures `orgId = "acme"`, then fails on `"summary"`. Branch 2 matches `tenantId = "acme"`, but the returned `params` object contains `{ orgId: "acme", tenantId: "acme" }` (leaking `orgId` from the failed branch!).
-> 3. **Strict Precedence Regardless of Registration Order**:
->    - Whether routes are registered in order `[Wildcard, Param, Static]` or `[Static, Param, Wildcard]`, matching MUST follow deterministic specificity:
+>    - When `GET /v1/acme/billing/summary` is requested, Branch 1 captures `orgId = "acme"` and then fails on `"summary"`. Branch 2 matches `tenantId = "acme"`, but the returned `params` object contains `{ orgId: "acme", tenantId: "acme" }` (leaking `orgId` from the failed branch).
+> 3. **Strict Specificity Precedence Regardless of Registration Order**:
+>    - Whether routes are registered in order `[Wildcard, Param, Static]` or `[Static, Param, Wildcard]`, matching must follow deterministic specificity:
 >      `Static segment > Regex-constrained :param{[0-9]+} > Standard :param > Wildcard *`
 >
-> ### Your Tasks
->
-> 1. **Explore & Trace**: Read `node.ts` (`#children`, `#patterns`, `#params`) and `router.ts` in `src/router/trie-router/` (or `tree.go` in `go-chi/chi`).
-> 2. **Run & Uncomment Tests**: Run `npx vitest run src/router/trie-router` and uncomment the backtracking, parameter isolation, and registration-order tests in `router.test.ts`.
-> 3. **Fix Backtracking, Parameter Isolation & Specificity Precedence**: Implement clean fixes in `node.ts` / `router.ts`.
-> 4. **Verify Edge Cases**: Test URL-encoded path segments (`/users/alice%20smith/posts`), trailing slashes, multi-segment wildcards (`/static/*filepath` capturing `"css/main.css"`), and registration-order permutation tests.
+> Please explore the trie router codebase, re-enable any commented-out tests in the router test suite, fix the backtracking, parameter isolation, and specificity precedence bugs, and verify edge cases (including URL-encoded segments, trailing slashes, and multi-segment wildcards).
 
 ---
 

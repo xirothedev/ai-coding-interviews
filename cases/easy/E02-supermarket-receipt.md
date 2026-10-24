@@ -36,25 +36,20 @@ pytest
 
 > ### Welcome to Your AI-Enabled SWE Coding Interview
 >
-> You are working on a supermarket checkout & receipt calculation engine. You have full access to the AI Assistant and unit test suite.
+> You are working on our supermarket checkout and receipt calculation engine. You have full access to the AI Assistant and the unit test suite.
 >
-> ### Problem Context
+> ### What We Need You to Do
 >
-> 1. **Bug in Multi-Bundle Offers (`ShoppingCart.handle_offers`)**:
->    - Customers buying multiple full bundles (e.g., `10` or `12` items on a `5-for-$7.49` or `2-for-$1.50` offer, potentially added across multiple `add_item_quantity` calls) are being overcharged!
->    - For quantity `Q` on an `N-for-$A` offer (with unit price `P`): `bundles = int(Q) // N` and `remainder = Q - (bundles * N)`. Total cost for that product must be `bundles * A + remainder * P`.
-> 2. **New Feature — Minimum-Spend Cart Coupon (`apply_loyalty_coupon`)**:
->    - Support a cart-level coupon `(threshold_amount, discount_amount)`:
->      - The `threshold_amount` MUST be evaluated against the **net cart subtotal AFTER all product-level offers (`ThreeForTwo`, `FiveForAmount`, `TenPercentDiscount`, etc.) have been deducted**—NOT the gross pre-discount subtotal!
->      - Example: Gross items = `$52.00`, bundle discounts = `-$5.00` → Net subtotal = `$47.00`. A `"$10 off $50+"` coupon does **NOT** apply because `$47.00 < $50.00`!
->      - Final receipt total must be rounded cleanly to 2 decimal places (`round(total, 2)`) and never drop below `0.00`.
+> 1. **Fix the Multi-Bundle Offer Overcharge Bug**:
+>    - Store managers reported that customers buying multiple bundles or odd quantities on bundle offers (such as `2-for-$A` or `5-for-$A`, potentially scanned across multiple separate additions to the cart) are being charged the wrong total.
+>    - For any total quantity `Q` of a product on an `N-for-$A` offer (with unit price `P`): the number of full bundles is `int(Q) // N` and the remaining unbundled units are `Q - (bundles * N)`. The net cost for that product must equal `bundles * A + remainder * P`.
+> 2. **Add Cart-Level Minimum-Spend Loyalty Coupons (`apply_loyalty_coupon`)**:
+>    - We want to support a cart-level loyalty coupon defined by `(threshold_amount, discount_amount)`:
+>      - The `threshold_amount` **must be evaluated against the net cart subtotal AFTER all product-level special offers (`ThreeForTwo`, `TwoForAmount`, `FiveForAmount`, `TenPercentDiscount`) have already been deducted**—never against the gross pre-discount subtotal.
+>      - For example, if gross items total `$52.00` and bundle discounts subtract `$5.00`, the net subtotal is `$47.00`, so a `"$10 off $50+"` coupon must **not** apply (`$47.00 < $50.00`).
+>      - Ensure floating-point representation drift (such as `3 * 19.99 - 9.97` evaluating to `49.99999999999999`) does not block an exact `$50.00` net cart, and ensure the final receipt total is rounded to 2 decimal places and never drops below `0.00`.
 >
-> ### Your Tasks
->
-> 1. **Explore & Trace**: Read `teller.py`, `shopping_cart.py`, `receipt.py`, and `model_objects.py`.
-> 2. **Run & Uncomment Tests**: Run `pytest` and uncomment the multi-bundle and loyalty coupon tests in `tests/test_supermarket.py`.
-> 3. **Fix Multi-Bundle Offers & Implement Net-Threshold Loyalty Coupon**: Fix the bundle math and add loyalty coupon evaluation.
-> 4. **Verify Edge Cases**: Test adding the same product in 3 separate `add_item_quantity` calls (`2 + 2 + 3 = 7` items on `5-for-A`), weighted items (`1.5 kg`), and floating-point boundary (`net_subtotal == 49.99999999999999` vs `50.00`).
+> Please explore the codebase, re-enable any commented-out tests in the test suite, fix the bundle pricing bug, implement the loyalty coupon rule, and add tests covering multi-scan bundles and exact threshold boundaries.
 
 ---
 

@@ -70,14 +70,13 @@ others/meta/puzzle/
 > - Secret = `"aloe"`, Guess = `"ally"` → `[Match.YES, Match.YES, Match.NO, Match.NO]` _(Second `'l'` is `NO` because `'aloe'` has only one `'l'`, already matched at index 1)_
 > - Secret = `"area"`, Guess = `"aaaa"` → `[Match.YES, Match.NO, Match.NO, Match.YES]`
 >
-> ### Your Tasks
+> ### What We Need You to Do
 >
-> 1. **Explore the code**: Figure out how `dictionary.py`, `puzzle.py`, `solver.py`, and `main.py` work.
-> 2. **Execute the code**: Run `main.py` to see current behavior.
-> 3. **Run & Uncomment Unit Tests**: Run `puzzle_test.py` (`test_puzzle.py`) and `solver_test.py` (`test_solver.py`). Look at the unit test files, see that there are commented-out unit tests, and uncomment them.
-> 4. **Fix the Existing Bugs**: Fix `dictionary.py` and `puzzle.py` to pass all unit tests in `puzzle_test.py` (`test_puzzle.py`).
-> 5. **Implement the `Solver`**: Implement `Solver` in `solver.py` to play the game and beat the puzzle across both `get_test_dictionary()` and `get_prod_dictionary()` (`up_to_six_letters.txt`), averaging `<= 5.0` guesses per word and completing 100 production games in `< 2.0 seconds`.
-> 6. **Use the AI Assistant** as much or as little as you would like, and be ready to explain why your solution is correct.
+> 1. **Explore & Run the Game**: Explore the repository to see how the dictionary loader, puzzle engine, solver, and entrypoint runner fit together, and run the entrypoint script to see its current behavior.
+> 2. **Run & Re-enable Unit Tests**: Run the existing unit test suites for the puzzle and solver, find any commented-out test cases, and re-enable them.
+> 3. **Fix Existing Dictionary & Hint Bugs**: Fix the existing bugs in dictionary loading and duplicate-letter hint evaluation so all puzzle unit tests pass.
+> 4. **Implement the Automated `Solver`**: Implement `Solver` so it plays the game and reliably solves puzzles across both `get_test_dictionary()` and the full 40,000-word `get_prod_dictionary()` (`up_to_six_letters.txt`), averaging `<= 5.0` guesses per word and completing 100 production games in `< 2.0 seconds`.
+> 5. **Use the AI Assistant** as much or as little as you would like, and be ready to explain why your solution is correct.
 
 ---
 

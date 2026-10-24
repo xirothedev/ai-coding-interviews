@@ -37,26 +37,28 @@ In `tea.go` and `commands.go`:
 
 ## 2. Candidate Instructions (Copy-Paste into CoderPad / IDE)
 
-> ### Welcome to Your AI-Enabled SWE Coding Interview
+> ### Production Incident & Feature Request: TUI Shutdown Deadlocks, Command Sequencing & Bounded Concurrency
 >
-> You are working on `bubbletea`, a Go TUI framework based on The Elm Architecture (`Init -> Update -> View`). You may use the AI Assistant freely, and `go test -race ./...` is available in your terminal.
+> Developers building interactive terminal applications on our Elm-Architecture TUI runtime (`Init -> Update -> View`) have reported two concurrency bugs in production along with a feature request for bounded command concurrency:
 >
-> ### Problem Context
+> 1. **Shutdown Hang & Goroutine Leak Under Command Load**:
+>    - When a model's `Update` method dispatches a large batch of 50+ slow background commands (`Batch(...)`) and the user quits the program (`Quit`) before those commands finish, `Program.Run()` hangs indefinitely instead of exiting cleanly.
+>    - Shutdown must never panic (for example, due to concurrent producers sending on a closed channel) and must not leave leaked goroutines blocked forever trying to deliver messages after the main event loop has exited.
+> 2. **Out-of-Order Execution in `Sequence`**:
+>    - `Sequence(cmd1, cmd2, cmd3)` is required to execute `cmd1`, deliver its resulting message (or recursively finish any nested batch/sequence returned by `cmd1`), and only start `cmd2` after `cmd1` has completed. Currently, sequenced commands execute out of order, and fixing this must not block or deadlock the main command/event loop when `Update` emits new commands in response.
+> 3. **New API — `BatchLimit(limit int, cmds ...Cmd)`**:
+>    - Applications firing hundreds of network or disk commands in a single `Batch` are exhausting file descriptors.
+>    - Implement and export `BatchLimit(limit int, cmds ...Cmd) Cmd`:
+>      - Filters out `nil` commands (returning `nil` if no non-nil commands remain, or the single command directly if only one remains).
+>      - Executes at most `limit` commands concurrently at any given time (if `limit <= 0`, clamp to `1` so execution never deadlocks).
+>      - If the program shuts down (`Quit` or context cancellation) while commands are queued waiting for a concurrency slot, any unstarted commands in `BatchLimit` must abort immediately without executing.
 >
-> Production CLI tools built on this runtime are experiencing two concurrency bugs:
+> ### Acceptance Criteria
 >
-> 1. **Shutdown Deadlock & Goroutine Leak**: When a model's `Update()` returns a `tea.Batch(...)` of 50+ slow commands and the user presses `q` (triggering `tea.Quit`), `Program.Run()` hangs indefinitely waiting for background command goroutines that are blocked trying to send their result into `p.msgs`.
-> 2. **Broken `tea.Sequence` Ordering**: `tea.Sequence(cmd1, cmd2, cmd3)` is supposed to execute `cmd1`, deliver its resulting `Msg` (or recursively execute nested `Batch`/`Sequence` commands), and only start `cmd2` after `cmd1` finishes. Currently, messages arrive out of order.
-> 3. **New Feature — `tea.BatchLimit(limit int, cmds ...Cmd)`**: Users firing hundreds of HTTP/disk `Cmd` functions in a single `Batch` overwhelm file descriptors. Implement `BatchLimit(limit int, cmds ...Cmd)` in `commands.go` and `tea.go`:
->    - Executes at most `limit` non-nil commands concurrently (if `limit <= 0`, treat as `limit = 1`).
->    - If the program context (`p.ctx`) is cancelled (e.g., via `Quit` or `Kill`), any queued commands in `BatchLimit` that have not started yet must be skipped immediately without executing.
->
-> ### Your Tasks
->
-> 1. **Explore & Trace**: Read `tea.go` (`Run`, `eventLoop`, `handleCommands`, `Send`) and `commands.go` (`Batch`, `Sequence`).
-> 2. **Run Race Detector & Uncomment Tests**: Uncomment the disabled tests in `tea_test.go` and `commands_test.go`, then run `go test -race ./...`.
-> 3. **Fix Shutdown Deadlock & `Sequence` Ordering**: Ensure `Program.Run()` exits cleanly with zero leaked goroutines or panics under concurrent command load, and restore strict sequential execution for `tea.Sequence`.
-> 4. **Implement `BatchLimit` & Stress Test**: Implement `tea.BatchLimit(limit int, cmds ...Cmd)` and verify that `go test -race -count=10 ./...` passes in `< 5 seconds`.
+> 1. Explore the codebase to map how the program lifecycle, event loop, message channels, and command runners interact, and uncomment any disabled concurrency and ordering tests.
+> 2. Fix the shutdown deadlock and restore strict sequential execution for `Sequence` without introducing channel panics or AB-BA deadlocks between command producers and the event loop.
+> 3. Implement `BatchLimit(limit int, cmds ...Cmd)` respecting the concurrency cap, `limit <= 0` clamping, `nil` command filtering, and immediate cancellation on shutdown.
+> 4. Verify your solution under the Go race detector (`go test -race -count=10 ./...`), ensuring the full suite completes in `< 5 seconds` with zero data races or goroutine leaks.
 
 ---
 

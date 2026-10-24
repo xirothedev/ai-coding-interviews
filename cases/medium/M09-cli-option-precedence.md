@@ -36,9 +36,9 @@ pytest tests/test_options.py
 
 > ### Welcome to Your AI-Enabled SWE Coding Interview
 >
-> You are working on the parameter and option resolution engine of a CLI framework (`pallets/click` / `commander.js`). You have full access to the AI Assistant and test runner.
+> You are working on the parameter and option resolution engine of our CLI framework. You have full access to the AI Assistant and the test runner.
 >
-> ### Problem Context
+> ### What We Need You to Do
 >
 > CLI options can receive values from **4 distinct sources**, ordered from highest to lowest priority:
 > `1. COMMANDLINE (Explicit CLI flag) > 2. ENVIRONMENT (Env var) > 3. DEFAULT_MAP (Config file dictionary) > 4. DEFAULT (Option definition default)`
@@ -46,21 +46,16 @@ pytest tests/test_options.py
 > Users have reported three critical bugs:
 >
 > 1. **Falsy Explicit CLI Values Ignored**:
->    - When `APP_RETRIES=3` is set in the environment and the user runs `cli --retries 0`, the resolved value is `3` instead of `0`!
->    - Similarly, when `APP_SSL=true` is in the environment and the user runs `cli --no-ssl` (which passes `False`), `ssl` resolves to `True`!
+>    - When `APP_RETRIES=3` is set in the environment and the user runs `cli --retries 0`, the resolved value is `3` instead of `0`.
+>    - Similarly, when `APP_SSL=true` is in the environment and the user runs `cli --no-ssl` (which passes `False`), `ssl` resolves to `True`.
 >    - Passing `--tag ""` (empty string) on the CLI falls back to `DEFAULT` instead of keeping `""`.
 > 2. **Environment Variable Boolean & Multiple-Value Parsing**:
->    - Setting `APP_SSL=false`, `APP_SSL=0`, or `APP_SSL=no` in `os.environ` must resolve to `False` (never `bool("false") == True`!), while `APP_SSL=""` (empty env var) should be treated as unset unless the option type is `STRING` with explicit empty support.
+>    - Setting `APP_SSL=false`, `APP_SSL=0`, or `APP_SSL=no` in the environment must resolve to `False` (never `bool("false") == True`), while `APP_SSL=""` (empty env var) should be treated as unset unless the option type is `STRING` with explicit empty support.
 >    - For options with `multiple=True` and `envvar="APP_TAGS"`, `APP_TAGS="alpha,beta,gamma"` (or `os.pathsep` / custom `envvar_sep`) must split cleanly into `("alpha", "beta", "gamma")` without turning `APP_TAGS=""` into `("",)`.
-> 3. **Source Attribution API (`ctx.get_parameter_source(name)`)**:
->    - Ensure `ctx.get_parameter_source(param_name)` accurately returns `ParameterSource.COMMANDLINE`, `ParameterSource.ENVIRONMENT`, `ParameterSource.DEFAULT_MAP`, or `ParameterSource.DEFAULT` for every resolved parameter—even when the CLI value equals the default value (e.g., default is `0` and user explicitly passed `--retries 0` on the CLI → source MUST be `COMMANDLINE`, not `DEFAULT`!).
+> 3. **Accurate Source Attribution (`ctx.get_parameter_source(name)`)**:
+>    - Ensure `ctx.get_parameter_source(param_name)` accurately returns `ParameterSource.COMMANDLINE`, `ParameterSource.ENVIRONMENT`, `ParameterSource.DEFAULT_MAP`, or `ParameterSource.DEFAULT` for every resolved parameter—even when the explicit CLI value happens to equal the default value (e.g., default is `0` and the user explicitly passed `--retries 0` on the CLI → source must be `COMMANDLINE`, not `DEFAULT`).
 >
-> ### Your Tasks
->
-> 1. **Explore & Trace**: Inspect `Parameter.consume_value()`, `Option.consume_value()`, `Option.value_from_envvar()`, and the `UNSET` sentinel in `src/click/core.py`.
-> 2. **Run & Uncomment Tests**: Run `pytest tests/test_options.py tests/test_context.py` and uncomment the falsy-override and `ParameterSource` tests.
-> 3. **Fix Precedence, Env-Var Conversion & Source Tracking**: Fix all three issues cleanly.
-> 4. **Verify Edge Cases**: Test `--retries 0` when default is `0` (`source == COMMANDLINE`), `APP_FLAG=false`, `multiple=True` with empty env var, and nested subcommands (`cli --verbose subcmd`).
+> Please explore how parameters and options are consumed in the codebase, re-enable any commented-out option/context tests, fix all three issues, and verify edge cases with unit tests.
 
 ---
 

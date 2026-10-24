@@ -38,28 +38,23 @@ pnpm install && pnpm --filter @tanstack/query-core test
 >
 > You are working inside `@tanstack/query-core`. You have full access to the AI Assistant and the Vitest test runner (`pnpm --filter @tanstack/query-core test`).
 >
-> ### Problem Context
+> ### What We Need You to Do
 >
-> 1. **Shared `AbortSignal` Deduplication Bug (`query.ts`)**:
+> 1. **Shared `AbortSignal` Deduplication Bug**:
 >    - Suppose Component A mounts and triggers an async fetch for `['projects']` that consumes `signal` (`fetch('/api/projects', { signal })`).
 >    - 10ms later, Component B mounts and deduplicates onto the exact same in-flight fetch.
->    - 20ms later, Component A unmounts!
->    - **Bug**: Unmounting Component A aborts the `AbortController`, causing Component B's request to fail with `AbortError` (or get stuck in `pending` state)!
->    - **Requirement**: An in-flight `Query` fetch should ONLY abort its `AbortSignal` on observer removal if **all** observers requiring that fetch have unmounted (or if explicit `queryClient.cancelQueries()` was called)—and only if `signal` was actually accessed by the `queryFn`!
+>    - 20ms later, Component A unmounts.
+>    - **Bug**: Unmounting Component A aborts the `AbortController`, causing Component B's request to fail with `AbortError` (or get stuck in `pending` state).
+>    - **Requirement**: An in-flight `Query` fetch must **only** abort its `AbortSignal` on observer removal if **all** observers requiring that fetch have unmounted (or if explicit `queryClient.cancelQueries()` was called)—and only if `signal` was actually accessed by the `queryFn`.
 > 2. **Overlapping Optimistic Mutations Rollback Race**:
 >    - Suppose base server state for `['counter']` is `10`.
 >    - **Mutation 1 (`+1`)** starts at `t=0ms` → optimistic state becomes `11`.
 >    - **Mutation 2 (`+5`)** starts at `t=10ms` → optimistic state becomes `16`.
 >    - **Mutation 1 FAILS** at `t=30ms`, while **Mutation 2 SUCCEEDS** at `t=50ms`.
->    - **Bug**: If Mutation 1 rolls back by restoring its `t=0ms` snapshot (`10`), or if Mutation 2 rolls back by restoring its `t=10ms` snapshot (`11`, which included failed Mutation 1!), the cache ends up with **corrupted state**!
+>    - **Bug**: If Mutation 1 rolls back by restoring its `t=0ms` snapshot (`10`), or if Mutation 2 rolls back by restoring its `t=10ms` snapshot (`11`, which included failed Mutation 1), the cache ends up with **corrupted state**.
 >    - **Requirement**: Implement deterministic optimistic mutation layering where rolling back any failed mutation `M_i` recomputes the optimistic state from the **last known server state + remaining active/succeeded optimistic updaters** in causal order, and protects against stale background `fetch` responses started _before_ the mutations began.
 >
-> ### Your Tasks
->
-> 1. **Explore & Trace**: Inspect `Query.fetch()`, `removeObserver()`, and `#abortSignalConsumed` in `packages/query-core/src/query.ts`.
-> 2. **Run & Uncomment Tests**: Run `pnpm --filter @tanstack/query-core test` and uncomment the multi-observer abort and overlapping optimistic mutation tests.
-> 3. **Fix Multi-Observer Abort Lifecycle & Optimistic State Reducer**: Implement both fixes cleanly in `packages/query-core`.
-> 4. **Verify Out-of-Order Races**: Test 3 overlapping mutations `(M1: fail, M2: succeed, M3: fail)` and a background `fetch` initiated at `t = -5ms` that resolves at `t = 40ms`.
+> Please explore `@tanstack/query-core`, re-enable any commented-out multi-observer abort and overlapping optimistic mutation tests, fix both issues, and verify out-of-order settlement races.
 
 ---
 
