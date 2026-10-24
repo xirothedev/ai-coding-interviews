@@ -18,6 +18,8 @@
 
 ### Clean-Room Workspace Provisioning
 
+### Seeded Defects to Inject Before the Session
+
 Choose a language implementation (`server/python/`, `server/node/`, `server/go/`, `server/java/`, `server/dotnet/`) from [`stripe-samples/subscription-use-cases`](https://github.com/stripe-samples/subscription-use-cases) (or [`getlago/lago`](https://github.com/getlago/lago) for Go / [`killbill/killbill`](https://github.com/killbill/killbill) for Java) and apply the "AI-Slop PR" commit containing the 4 interlocking defects below:
 
 1. **Bug 1 (Tautological / Over-Mocked Unit Tests)**: The previous developer asked an LLM to write unit tests; 3 of the tests mock out the internal calculation helper or only assert `assert report is not None` / `assert "$" in statement`, giving a false `100% PASS` green suite!

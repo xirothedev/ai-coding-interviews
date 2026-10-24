@@ -114,3 +114,6 @@ pnpm install && pnpm --filter @tanstack/query-core test
 
 1. **Q**: _"Walk me through what happens with naive snapshot rollback if `M1 (+1)` starts at `t=0`, `M2 (+5)` starts at `t=10`, `M1` fails at `t=20`, and `M2` fails at `t=30`."_  
    **Expected Answer**: At `t=10`, `M2` captures `previous = 11` (which includes `M1`'s unconfirmed `+1`). At `t=20`, `M1` fails and sets cache to `10`. At `t=30`, `M2` fails and restores its captured `previous = 11`—leaving the cache at `11` even though _both_ mutations failed!
+
+2. **Q**: _"Why must rollback recompute from remaining active updaters instead of restoring a snapshot?"_
+   **Expected Answer**: Restoring a stale snapshot clobbers concurrent mutations that succeeded.

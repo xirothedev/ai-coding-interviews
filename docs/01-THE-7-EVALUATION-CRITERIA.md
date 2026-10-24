@@ -1,6 +1,6 @@
 # The 7 Evaluation Criteria of AI-Enabled Coding Interviews
 
-In traditional algorithmic interviews (LeetCode-style), interviewers evaluated syntax recall and memorized data-structure patterns on a blank file. In modern **AI-Enabled SWE Interviews** (used by companies like Meta, Canva, and Stripe), candidates have full access to frontier LLMs (Claude, GPT, Gemini) inside a multi-file codebase.
+In traditional algorithmic interviews (LeetCode-style), interviewers evaluated syntax recall and memorized data-structure patterns on a blank file. In modern **AI-Enabled SWE Interviews** (used by companies such as Meta, Canva, and Stripe), candidates have full access to frontier LLMs (Claude, GPT, Gemini) inside a multi-file codebase.
 
 When AI can generate syntax in seconds, **speed of typing is no longer the signal—technical judgment and control over the AI are.**
 
@@ -64,7 +64,7 @@ flowchart TD
 
 ---
 
-### 4. Unfamiliar Codebase Reading Speed (_How Fast You Read Others' Code_)
+### 4. Code Reading Speed (_How Fast You Read Others' Code_)
 
 > **Core Question:** How quickly can the engineer orient themselves in a 5-to-15 file repository written by someone else, tracing entry points, module dependencies, and test harnesses?
 

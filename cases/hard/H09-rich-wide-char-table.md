@@ -130,3 +130,6 @@ pytest tests/test_cells.py tests/test_text.py
 
 1. **Q**: _"Why can we use standard binary search (`bisect`) on `line_ranges` for each `Span`, whereas we CANNOT use simple binary search on `spans` sorted by `span.start` for each `line`?"_  
    **Expected Answer**: `line_ranges` partition `[0, N]` into strictly disjoint, non-overlapping intervals (`end[i] == start[i+1]`), so both `start` and `end` arrays are monotonically increasing. `spans`, however, can overlap and nest arbitrarily (a span starting at `0` can end at `10,000`, while a span starting at `5` ends at `10`), so sorting `spans` by `start` does not sort them by `end`!
+
+2. **Q**: _"Why does `max_width=1` risk an infinite loop on 2-cell characters?"_
+   **Expected Answer**: A 2-cell char cannot fit in width 1; the chopper must advance by cell width, not by one.

@@ -107,3 +107,6 @@ pytest tests/test_validators.py
 
 1. **Q**: _"From first principles, why should `mode='before'` validators run `Child → Parent`, while `mode='after'` validators run `Parent → Child`?"_  
    **Expected Answer**: Before core field parsing (`mode='before'`), the input is raw untyped data (e.g., a `dict`); `Child` may normalize new subclass-specific raw keys into the format `Parent` expects. After core validation (`mode='after'`), `self` is an initialized instance; `Parent`'s invariants must be verified first so `Child`'s `after` validator can safely assume `Parent` fields are valid.
+
+2. **Q**: _"Why does reversing MRO globally break `mode='before'` validators?"_
+   **Expected Answer**: `before` validators must run base-to-subclass; reversing them inverts the required order.

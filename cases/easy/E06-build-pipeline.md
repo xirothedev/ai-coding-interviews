@@ -41,9 +41,9 @@ pytest
 > ### What We Need You to Do
 >
 > 1. **Fix the Test Stage Status Check**:
->    - When a project has automated tests (`project.has_tests()`), running the test stage must return `"success"` for the pipeline to proceed. Any other return status (`"failure"`, `"error"`, or an empty/unexpected string) must mark the test stage as failed, log `"Tests failed"`, and **skip deployment completely**.
-> 2. **Add a Deployment Retry Policy (`max_deploy_retries: int = 0`)**:
->    - Support an optional `max_deploy_retries: int = 0` parameter on the pipeline (or its `run` method):
+>    - When a project has automated tests, running the test stage must return `"success"` for the pipeline to proceed. Any other return status (`"failure"`, `"error"`, or an empty/unexpected string) must mark the test stage as failed, log `"Tests failed"`, and **skip deployment completely**.
+> 2. **Add a Deployment Retry Policy**:
+>    - Support an optional retry count on the pipeline (or its `run` method):
 >      - When the test stage passes, attempt deployment (`project.deploy()`), which returns `"success"` on success and any other string on failure.
 >      - If deployment fails and `max_deploy_retries > 0`, retry `project.deploy()` up to `max_deploy_retries` additional times (up to `1 + max_deploy_retries` total attempts), stopping immediately once an attempt returns `"success"`.
 >      - **Single Summary Email Invariant**: No matter how many retry attempts run, the summary emailer (`emailer.send(...)`) must be called **at most once per pipeline run** (at the very end of the pipeline, if email summaries are enabled in config), reporting the final outcome (`"Deployment completed successfully"` if any retry succeeded, or `"Deployment failed"` if all retries failed).
@@ -101,3 +101,6 @@ pytest
 
 1. **Q**: _"Why is asserting `'Deployment completed successfully' in emailer.messages` insufficient in a unit test for retry notifications?"_  
    **Expected Answer**: Because if the code sent `['Deployment failed', 'Deployment failed', 'Deployment completed successfully']`, an `in` assertion would still pass! You must assert `emailer.messages == ['Deployment completed successfully']` (exact list equality / call count = 1).
+
+2. **Q**: _"Why must `deploy()` not be called when tests fail or return an unexpected status?"_
+   **Expected Answer**: Deploying untested or failed code ships broken builds; the pipeline must gate on a strict `"success"`.

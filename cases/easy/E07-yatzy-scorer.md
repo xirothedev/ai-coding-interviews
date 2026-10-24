@@ -44,8 +44,8 @@ pytest
 >    - In strict Scandinavian Yatzy:
 >      - **`two_pair`**: Requires two **distinct** pairs of different die faces (e.g., `[3, 3, 5, 5, 1]` → `3 + 3 + 5 + 5 = 16`). Four of the same face (`[3, 3, 3, 3, 1]`) is **not** two pairs and must score **`0`**.
 >      - **`fullHouse`**: Requires `3` of one face and `2` of a **different** face (e.g., `[2, 2, 3, 3, 3]` → `13`). Five of the same face (`[4, 4, 4, 4, 4]`) is **not** a full house and must score **`0`**.
-> 2. **Implement Wild Joker Dice Scoring (`score_with_joker(dice, category_fn)`)**:
->    - Add `score_with_joker(dice: list[int], category_fn: Callable)`:
+> 2. **Implement Wild Joker Dice Scoring**:
+>    - Add a joker-aware scoring entry point that takes a dice list and a category function:
 >      - Each die in the 5-dice roll is either a standard face (`1..6`) or **`0` (a Wild Joker)**.
 >      - Each `0` Joker independently takes whatever standard face value (`1..6`) **maximizes** the score of `category_fn` for that 5-dice roll:
 >        - `score_with_joker([0, 2, 3, 4, 5], Yatzy.smallStraight)` → Joker becomes `1` → scores `15`.
@@ -99,3 +99,6 @@ pytest
 
 1. **Q**: _"What is the worst-case number of evaluations of `category_fn` in your `score_with_joker` when a roll has `k` jokers, and why is exhaustive search the right engineering trade-off here?"_  
    **Expected Answer**: $6^k$ evaluations, which is at most $6^2 = 36$ for 2 jokers and $6^5 = 7,776$ if all 5 dice are jokers (`< 2ms` in Python). It decouples joker expansion from category rules, guaranteeing zero bugs if new categories are added later.
+
+2. **Q**: _"Why is exact combinatorial delegation safer than greedy joker heuristics for `fullHouse`?"_
+   **Expected Answer**: Greedy picks can misclassify when the joker could complete two different categories; exhaustive delegation guarantees the legal max.

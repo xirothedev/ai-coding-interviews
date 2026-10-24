@@ -109,3 +109,6 @@ pytest tests/test_options.py
 
 1. **Q**: _"In Python, why is even `if value is not None:` sometimes insufficient as a sentinel check in a configuration parser?"_  
    **Expected Answer**: Because a user or `default_map` might explicitly pass `None` to unset/disable an optional setting! Using a private singleton sentinel `_UNSET = object()` and checking `if value is not _UNSET:` distinguishes "not provided" from an explicit `None`, `False`, `0`, or `""`.
+
+2. **Q**: _"Why must CLI values be checked for presence rather than truthiness?"_
+   **Expected Answer**: Falsy values like `0`, `False`, or `""` are valid inputs and must not fall through to env/default.

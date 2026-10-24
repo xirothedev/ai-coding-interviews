@@ -56,7 +56,7 @@ others/meta/puzzle/
 >
 > I've written a new word game, and it works like this:
 >
-> - `Puzzle` has a secret word chosen from a dictionary (`up_to_six_letters.txt`, containing words of **1 to 6 letters**).
+> - `Puzzle` has a secret word chosen from a bundled dictionary containing words of **1 to 6 letters**.
 > - The player needs to guess the secret word, ideally in as few guesses as possible.
 > - When you guess a word via `Puzzle.guess(word)`, you get a list of `Match` statuses for each letter in your guess:
 >   - `Match.YES` if the secret word has that exact letter in that exact spot.
@@ -75,7 +75,7 @@ others/meta/puzzle/
 > 1. **Explore & Run the Game**: Explore the repository to see how the dictionary loader, puzzle engine, solver, and entrypoint runner fit together, and run the entrypoint script to see its current behavior.
 > 2. **Run & Re-enable Unit Tests**: Run the existing unit test suites for the puzzle and solver, find any commented-out test cases, and re-enable them.
 > 3. **Fix Existing Dictionary & Hint Bugs**: Fix the existing bugs in dictionary loading and duplicate-letter hint evaluation so all puzzle unit tests pass.
-> 4. **Implement the Automated `Solver`**: Implement `Solver` so it plays the game and reliably solves puzzles across both `get_test_dictionary()` and the full 40,000-word `get_prod_dictionary()` (`up_to_six_letters.txt`), averaging `<= 5.0` guesses per word and completing 100 production games in `< 2.0 seconds`.
+> 4. **Implement the Automated `Solver`**: Implement `Solver` so it plays the game and reliably solves puzzles across both the small test dictionary and the full 40,000-word production dictionary, averaging `<= 5.0` guesses per word and completing 100 production games in `< 2.0 seconds`.
 > 5. **Use the AI Assistant** as much or as little as you would like, and be ready to explain why your solution is correct.
 
 ---

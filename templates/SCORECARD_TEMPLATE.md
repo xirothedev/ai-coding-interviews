@@ -37,9 +37,9 @@ _Standard passing bar: Completing Checkpoints 1–3 cleanly, plus defending edge
 |   #   | Evaluation Criterion                               | Score (1–4) | Observed Evidence (Prompts Used, Diffs Rejected, Tests Run) |
 | :---: | :------------------------------------------------- | :---------: | :---------------------------------------------------------- |
 | **1** | **Problem Decomposition** (_Divide & Conquer_)     |    `/ 4`    |                                                             |
-| **2** | **Prompt Context & Precision**                     |    `/ 4`    |                                                             |
+| **2** | **Prompt Context Quality**                         |    `/ 4`    |                                                             |
 | **3** | **AI Skepticism & Diff Review** (_No Blind Trust_) |    `/ 4`    |                                                             |
-| **4** | **Unfamiliar Codebase Navigation Speed**           |    `/ 4`    |                                                             |
+| **4** | **Code Reading Speed**                             |    `/ 4`    |                                                             |
 | **5** | **Bug & Edge-Case Discovery**                      |    `/ 4`    |                                                             |
 | **6** | **Verification & Testing Before Claiming Done**    |    `/ 4`    |                                                             |
 | **7** | **Explaining Why the Solution Is Correct**         |    `/ 4`    |                                                             |

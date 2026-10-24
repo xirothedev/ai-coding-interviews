@@ -84,7 +84,7 @@ _(Or use [`isaacs/node-lru-cache`](https://github.com/isaacs/node-lru-cache) `sr
      - Otherwise, create `call := &inflightCall{done: make(chan struct{})}`, store `c.inflight[key] = call`, and **`c.mu.Unlock()` BEFORE calling `loader()`**!
   2. Execute `loader()` **outside** `c.mu.Lock()` (with `defer` cleanup that re-acquires `c.mu.Lock()`, stores result if `err == nil`, deletes `c.inflight[key]`, and closes `call.done` even if `loader()` panics!).
 
-### Trap 2: In TypeScript/JS,Forgetting `.finally()` Cleanup on Rejected In-Flight Promises
+### Trap 2: In TypeScript/JS, Forgetting `.finally()` Cleanup on Rejected In-Flight Promises
 
 - **What Naive AI Writes (TypeScript)**:
   ```ts
@@ -128,3 +128,6 @@ _(Or use [`isaacs/node-lru-cache`](https://github.com/isaacs/node-lru-cache) `sr
 
 1. **Q**: _"What happens if `loaderFn("user:1")` internally calls `cache.Get("config:timeout")`, and your `GetOrLoad` holds `c.mu.Lock()` while calling `loaderFn`?"_  
    **Expected Answer**: In Go (or Python `threading.Lock` / Rust `Mutex`), mutexes are non-reentrant. The goroutine will block forever trying to acquire `c.mu.Lock()` inside `cache.Get` while already holding it in `GetOrLoad`—an instant self-deadlock!
+
+2. **Q**: _"Why must the global lock be released before calling `loaderFn`?"_
+   **Expected Answer**: Holding it serializes all loaders and turns a slow loader into a system-wide stall.

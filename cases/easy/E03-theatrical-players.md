@@ -47,8 +47,8 @@ pytest
 >    - Base cost for `"history"`: `$350.00` (`35000` cents). If `audience > 25`, add `$15.00` (`1500` cents) for each attendee over `25`.
 >    - Base volume credits for `"history"`: `max(audience - 25, 0) + floor(audience / 10)`.
 >    - **Cross-Play Repertoire Bonus**: If the invoice contains **at least one `"tragedy"` play AND at least one `"history"` play** (regardless of which one appears first in the invoice's performance list), every `"history"` performance on that invoice earns **double (`2x`)** its volume credits.
-> 3. **Add an HTML Statement Renderer (`html_statement(invoice, plays)`)**:
->    - Implement `html_statement(invoice, plays)` returning an HTML representation with the exact same figures as the plain-text `statement(invoice, plays)`, refactored cleanly so pricing and credit formulas are never duplicated across the two output formats.
+> 3. **Add an HTML Statement Renderer**:
+>    - Implement an HTML statement function returning an HTML representation with the exact same figures as the plain-text `statement(invoice, plays)`, refactored cleanly so pricing and credit formulas are never duplicated across the two output formats.
 >
 > Please explore the codebase, re-enable any disabled tests in the test suite, fix the boundary bug, implement `"history"` plays and `html_statement`, and verify that the repertoire bonus works regardless of performance order.
 
@@ -111,3 +111,6 @@ pytest
 
 1. **Q**: _"If the business changes comedy surcharge from `> 20` to `> 25` tomorrow, how many places in your code need to change so both text and HTML statements stay in sync?"_  
    **Expected Answer**: Exactly 1 place (`compute_statement_data`), because calculation is completely decoupled from text/HTML formatting.
+
+2. **Q**: _"If `html_statement` duplicates the pricing formula, what regression risk appears when a new play type is added?"_
+   **Expected Answer**: The two renderers drift; one output shows stale prices. A single shared calculation prevents this.

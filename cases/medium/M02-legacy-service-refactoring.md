@@ -114,3 +114,6 @@ The repository is a multi-module Gradle build with two modules (`:monolith` and 
 
 1. **Q**: _"If a batch has 5 graphs and graph #4 throws an exception when `failFast = true`, how many paths have been written to `PathsService` in your implementation?"_  
    **Expected Answer**: `0` paths. Because `runForAll(true)` computes and stages all shortest paths in memory before invoking `PathsService.saveNew(...)`, graphs #1–#3 are never partially persisted.
+
+2. **Q**: _"Why is a mutable `source` field on `Dijkstra` a correctness hazard?"_
+   **Expected Answer**: It leaks state across calls and makes results depend on call order.

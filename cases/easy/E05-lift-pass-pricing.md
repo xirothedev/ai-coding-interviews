@@ -48,7 +48,7 @@ PYTHONPATH=src pytest
 >      - Seniors (`age > 64`): `1jour` is `75%` of the base price (`ceil(base * 0.75)`), while `night` is `40%` of `$19` (`ceil(19 * 0.4) = $8`).
 >      - On non-holiday Mondays, `1jour` passes for ages `>= 15` receive a `35%` Monday discount (`* 0.65`).
 >    - Right now, exact boundary ages (`6` and `64`) are being misclassified.
-> 2. **Add Group Checkout Pricing (`calculate_group_price(pass_type, base_price, ages, date_str, holidays)`)**:
+> 2. **Add Group Checkout Pricing**:
 >    - We need a pure pricing function that computes the total cost for a group of skiers given their list of `ages`.
 >    - **Group Discount Rule**: When a group has **`4 or more PAYING skiers`** (meaning skiers whose individual ticket price before the group discount is **strictly greater than `0`**—so free children `< 6` on `1jour` and free youth `< 15` on `night` passes do **not** count toward the `4`-skier threshold), apply an additional `10%` group discount (`* 0.90`) on non-holiday dates, rounding each paying skier's ticket with `ceil()`.
 >    - On holidays, both the Monday `35%` discount and the `10%` group discount are blacked out (disabled).
@@ -97,3 +97,6 @@ PYTHONPATH=src pytest
 
 1. **Q**: _"In a group of three 30-year-olds and one 10-year-old buying a `'night'` pass, how many paying skiers are there, and does the group discount apply?"_  
    **Expected Answer**: Only `3` paying skiers, because youth (`age < 15`) are free (`$0`) for `'night'` passes. Therefore, the `4+` paying skiers threshold is not met and no group discount applies.
+
+2. **Q**: _"Why must free children under 6 be excluded from the group-discount count?"_
+   **Expected Answer**: Otherwise a group of 3 paying adults plus free toddlers could wrongly trigger the 4+ paying discount.

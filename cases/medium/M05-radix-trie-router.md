@@ -28,7 +28,7 @@ npx vitest run src/router/trie-router
 ### Seeded Defects to Inject Before the Session
 
 1. **Bug 1 (No Backtracking from Failed Static Prefix in `node.ts` / `tree.go`)**: In `Node.search()` (`src/router/trie-router/node.ts`, which traverses `#children`, `#patterns`, and `#params`), seed a greedy return `if (staticChild) { return search(staticChild, ...); }` without falling back to `#patterns` (`:param` / `*` wildcard) when `staticChild`'s subtree fails to match the remaining URL segments!
-   - Example: Routes registered are `GET /users/profile/settings` and `GET /users/:id/posts`. Requesting `GET /users/profile/posts` enters static child `"profile"`, fails to find `"posts"`, and returns `404` instead of backtracking to `:id = "profile"`!
+   - Example: Routes registered are `GET /users/admin/audit-log` and `GET /users/:username/followers`. Requesting `GET /users/admin/followers` enters static child `"admin"`, fails to find `"followers"`, and returns `404` instead of backtracking to `:username = "admin"`!
 2. **Bug 2 (Polluted `#params` / `params` Dictionary Across Backtracked Branches)**: Mutate a shared `params: Record<string, string>` object across candidate branches in `node.ts` so that a parameter captured in a higher-priority branch that fails at a deeper segment remains inside `params` when a fallback branch succeeds!
 
 ---
@@ -119,3 +119,6 @@ npx vitest run src/router/trie-router
 
 1. **Q**: _"Why can't a URL router with `:param` and `*` wildcards be a purely deterministic state machine without backtracking (unless compiled into a DFA)?"_  
    **Expected Answer**: Because at segment `"admin"` in `/users/admin/followers`, the router cannot know whether `"admin"` is the static route `/users/admin/audit-log` or the parameter `:username = "admin"` in `/users/:username/followers` until it inspects the _next_ segment (`"followers"`).
+
+2. **Q**: _"Why must `params` be snapshotted or rolled back on backtrack?"_
+   **Expected Answer**: Otherwise a parameter captured in a failed branch leaks into the successful branch.

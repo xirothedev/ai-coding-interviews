@@ -43,7 +43,7 @@ pytest
 > 1. **Fix the Multi-Bundle Offer Overcharge Bug**:
 >    - Store managers reported that customers buying multiple bundles or odd quantities on bundle offers (such as `2-for-$A` or `5-for-$A`, potentially scanned across multiple separate additions to the cart) are being charged the wrong total.
 >    - For any total quantity `Q` of a product on an `N-for-$A` offer (with unit price `P`): the number of full bundles is `int(Q) // N` and the remaining unbundled units are `Q - (bundles * N)`. The net cost for that product must equal `bundles * A + remainder * P`.
-> 2. **Add Cart-Level Minimum-Spend Loyalty Coupons (`apply_loyalty_coupon`)**:
+> 2. **Add Cart-Level Minimum-Spend Loyalty Coupons**:
 >    - We want to support a cart-level loyalty coupon defined by `(threshold_amount, discount_amount)`:
 >      - The `threshold_amount` **must be evaluated against the net cart subtotal AFTER all product-level special offers (`ThreeForTwo`, `TwoForAmount`, `FiveForAmount`, `TenPercentDiscount`) have already been deducted**—never against the gross pre-discount subtotal.
 >      - For example, if gross items total `$52.00` and bundle discounts subtract `$5.00`, the net subtotal is `$47.00`, so a `"$10 off $50+"` coupon must **not** apply (`$47.00 < $50.00`).
@@ -97,3 +97,6 @@ pytest
 
 1. **Q**: _"Why does `ShoppingCart` maintain both `_items` (a list) and `_product_quantities` (a dict), and what goes wrong if you evaluate offers over `_items`?"_  
    **Expected Answer**: `_items` preserves the line-by-line scan order for printing the receipt, while `_product_quantities` aggregates total quantity per product across the whole cart. If a customer scans 1 toothbrush at the start and 2 more at the end, evaluating a `3-for-2` offer over `_items` individually misses the bundle!
+
+2. **Q**: _"Why must the loyalty coupon threshold be checked against the post-offer subtotal rather than the gross subtotal?"_
+   **Expected Answer**: Otherwise a coupon could be granted on a cart whose discounted total is below the threshold, leaking revenue.

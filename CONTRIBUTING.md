@@ -16,9 +16,9 @@ To add a new case:
 
 1. Copy [`templates/CASE_TEMPLATE.md`](templates/CASE_TEMPLATE.md).
 2. Choose the target difficulty tier:
-   - **Easy (`cases/easy/`)**: 3–4 files, 1–2 localized bugs, 1 clear AI trap, polyglot katas or small utilities (~30–45 min).
-   - **Medium (`cases/medium/`)**: 5–7 files across modules, 2–3 interacting bugs, multi-stage feature/scale extension (~45–60 min, Meta/Canva standard bar).
-   - **Hard (`cases/hard/`)**: 7–10+ files, real production open-source repository commits (`SWE-bench` / `Multi-SWE-bench` style), compounding AI traps involving cross-file invariants, concurrency, scale divergence, or AI-slop rescue (~60–75 min, Senior/Staff bar).
+   - **Easy (`cases/easy/`)**: 2–4 files, 1–2 localized bugs, 1 clear AI trap, polyglot katas or small utilities (~30–45 min).
+   - **Medium (`cases/medium/`)**: 3–6 files across modules, 1–3 interacting bugs, multi-stage feature/scale extension (~45–60 min, Meta/Canva standard bar).
+   - **Hard (`cases/hard/`)**: 3–6 files, real production open-source repository commits (`SWE-bench` / `Multi-SWE-bench` style), compounding AI traps involving cross-file invariants, concurrency, scale divergence, or AI-slop rescue (~60–75 min, Senior/Staff bar).
 3. Test your case against at least one frontier LLM (e.g., Claude, GPT, Gemini) using a naive "copy-paste the whole prompt" approach to verify and document the **AI Trap**.
 4. Add your case to the tier catalog and update the master table in [`README.md`](README.md).
 

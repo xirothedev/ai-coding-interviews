@@ -124,3 +124,6 @@ go test -race ./...
 
 1. **Q**: _"Why is `results[i] = val` without a mutex safe under `go test -race`, whereas `results = append(results, val)` is a data race?"_  
    **Expected Answer**: Once `results := make([]R, len(items))` is allocated before spawning goroutines, the slice header (`ptr, len, cap`) is never mutated, and each index `i` is processed by exactly one goroutine, writing to a disjoint memory address `&results[i]`.
+
+2. **Q**: _"Why must `cancel()` be called only after recording `firstErr`?"_
+   **Expected Answer**: Otherwise the first error is lost and the pool reports success despite a failure.

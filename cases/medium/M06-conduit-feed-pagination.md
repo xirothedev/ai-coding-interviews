@@ -48,7 +48,7 @@ Notice that **`nsidnev/fastapi-realworld-example-app` natively exhibits both cla
 >    - Filtering by `?tag=dragons` when an article has multiple tags (e.g., `["dragons", "training", "magic"]`) must still return **all** tags of that article in `tagList: ["dragons", "magic", "training"]` (sorted alphabetically)—NOT just `["dragons"]`!
 >    - Applying `?limit=10` must return exactly `10` distinct articles (when `>= 10` matching articles exist), and `articlesCount` must reflect the **total matching articles before `limit`/`offset`**, not `len(articles)`.
 > 2. **N+1 Query Bottleneck**:
->    - Fetching `50` articles currently executes `1 + 3 * 50 = 151` database queries (fetching tags, author following status, and favorite count inside a loop).
+>    - Fetching `50` articles currently executes `1 + 5 * 50 = 251` database queries (fetching tags, author following status, and favorite count inside a loop).
 >    - Optimize the data access layer so fetching `50` articles executes a **constant $O(1)$ number of queries (`<= 4` queries total)** regardless of `limit`.
 > 3. **Keyset Cursor Pagination (`?cursor=`)**:
 >    - Add optional cursor pagination (`?limit=20&cursor=<opaque_token>`) ordered by `created_at DESC, id DESC` so that even if 50 articles share the exact same `created_at` timestamp, paging through the feed never skips or duplicates a single article!
@@ -124,3 +124,6 @@ Notice that **`nsidnev/fastapi-realworld-example-app` natively exhibits both cla
 
 1. **Q**: _"What happens if you filter a `LEFT JOIN tags` query with `WHERE tags.name = 'dragons'` and also use that same join to populate `article.tagList`?"_  
    **Expected Answer**: The `WHERE` clause filters out all joined rows for the article's _other_ tags (like `'magic'`), so the API falsely returns `tagList: ['dragons']` instead of the article's full tag list! Using `WHERE EXISTS` (or fetching tags in a second batch query `WHERE article_id IN (...)`) preserves the full `tagList`.
+
+2. **Q**: _"Why must pagination use a composite cursor instead of `created_at` alone?"_
+   **Expected Answer**: Ties on the same timestamp cause duplicates or gaps across pages.
