@@ -151,6 +151,18 @@ for root, _, files in os.walk(build_dir):
             f.write(content)
 PYEOF
 
+# Merge locale sidebars into a single bilingual global sidebar (GitHub Wiki has one global sidebar)
+if [[ -f "${BUILD_DIR}/vi-_Sidebar.md" ]]; then
+  {
+    echo ""
+    echo "---"
+    echo ""
+    echo "### 🌐 Tiếng Việt"
+    echo ""
+    cat "${BUILD_DIR}/vi-_Sidebar.md"
+  } >> "${BUILD_DIR}/_Sidebar.md"
+fi
+
 PAGE_COUNT=$(find "${BUILD_DIR}" -maxdepth 1 -name '*.md' | wc -l | tr -d ' ')
 echo "==> Compiled ${PAGE_COUNT} Wiki pages in ${BUILD_DIR}."
 
